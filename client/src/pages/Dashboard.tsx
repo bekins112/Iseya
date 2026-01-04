@@ -12,9 +12,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const isEmployer = user?.role === "employer";
 
-  // Applicants see recent jobs
   const { data: jobs, isLoading: jobsLoading } = useJobs();
-  // Applicants see their applications
   const { data: myApplications, isLoading: appsLoading } = useMyApplications();
 
   const container = {
@@ -53,7 +51,6 @@ export default function Dashboard() {
         />
       </motion.div>
 
-      {/* Stats Overview */}
       <motion.div 
         variants={container}
         initial="hidden"
@@ -110,7 +107,6 @@ export default function Dashboard() {
         </motion.div>
       </motion.div>
 
-      {/* Main Content Area */}
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -150,7 +146,7 @@ export default function Dashboard() {
                 <p className="text-xl font-bold text-muted-foreground">No jobs found.</p>
                 {isEmployer && (
                   <Link href="/post-job">
-                    <Button variant="link" className="mt-2 text-primary font-bold">Create your first job post</Button>
+                    <Button variant="ghost" className="mt-2 text-primary font-bold">Create your first job post</Button>
                   </Link>
                 )}
               </div>
@@ -161,4 +157,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

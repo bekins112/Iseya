@@ -1,10 +1,12 @@
+import { useAuth } from "@/hooks/use-auth";
 import { useJobs } from "@/hooks/use-casual";
 import { PageHeader } from "@/components/ui-extension";
 import { JobCard } from "@/components/JobCard";
 import { Input } from "@/components/ui/input";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, Briefcase } from "lucide-react";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function JobListing() {
@@ -87,7 +89,7 @@ export default function JobListing() {
                 <Briefcase className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-2xl font-display font-bold text-muted-foreground">No matches found</p>
                 <p className="text-muted-foreground">Try adjusting your search or filters to find more jobs.</p>
-                <Button variant="link" onClick={() => setCategory("all")} className="mt-4 text-primary font-bold">Clear all filters</Button>
+                <Button variant="ghost" onClick={() => setCategory("all")} className="mt-4 text-primary font-bold">Clear all filters</Button>
              </motion.div>
           )}
         </AnimatePresence>
@@ -95,4 +97,3 @@ export default function JobListing() {
     </div>
   );
 }
-

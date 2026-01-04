@@ -22,6 +22,7 @@ const profileSchema = insertUserSchema.pick({
 }).extend({
   firstName: z.string().min(1, "First Name is required"),
   lastName: z.string().min(1, "Last Name is required"),
+  location: z.string().nullable().optional(),
   bio: z.string().optional(),
 });
 
@@ -171,7 +172,7 @@ export default function Profile() {
                       <FormItem>
                         <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary Location</FormLabel>
                         <FormControl>
-                          <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. San Francisco, CA" {...field} />
+                          <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. San Francisco, CA" {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -214,4 +215,3 @@ export default function Profile() {
     </div>
   );
 }
-
