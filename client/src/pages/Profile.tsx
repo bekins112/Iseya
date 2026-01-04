@@ -11,6 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { motion } from "framer-motion";
+import { Settings, Shield, Crown, Camera } from "lucide-react";
 
 const profileSchema = insertUserSchema.pick({
   firstName: true,
@@ -45,57 +47,103 @@ export default function Profile() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <PageHeader title="My Profile" description="Manage your personal information and subscription." />
+    <div className="max-w-5xl mx-auto space-y-10 pb-20">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <PageHeader title="Account Settings" description="Customize your presence on CasualWorker." />
+      </motion.div>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        <div className="md:col-span-1 space-y-6">
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <Avatar className="w-24 h-24 mx-auto mb-4">
-                <AvatarImage src={user?.profileImageUrl || undefined} />
-                <AvatarFallback className="text-xl bg-primary/10 text-primary">
-                  {user?.firstName?.[0]}{user?.lastName?.[0]}
-                </AvatarFallback>
-              </Avatar>
-              <h3 className="text-xl font-bold">{user?.firstName} {user?.lastName}</h3>
-              <p className="text-muted-foreground capitalize">{user?.role}</p>
-              <div className="mt-4 flex justify-center">
+      <div className="grid lg:grid-cols-12 gap-10">
+        <motion.div 
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+          className="lg:col-span-4 space-y-8"
+        >
+          <Card className="rounded-3xl border-border/40 overflow-hidden shadow-xl shadow-black/5 bg-card/50 backdrop-blur-sm">
+            <div className="h-32 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 animate-gradient" />
+            <CardContent className="pt-0 text-center relative">
+              <div className="relative inline-block -mt-16 mb-6">
+                <Avatar className="w-32 h-32 border-8 border-background shadow-2xl">
+                  <AvatarImage src={user?.profileImageUrl || undefined} />
+                  <AvatarFallback className="text-3xl bg-primary/10 text-primary font-bold">
+                    {user?.firstName?.[0]}{user?.lastName?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <Button size="icon" className="absolute bottom-2 right-2 rounded-full w-10 h-10 shadow-lg shadow-primary/30 border-2 border-background">
+                  <Camera className="w-5 h-5" />
+                </Button>
+              </div>
+              <h3 className="text-2xl font-display font-bold">{user?.firstName} {user?.lastName}</h3>
+              <p className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-xs mb-6">{user?.role}</p>
+              <div className="flex justify-center gap-4 py-4 border-t border-border/40">
+                <div className="text-center px-4">
+                  <div className="text-xl font-bold">12</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase">Jobs</div>
+                </div>
+                <div className="border-r border-border/40" />
+                <div className="text-center px-4">
+                  <div className="text-xl font-bold">4.8</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase">Rating</div>
+                </div>
+              </div>
+              <div className="pt-6 pb-2">
                  <StatusBadge status={user?.subscriptionStatus || 'free'} />
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-primary/90 to-primary text-primary-foreground border-none">
-            <CardHeader>
-              <CardTitle className="text-lg">Upgrade to Premium</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-primary-foreground/90 text-sm">
-                Get verified status, priority support, and unlimited job postings.
-              </p>
-              <Button variant="secondary" className="w-full font-semibold text-primary">Upgrade Now</Button>
-            </CardContent>
-          </Card>
-        </div>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="group"
+          >
+            <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-none rounded-3xl overflow-hidden relative shadow-2xl shadow-primary/20">
+              <Crown className="absolute right-[-20px] top-[-20px] w-40 h-40 opacity-10 group-hover:rotate-12 transition-transform duration-500" />
+              <CardHeader>
+                <CardTitle className="text-2xl font-display flex items-center gap-3">
+                  <Shield className="w-6 h-6" />
+                  Premium
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 relative z-10">
+                <p className="text-primary-foreground/90 font-medium text-lg leading-relaxed">
+                  Get verified status, priority job alerts, and stand out to employers.
+                </p>
+                <Button variant="secondary" className="w-full h-12 rounded-2xl font-bold text-primary shadow-xl shadow-black/10">
+                  Upgrade Now
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
 
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Edit Details</CardTitle>
+        <motion.div 
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="lg:col-span-8"
+        >
+          <Card className="rounded-3xl border-border/40 shadow-xl shadow-black/5 overflow-hidden">
+            <CardHeader className="bg-muted/30 pb-8 border-b border-border/40">
+              <CardTitle className="text-2xl font-display flex items-center gap-3">
+                <Settings className="w-6 h-6 text-primary" />
+                Profile Information
+              </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-10">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  <div className="grid sm:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
                       name="firstName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>First Name</FormLabel>
+                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">First Name</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -106,9 +154,9 @@ export default function Profile() {
                       name="lastName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Last Name</FormLabel>
+                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Last Name</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -121,9 +169,9 @@ export default function Profile() {
                     name="location"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Location</FormLabel>
+                        <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary Location</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. San Francisco, CA" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -135,26 +183,35 @@ export default function Profile() {
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bio</FormLabel>
+                        <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">About You</FormLabel>
                         <FormControl>
-                          <Textarea className="min-h-[120px]" {...field} />
+                          <Textarea 
+                            className="min-h-[160px] rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all text-lg leading-relaxed resize-none" 
+                            placeholder="Tell potential employers about your experience and skills..."
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={updateUser.isPending}>
-                      {updateUser.isPending ? "Saving..." : "Save Changes"}
+                  <div className="flex justify-end pt-4">
+                    <Button 
+                      type="submit" 
+                      disabled={updateUser.isPending}
+                      className="h-14 px-10 rounded-2xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                    >
+                      {updateUser.isPending ? "Saving changes..." : "Save Profile"}
                     </Button>
                   </div>
                 </form>
               </Form>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
 }
+
