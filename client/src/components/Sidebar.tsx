@@ -30,7 +30,27 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
+    <>
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t z-50 md:hidden flex items-center justify-around h-16 px-2 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        {links.map((link) => {
+          const Icon = link.icon;
+          const isActive = location === link.href;
+          return (
+            <Link key={link.href} href={link.href}>
+              <button className={cn(
+                "flex flex-col items-center justify-center gap-1 transition-all",
+                isActive ? "text-primary scale-110" : "text-muted-foreground"
+              )}>
+                <Icon className={cn("w-6 h-6", isActive && "stroke-[2.5px]")} />
+                <span className="text-[10px] font-bold uppercase tracking-tighter">{link.label.split(' ')[0]}</span>
+              </button>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
       <div className="h-16 flex items-center px-6 border-b">
          <div className="bg-primary rounded-lg p-1.5 mr-2">
             <Briefcase className="w-5 h-5 text-white" />
@@ -77,5 +97,6 @@ export function Sidebar() {
         </Button>
       </div>
     </aside>
+    </>
   );
 }
