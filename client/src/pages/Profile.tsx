@@ -59,7 +59,7 @@ export default function Profile() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <PageHeader title="Account Settings" description="Customize your presence on CasualWorker." />
+        <PageHeader title="Account Settings" description="Customize your presence on Ìṣeyà." />
       </motion.div>
 
       <div className="grid lg:grid-cols-12 gap-10">

@@ -65,7 +65,7 @@ export default function Onboarding() {
         <CardHeader>
           <CardTitle className="text-2xl font-display text-center">Complete Your Profile</CardTitle>
           <CardDescription className="text-center">
-            Welcome to CasualWorker! Let's get you set up.
+            Welcome to Ìṣeyà! Let's get you set up.
           </CardDescription>
         </CardHeader>
         <CardContent>

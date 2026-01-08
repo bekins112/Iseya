@@ -21,7 +21,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  // Added fields for CasualWorker app
+  // Added fields for Ìṣeyà app
   role: varchar("role", { length: 20 }).default("applicant"), // 'applicant', 'employer', 'admin'
   age: integer("age"),
   bio: text("bio"),
