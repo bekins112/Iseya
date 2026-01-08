@@ -17,6 +17,10 @@ export default function Landing() {
     if (role) {
       localStorage.setItem("intended_role", role);
     }
+    if (isAuthenticated) {
+      window.location.href = "/api/logout";
+      return;
+    }
     window.location.href = "/api/login";
   };
 
