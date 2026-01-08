@@ -26,6 +26,9 @@ const categories = [
 
 const postJobSchema = insertJobSchema.extend({
   category: z.string().min(1, "Category is required"),
+  jobType: z.string().min(1, "Job type is required"),
+  salaryMin: z.coerce.number().min(0, "Minimum salary must be at least 0"),
+  salaryMax: z.coerce.number().min(0, "Maximum salary must be at least 0"),
   wage: z.string().min(1, "Wage information is required"),
   location: z.string().min(1, "Location is required"),
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -46,6 +49,9 @@ export default function PostJob() {
       title: "",
       description: "",
       category: "",
+      jobType: "Full-time",
+      salaryMin: 0,
+      salaryMax: 0,
       wage: "",
       location: "",
       isActive: true,
@@ -109,12 +115,65 @@ export default function PostJob() {
 
                 <FormField
                   control={form.control}
+                  name="jobType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Full-time">Full-time</SelectItem>
+                          <SelectItem value="Part-time">Part-time</SelectItem>
+                          <SelectItem value="Contract">Contract</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="salaryMin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Min Salary (₦)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="salaryMax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Max Salary (₦)</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="wage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Wage / Salary</FormLabel>
+                      <FormLabel>Wage Period (e.g. /hr, /mo)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. $20/hr" {...field} />
+                        <Input placeholder="e.g. /hr" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

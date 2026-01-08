@@ -1,5 +1,5 @@
 import { Job } from "@shared/schema";
-import { MapPin, DollarSign, Briefcase, ChevronRight } from "lucide-react";
+import { MapPin, DollarSign, Briefcase, ChevronRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -53,11 +53,20 @@ export function JobCard({ job, isEmployer = false }: JobCardProps) {
             </div>
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 group-hover:bg-primary/5 transition-colors duration-300">
               <div className="bg-background p-2 rounded-xl shadow-sm">
+                <Clock className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Type</span>
+                <span className="text-sm font-semibold">{job.jobType}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 group-hover:bg-primary/5 transition-colors duration-300 col-span-2">
+              <div className="bg-background p-2 rounded-xl shadow-sm">
                 <DollarSign className="h-4 w-4 text-accent" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase">Wage</span>
-                <span className="text-sm font-semibold">{job.wage}</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase">Salary Range</span>
+                <span className="text-sm font-semibold">₦{job.salaryMin.toLocaleString()} - ₦{job.salaryMax.toLocaleString()} ({job.wage})</span>
               </div>
             </div>
           </div>
