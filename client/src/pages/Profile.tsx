@@ -19,11 +19,15 @@ const profileSchema = insertUserSchema.pick({
   lastName: true,
   location: true,
   bio: true,
+  profileImageUrl: true,
+  cvUrl: true,
 }).extend({
   firstName: z.string().min(1, "First Name is required"),
   lastName: z.string().min(1, "Last Name is required"),
   location: z.string().nullable().optional(),
   bio: z.string().optional(),
+  profileImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  cvUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -39,6 +43,8 @@ export default function Profile() {
       lastName: user?.lastName || "",
       location: user?.location || "",
       bio: user?.bio || "",
+      profileImageUrl: user?.profileImageUrl || "",
+      cvUrl: user?.cvUrl || "",
     }
   });
 
@@ -178,6 +184,36 @@ export default function Profile() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="profileImageUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Profile Picture URL</FormLabel>
+                        <FormControl>
+                          <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="https://example.com/photo.jpg" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {user?.role === 'applicant' && (
+                    <FormField
+                      control={form.control}
+                      name="cvUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">CV / Resume URL (PDF)</FormLabel>
+                          <FormControl>
+                            <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="https://example.com/my-cv.pdf" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}

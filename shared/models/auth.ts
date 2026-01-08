@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   role: varchar("role", { length: 20 }).default("applicant"), // 'applicant', 'employer', 'admin'
   age: integer("age"),
   bio: text("bio"),
+  cvUrl: varchar("cv_url"),
   location: varchar("location"),
   isVerified: boolean("is_verified").default(false),
   subscriptionStatus: varchar("subscription_status").default("free"), // 'free', 'premium'
