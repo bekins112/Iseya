@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,14 +19,8 @@ import { AlertCircle } from "lucide-react";
 // Schema for onboarding form
 const onboardingSchema = insertUserSchema.pick({
   role: true,
-  age: true,
-  location: true,
-  bio: true
 }).extend({
-  age: z.coerce.number().min(16, "You must be at least 16 years old to use this platform."),
   role: z.enum(["applicant", "employer"]),
-  location: z.string().min(2, "Location is required"),
-  bio: z.string().min(10, "Tell us a bit about yourself (min 10 chars)")
 });
 
 type OnboardingFormValues = z.infer<typeof onboardingSchema>;
@@ -41,16 +35,28 @@ export default function Onboarding() {
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       role: (localStorage.getItem("intended_role") as "applicant" | "employer") || "applicant",
-      location: "",
-      bio: "",
-      age: undefined,
     }
   });
+
+  useEffect(() => {
+    const intendedRole = localStorage.getItem("intended_role");
+    if (intendedRole && user) {
+      updateUser.mutate(
+        { id: user.id, role: intendedRole as "applicant" | "employer", age: 18 },
+        {
+          onSuccess: () => {
+            localStorage.removeItem("intended_role");
+            setLocation("/dashboard");
+          }
+        }
+      );
+    }
+  }, [user, setLocation, updateUser]);
 
   const onSubmit = (data: OnboardingFormValues) => {
     if (!user) return;
     updateUser.mutate(
-      { id: user.id, ...data },
+      { id: user.id, ...data, age: 18 },
       {
         onSuccess: () => {
           localStorage.removeItem("intended_role");
@@ -64,123 +70,37 @@ export default function Onboarding() {
     <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
       <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
         <CardHeader>
-          <CardTitle className="text-2xl font-display text-center">Complete Your Profile</CardTitle>
+          <CardTitle className="text-2xl font-display text-center">Select Your Role</CardTitle>
           <CardDescription className="text-center">
-            Welcome to Ìṣeyà! Let's get you set up.
+            Welcome to Ìṣeyà! Choose how you want to use the platform.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>I am here to...</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="grid grid-cols-2 gap-4"
-                      >
-                        <div>
-                          <RadioGroupItem value="applicant" id="applicant" className="peer sr-only" />
-                          <Label
-                            htmlFor="applicant"
-                            className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:text-primary cursor-pointer transition-all"
-                          >
-                            <span className="text-lg font-bold mb-1">Find Work</span>
-                            <span className="text-xs text-muted-foreground text-center">I'm looking for casual jobs</span>
-                          </Label>
-                        </div>
-                        <div>
-                          <RadioGroupItem value="employer" id="employer" className="peer sr-only" />
-                          <Label
-                            htmlFor="employer"
-                            className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:text-primary cursor-pointer transition-all"
-                          >
-                            <span className="text-lg font-bold mb-1">Hire Talent</span>
-                            <span className="text-xs text-muted-foreground text-center">I need to hire help</span>
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
+        <CardContent className="py-10">
+          <div className="flex flex-col items-center justify-center space-y-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground font-medium italic">Setting up your experience...</p>
+          </div>
+          <div className="hidden">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="age"
+                  name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Age</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="18" {...field} />
+                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value}>
+                          <RadioGroupItem value="applicant" />
+                          <RadioGroupItem value="employer" />
+                        </RadioGroup>
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location</FormLabel>
-                      <FormControl>
-                        <Input placeholder="City, Area" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {form.watch("age") && form.watch("age") < 16 && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Age Restriction</AlertTitle>
-                  <AlertDescription>
-                    You must be at least 16 years old to use this platform.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder={form.watch("role") === "applicant" 
-                          ? "Tell employers about your skills and experience..." 
-                          : "Tell applicants about your business..."} 
-                        className="resize-none min-h-[100px]"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-lg font-semibold"
-                disabled={updateUser.isPending || (form.watch("age") || 0) < 16}
-              >
-                {updateUser.isPending ? "Setting up..." : "Complete Setup"}
-              </Button>
-            </form>
-          </Form>
+                <Button type="submit" id="submit-onboarding">Submit</Button>
+              </form>
+            </Form>
+          </div>
         </CardContent>
       </Card>
     </div>
