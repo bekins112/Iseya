@@ -55,7 +55,7 @@ export function Sidebar() {
          <div className="bg-primary rounded-lg p-1.5 mr-2">
             <Briefcase className="w-5 h-5 text-white" />
          </div>
-         <span className="font-display font-bold text-xl">CasualWorker</span>
+         <span className="font-display font-bold text-xl">Ìṣeyà</span>
       </div>
 
       <nav className="flex-1 p-4 space-y-1">

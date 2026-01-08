@@ -52,7 +52,7 @@ export default function Landing() {
             <div className="bg-primary rounded-lg p-1.5">
               <Briefcase className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-display font-bold text-foreground">CasualWorker</span>
+            <span className="text-xl font-display font-bold text-foreground">Ìṣeyà</span>
           </motion.div>
           <motion.div
             initial={{ x: 20, opacity: 0 }}
@@ -268,9 +268,9 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Briefcase className="w-6 h-6 text-primary" />
-            <span className="text-xl font-display font-bold">CasualWorker</span>
+            <span className="text-xl font-display font-bold">Ìṣeyà</span>
           </div>
-          <p className="text-muted-foreground">© 2026 CasualWorker. All rights reserved.</p>
+          <p className="text-muted-foreground">© 2026 Ìṣeyà. All rights reserved.</p>
         </div>
       </footer>
     </div>

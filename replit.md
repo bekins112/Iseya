@@ -1,8 +1,8 @@
-# CasualWorker - Job Marketplace Platform
+# Ìṣeyà - Job Marketplace Platform
 
 ## Overview
 
-CasualWorker is a job marketplace platform connecting casual workers (applicants) with employers posting short-term or part-time job opportunities. The application features role-based access where applicants can browse and apply for jobs while employers can post and manage job listings. Built with a modern React frontend and Express backend, using PostgreSQL for data persistence and Replit Auth for authentication.
+Ìṣeyà is a job marketplace platform connecting casual workers (applicants) with employers posting short-term or part-time job opportunities. The application features role-based access where applicants can browse and apply for jobs while employers can post and manage job listings. Built with a modern React frontend and Express backend, using PostgreSQL for data persistence and Replit Auth for authentication.
 
 ## User Preferences
 
