@@ -40,7 +40,7 @@ export default function Onboarding() {
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
-      role: "applicant",
+      role: (localStorage.getItem("intended_role") as "applicant" | "employer") || "applicant",
       location: "",
       bio: "",
       age: undefined,
@@ -53,6 +53,7 @@ export default function Onboarding() {
       { id: user.id, ...data },
       {
         onSuccess: () => {
+          localStorage.removeItem("intended_role");
           setLocation("/dashboard");
         }
       }

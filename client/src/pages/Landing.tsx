@@ -13,7 +13,10 @@ export default function Landing() {
     return null;
   }
 
-  const handleLogin = () => {
+  const handleLogin = (role?: string) => {
+    if (role) {
+      localStorage.setItem("intended_role", role);
+    }
     window.location.href = "/api/login";
   };
 
@@ -117,20 +120,28 @@ export default function Landing() {
             variants={itemVariants}
             className="flex flex-col sm:flex-row items-center justify-center gap-6"
           >
-            <Button 
-              onClick={handleLogin} 
-              size="lg" 
-              className="h-16 px-10 text-xl rounded-full shadow-2xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 group bg-primary"
-            >
-              Get Started <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="h-16 px-10 text-xl rounded-full border-2 hover:bg-muted transition-all hover:scale-105 active:scale-95"
-            >
-              View Jobs
-            </Button>
+            <div className="flex flex-col items-center gap-4">
+              <Button 
+                onClick={() => handleLogin("applicant")} 
+                size="lg" 
+                className="h-16 px-10 text-xl rounded-full shadow-2xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 group bg-primary"
+              >
+                Find Work <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <span className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Job Seekers</span>
+            </div>
+
+            <div className="flex flex-col items-center gap-4">
+              <Button 
+                onClick={() => handleLogin("employer")} 
+                variant="outline"
+                size="lg" 
+                className="h-16 px-10 text-xl rounded-full border-2 hover:bg-muted transition-all hover:scale-105 active:scale-95 group"
+              >
+                Hire Talent <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <span className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Hiring Companies</span>
+            </div>
           </motion.div>
         </motion.div>
       </section>
