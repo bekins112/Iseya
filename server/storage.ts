@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, jobs, applications, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { IAuthStorage } from "./replit_integrations/auth/storage";
 
 export interface IStorage extends IAuthStorage {
@@ -12,7 +12,13 @@ export interface IStorage extends IAuthStorage {
   // Jobs
   createJob(job: InsertJob): Promise<Job>;
   getJob(id: number): Promise<Job | undefined>;
-  getJobs(filters?: { category?: string; location?: string }): Promise<Job[]>;
+  getJobs(filters?: { 
+    category?: string; 
+    location?: string;
+    jobType?: string;
+    minSalary?: number;
+    maxSalary?: number;
+  }): Promise<Job[]>;
   deleteJob(id: number): Promise<void>;
   
   // Applications
@@ -61,23 +67,20 @@ export class DatabaseStorage implements IStorage {
     return job;
   }
 
-  async getJobs(filters?: { category?: string; location?: string }): Promise<Job[]> {
-    let query = db.select().from(jobs).where(eq(jobs.isActive, true)).orderBy(desc(jobs.createdAt));
-    
-    if (filters?.category) {
-      query = query.where(eq(jobs.category, filters.category)) as any;
-    }
-    
-    if (filters?.location) {
-      // Simple exact match for MVP, or like match
-      // For now, let's just do exact or handle in memory if needed, but SQL is better
-      // Since filters are optional, we chain
-      // Note: Chaining with Drizzle query builder requires careful type handling or building the conditions array
-    }
-    
+  async getJobs(filters?: { 
+    category?: string; 
+    location?: string;
+    jobType?: string;
+    minSalary?: number;
+    maxSalary?: number;
+  }): Promise<Job[]> {
     const conditions = [eq(jobs.isActive, true)];
+    
     if (filters?.category) conditions.push(eq(jobs.category, filters.category));
-    if (filters?.location) conditions.push(eq(jobs.location, filters.location));
+    if (filters?.location) conditions.push(sql`${jobs.location} ILIKE ${`%${filters.location}%`}`);
+    if (filters?.jobType) conditions.push(eq(jobs.jobType, filters.jobType));
+    if (filters?.minSalary) conditions.push(sql`${jobs.salaryMin} >= ${filters.minSalary}`);
+    if (filters?.maxSalary) conditions.push(sql`${jobs.salaryMax} <= ${filters.maxSalary}`);
     
     return await db.select().from(jobs).where(and(...conditions)).orderBy(desc(jobs.createdAt));
   }

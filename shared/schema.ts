@@ -13,6 +13,9 @@ export const jobs = pgTable("jobs", {
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   category: varchar("category").notNull(), // 'waitress', 'cleaner', etc.
+  jobType: varchar("job_type").notNull().default("Full-time"), // 'Full-time', 'Part-time', 'Contract'
+  salaryMin: integer("salary_min").notNull().default(0),
+  salaryMax: integer("salary_max").notNull().default(0),
   wage: varchar("wage").notNull(),
   location: varchar("location").notNull(),
   isActive: boolean("is_active").default(true),

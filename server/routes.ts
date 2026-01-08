@@ -31,6 +31,9 @@ export async function registerRoutes(
     const filters = {
       category: req.query.category as string,
       location: req.query.location as string,
+      jobType: req.query.jobType as string,
+      minSalary: req.query.minSalary ? Number(req.query.minSalary) : undefined,
+      maxSalary: req.query.maxSalary ? Number(req.query.maxSalary) : undefined,
     };
     const jobs = await storage.getJobs(filters);
     res.json(jobs);
