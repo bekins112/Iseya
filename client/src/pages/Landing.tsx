@@ -5,20 +5,15 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 
 export default function Landing() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
-
-  if (!isLoading && isAuthenticated) {
-    setLocation("/dashboard");
-    return null;
-  }
 
   const handleLogin = (role?: string) => {
     if (role) {
       localStorage.setItem("intended_role", role);
     }
     if (isAuthenticated) {
-      window.location.href = "/api/logout";
+      setLocation("/dashboard");
       return;
     }
     window.location.href = "/api/login";
