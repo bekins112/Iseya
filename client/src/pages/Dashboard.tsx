@@ -15,6 +15,9 @@ export default function Dashboard() {
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: myApplications, isLoading: appsLoading } = useMyApplications();
 
+  // Employer specific data
+  const myJobs = jobs?.filter(j => j.employerId === user?.id) || [];
+  
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -130,7 +133,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-8">
-            {jobs?.slice(0, 3).map((job, idx) => (
+            {(isEmployer ? myJobs : jobs)?.slice(0, 3).map((job, idx) => (
               <motion.div
                 key={job.id}
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -140,7 +143,7 @@ export default function Dashboard() {
                 <JobCard job={job} isEmployer={isEmployer} />
               </motion.div>
             ))}
-            {jobs?.length === 0 && (
+            {((isEmployer ? myJobs : jobs)?.length === 0) && (
               <div className="col-span-3 text-center py-24 bg-muted/20 rounded-3xl border-2 border-dashed border-border/40">
                 <Briefcase className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-xl font-bold text-muted-foreground">No jobs found.</p>
