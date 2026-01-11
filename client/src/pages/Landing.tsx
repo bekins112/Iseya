@@ -65,7 +65,7 @@ export default function Landing() {
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
           >
-            <Button onClick={handleLogin} variant="default" className="font-semibold rounded-full px-6">
+            <Button onClick={() => handleLogin()} variant="default" className="font-semibold rounded-full px-6">
               Login
             </Button>
           </motion.div>
