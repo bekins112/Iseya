@@ -41,6 +41,7 @@ export default function Onboarding() {
   useEffect(() => {
     const intendedRole = localStorage.getItem("intended_role");
     if (intendedRole && user) {
+      // Always update if we have an intended role from landing
       updateUser.mutate(
         { id: user.id, role: intendedRole as "applicant" | "employer", age: 18 },
         {
@@ -51,7 +52,7 @@ export default function Onboarding() {
         }
       );
     }
-  }, [user, setLocation, updateUser]);
+  }, [user?.id, setLocation, updateUser]);
 
   const onSubmit = (data: OnboardingFormValues) => {
     if (!user) return;

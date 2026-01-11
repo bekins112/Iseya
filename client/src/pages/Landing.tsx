@@ -13,6 +13,11 @@ export default function Landing() {
       localStorage.setItem("intended_role", role);
     }
     if (isAuthenticated) {
+      if (role && user && user.role !== role) {
+        // If logged in as wrong role, logout first to allow switching
+        window.location.href = "/api/logout";
+        return;
+      }
       setLocation("/dashboard");
       return;
     }
