@@ -122,30 +122,39 @@ export default function Landing() {
           
           <motion.div 
             variants={itemVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-6"
+            className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-12"
           >
-            <div className="flex flex-col items-center gap-4">
-              <Button 
-                onClick={() => handleLogin("applicant")} 
-                size="lg" 
-                className="h-16 px-10 text-xl rounded-full shadow-2xl shadow-primary/30 hover:shadow-primary/40 transition-all hover:scale-105 active:scale-95 group bg-primary"
-              >
-                Find Work <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <span className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Job Seekers</span>
-            </div>
+            <motion.button
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleLogin("applicant")}
+              className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-primary text-primary-foreground shadow-2xl shadow-primary/40 min-w-[280px] group transition-all"
+            >
+              <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Search className="w-10 h-10" />
+              </div>
+              <div className="text-center">
+                <span className="text-2xl font-display font-bold block">Seek for Job</span>
+                <span className="text-sm opacity-80 font-medium">Find your next opportunity</span>
+              </div>
+              <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+            </motion.button>
 
-            <div className="flex flex-col items-center gap-4">
-              <Button 
-                onClick={() => handleLogin("employer")} 
-                variant="outline"
-                size="lg" 
-                className="h-16 px-10 text-xl rounded-full border-2 hover:bg-muted transition-all hover:scale-105 active:scale-95 group"
-              >
-                Hire Talent <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
-              </Button>
-              <span className="text-sm text-muted-foreground font-medium uppercase tracking-widest">Hiring Companies</span>
-            </div>
+            <motion.button
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleLogin("employer")}
+              className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-card border-2 border-primary/20 hover:border-primary/50 shadow-2xl shadow-black/5 min-w-[280px] group transition-all"
+            >
+              <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform text-primary">
+                <UserCheck className="w-10 h-10" />
+              </div>
+              <div className="text-center">
+                <span className="text-2xl font-display font-bold block text-foreground">Hire a Talent</span>
+                <span className="text-sm text-muted-foreground font-medium">Find reliable workers</span>
+              </div>
+              <ArrowRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
+            </motion.button>
           </motion.div>
         </motion.div>
       </section>
