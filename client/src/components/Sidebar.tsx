@@ -20,8 +20,8 @@ export function Sidebar() {
   const links = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     ...(isEmployer ? [
+      { href: "/my-jobs", label: "My Job Postings", icon: FolderOpen },
       { href: "/post-job", label: "Post a Job", icon: PlusCircle },
-      { href: "/my-jobs", label: "My Jobs", icon: Briefcase },
     ] : [
       { href: "/jobs", label: "Find Jobs", icon: Briefcase },
       { href: "/my-applications", label: "Applications", icon: FolderOpen },

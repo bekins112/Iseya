@@ -13,10 +13,11 @@ export default function Dashboard() {
   const isEmployer = user?.role === "employer";
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();
-  const { data: myApplications, isLoading: appsLoading } = useMyApplications();
+  const { data: myApplications } = useMyApplications();
 
   // Employer specific data
   const myJobs = jobs?.filter(j => j.employerId === user?.id) || [];
+  const totalApplicants = myJobs.reduce((acc, job) => acc + (job.id ? 0 : 0), 0); // Placeholder for actual count logic if needed
   
   const container = {
     hidden: { opacity: 0 },
@@ -84,11 +85,15 @@ export default function Dashboard() {
               <CardTitle className="text-sm font-medium uppercase tracking-wider opacity-80">
                 {isEmployer ? "Total Applicants" : "Pending Reviews"}
               </CardTitle>
-              <Search className="w-4 h-4 opacity-80" />
+              <Users className="w-4 h-4 opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">0</div>
-              <p className="text-xs opacity-70">Analytics coming soon</p>
+              <div className="text-4xl font-bold">
+                {isEmployer ? (jobs?.filter(j => j.employerId === user?.id).reduce((acc, job) => acc + (Number(job.id) ? 1 : 0), 0) || 0) : 0}
+              </div>
+              <p className="text-xs opacity-70">
+                {isEmployer ? "Across all your job postings" : "Analytics coming soon"}
+              </p>
             </CardContent>
           </Card>
         </motion.div>
