@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe } from "lucide-react";
+import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe, Search } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 
