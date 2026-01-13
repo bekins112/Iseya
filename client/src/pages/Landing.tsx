@@ -129,13 +129,14 @@ export default function Landing() {
               whileTap={{ scale: 0.95 }}
               onClick={() => handleLogin("applicant")}
               className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-primary text-primary-foreground shadow-2xl shadow-primary/40 min-w-[280px] group transition-all"
+              data-testid="button-signup-applicant"
             >
               <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Search className="w-10 h-10" />
               </div>
               <div className="text-center">
                 <span className="text-2xl font-display font-bold block">Seek for Job</span>
-                <span className="text-sm opacity-80 font-medium">Find your next opportunity</span>
+                <span className="text-sm opacity-80 font-medium">Create applicant account</span>
               </div>
               <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
             </motion.button>
@@ -145,13 +146,14 @@ export default function Landing() {
               whileTap={{ scale: 0.95 }}
               onClick={() => handleLogin("employer")}
               className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-card border-2 border-primary/20 hover:border-primary/50 shadow-2xl shadow-black/5 min-w-[280px] group transition-all"
+              data-testid="button-signup-employer"
             >
               <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform text-primary">
                 <UserCheck className="w-10 h-10" />
               </div>
               <div className="text-center">
                 <span className="text-2xl font-display font-bold block text-foreground">Hire a Talent</span>
-                <span className="text-sm text-muted-foreground font-medium">Find reliable workers</span>
+                <span className="text-sm text-muted-foreground font-medium">Create employer account</span>
               </div>
               <ArrowRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
             </motion.button>
