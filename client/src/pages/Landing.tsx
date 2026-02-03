@@ -26,14 +26,6 @@ export default function Landing() {
     setLocation("/employer");
   };
 
-  const handleLogin = () => {
-    if (isAuthenticated) {
-      setLocation("/dashboard");
-      return;
-    }
-    window.location.href = "/api/login";
-  };
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -71,9 +63,13 @@ export default function Landing() {
           <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
+            className="flex items-center gap-3"
           >
-            <Button onClick={() => handleLogin()} variant="default" className="font-semibold rounded-full px-6">
-              Login
+            <Button onClick={handleApplicantLogin} variant="ghost" className="font-medium" data-testid="nav-job-seeker-login">
+              Job Seeker
+            </Button>
+            <Button onClick={handleEmployerLogin} variant="default" className="font-semibold rounded-full px-6" data-testid="nav-employer-login">
+              Employer Login
             </Button>
           </motion.div>
         </div>
