@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import iseyaLogo from "@assets/Iseya_(2)_1770119862471.png";
+import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { Card, CardContent } from "@/components/ui/card";
 
 type UserMode = "seeker" | "employer";

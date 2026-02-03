@@ -12,7 +12,7 @@ import {
   Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import iseyaLogo from "@assets/Iseya_(2)_1770119862471.png";
+import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
 export function Sidebar() {
   const { user, logout } = useAuth();
