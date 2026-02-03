@@ -27,6 +27,15 @@ export default function Landing() {
     window.location.href = "/api/login";
   };
 
+  const handleSignup = (role: "applicant" | "employer") => {
+    if (role === "employer") {
+      setLocation("/employer/signup");
+    } else {
+      localStorage.setItem("intended_role", role);
+      window.location.href = "/api/login";
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -255,7 +264,7 @@ export default function Landing() {
                     </Button>
                     
                     <Button 
-                      onClick={() => handleLogin(activeMode === "seeker" ? "applicant" : "employer")}
+                      onClick={() => handleSignup(activeMode === "seeker" ? "applicant" : "employer")}
                       variant="outline"
                       className="w-full h-12 text-base font-bold rounded-xl"
                       data-testid={`button-signup-${activeMode}`}
