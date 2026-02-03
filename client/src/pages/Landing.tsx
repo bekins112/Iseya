@@ -5,6 +5,7 @@ import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap,
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import workersImage from "@assets/file_0000000006b4722f93fd48732a248e00_1770125859585.png";
 import { Card, CardContent } from "@/components/ui/card";
 
 type UserMode = "seeker" | "employer";
@@ -402,8 +403,8 @@ export default function Landing() {
             >
               <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-accent/30 rounded-3xl blur-2xl -z-10 animate-pulse" />
               <img 
-                src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=1000" 
-                alt="Diverse team collaborating" 
+                src={workersImage} 
+                alt="Nigerian casual workers - construction, hospitality, waitstaff, and cleaning professionals" 
                 className="rounded-3xl shadow-2xl border-4 border-white dark:border-gray-800"
               />
             </motion.div>
