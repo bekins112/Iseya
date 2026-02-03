@@ -193,9 +193,170 @@ export async function registerRoutes(
     }
   });
 
-  // Initial Seed (Optional, but good for demo)
-  // We can't easily seed users because of Auth, but we can seed jobs if we had a user.
-  // Skipping seed for now as we need a real user ID.
+  // === ADMIN ROUTES ===
+  
+  // Middleware to check admin permissions
+  const isAdmin = async (req: any, res: any, next: any) => {
+    const userId = (req.user as any)?.claims?.sub;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    req.adminUser = user;
+    req.adminPermissions = await storage.getAdminPermissions(userId);
+    next();
+  };
+
+  // Admin stats
+  app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canViewStats) {
+      return res.status(403).json({ message: "You don't have permission to view stats" });
+    }
+    const stats = await storage.getStats();
+    res.json(stats);
+  });
+
+  // Admin users management
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers && !req.adminPermissions.canViewStats) {
+      return res.status(403).json({ message: "You don't have permission to view users" });
+    }
+    const { role, search } = req.query;
+    const users = await storage.getAllUsers({ 
+      role: role as string, 
+      search: search as string 
+    });
+    res.json(users);
+  });
+
+  app.patch("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+      return res.status(403).json({ message: "You don't have permission to manage users" });
+    }
+    try {
+      const user = await storage.updateUser(req.params.id, req.body);
+      res.json(user);
+    } catch (err) {
+      res.status(400).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Admin jobs management
+  app.get("/api/admin/jobs", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageJobs && !req.adminPermissions.canViewStats) {
+      return res.status(403).json({ message: "You don't have permission to view jobs" });
+    }
+    const jobs = await storage.getAllJobs();
+    res.json(jobs);
+  });
+
+  app.patch("/api/admin/jobs/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageJobs) {
+      return res.status(403).json({ message: "You don't have permission to manage jobs" });
+    }
+    try {
+      const job = await storage.updateJob(Number(req.params.id), req.body);
+      res.json(job);
+    } catch (err) {
+      res.status(400).json({ message: "Failed to update job" });
+    }
+  });
+
+  app.delete("/api/admin/jobs/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageJobs) {
+      return res.status(403).json({ message: "You don't have permission to delete jobs" });
+    }
+    try {
+      await storage.deleteJob(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ message: "Failed to delete job" });
+    }
+  });
+
+  // Admin applications management
+  app.get("/api/admin/applications", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageApplications && !req.adminPermissions.canViewStats) {
+      return res.status(403).json({ message: "You don't have permission to view applications" });
+    }
+    const applications = await storage.getAllApplications();
+    res.json(applications);
+  });
+
+  // Sub-admin management
+  app.get("/api/admin/admins", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to manage admins" });
+    }
+    const admins = await storage.getAllAdmins();
+    res.json(admins);
+  });
+
+  app.post("/api/admin/admins", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to create admins" });
+    }
+    
+    try {
+      const { userId, permissions } = req.body;
+      
+      // Update user role to admin
+      await storage.updateUser(userId, { role: 'admin' });
+      
+      // Create permissions
+      const adminPerms = await storage.createAdminPermissions({
+        userId,
+        createdBy: req.adminUser.id,
+        ...permissions
+      });
+      
+      res.status(201).json(adminPerms);
+    } catch (err) {
+      res.status(400).json({ message: "Failed to create admin" });
+    }
+  });
+
+  app.patch("/api/admin/admins/:userId/permissions", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to update admin permissions" });
+    }
+    
+    try {
+      const perms = await storage.updateAdminPermissions(req.params.userId, req.body);
+      res.json(perms);
+    } catch (err) {
+      res.status(400).json({ message: "Failed to update permissions" });
+    }
+  });
+
+  app.delete("/api/admin/admins/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to remove admins" });
+    }
+    
+    try {
+      // Remove admin permissions
+      await storage.deleteAdminPermissions(req.params.userId);
+      // Downgrade to applicant role
+      await storage.updateUser(req.params.userId, { role: 'applicant' });
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ message: "Failed to remove admin" });
+    }
+  });
+
+  // Get current user's admin permissions
+  app.get("/api/admin/my-permissions", isAuthenticated, isAdmin, async (req: any, res) => {
+    res.json(req.adminPermissions || {
+      canManageUsers: true,
+      canManageJobs: true,
+      canManageApplications: true,
+      canManageAdmins: true,
+      canViewStats: true,
+    });
+  });
 
   return httpServer;
 }
