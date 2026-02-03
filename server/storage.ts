@@ -25,6 +25,12 @@ export interface IStorage extends IAuthStorage {
   createApplication(app: InsertApplication): Promise<Application>;
   getApplicationsForJob(jobId: number): Promise<Application[]>;
   getApplicationsForApplicant(applicantId: string): Promise<Application[]>;
+  getApplication(id: number): Promise<Application | undefined>;
+  updateApplicationStatus(id: number, status: string): Promise<Application>;
+  
+  // Jobs - additional
+  updateJob(id: number, updates: Partial<Job>): Promise<Job>;
+  getJobsByEmployer(employerId: string): Promise<Job[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -100,6 +106,37 @@ export class DatabaseStorage implements IStorage {
 
   async getApplicationsForApplicant(applicantId: string): Promise<Application[]> {
     return await db.select().from(applications).where(eq(applications.applicantId, applicantId));
+  }
+
+  async getApplication(id: number): Promise<Application | undefined> {
+    const [app] = await db.select().from(applications).where(eq(applications.id, id));
+    return app;
+  }
+
+  async updateApplicationStatus(id: number, status: string): Promise<Application> {
+    const [app] = await db
+      .update(applications)
+      .set({ status })
+      .where(eq(applications.id, id))
+      .returning();
+    return app;
+  }
+
+  async updateJob(id: number, updates: Partial<Job>): Promise<Job> {
+    const [job] = await db
+      .update(jobs)
+      .set(updates)
+      .where(eq(jobs.id, id))
+      .returning();
+    return job;
+  }
+
+  async getJobsByEmployer(employerId: string): Promise<Job[]> {
+    return await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.employerId, employerId))
+      .orderBy(desc(jobs.createdAt));
   }
 }
 

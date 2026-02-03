@@ -87,6 +87,39 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  app.patch(api.jobs.update.path, isAuthenticated, async (req, res) => {
+    const jobId = Number(req.params.id);
+    const job = await storage.getJob(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    const userId = (req.user as any).claims.sub;
+    const user = await storage.getUser(userId);
+
+    if (job.employerId !== userId && user?.role !== 'admin') {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const input = api.jobs.update.input.parse(req.body);
+      const updatedJob = await storage.updateJob(jobId, input);
+      res.json(updatedJob);
+    } catch (err) {
+      res.status(400).json({ message: "Invalid input" });
+    }
+  });
+
+  app.get(api.jobs.listByEmployer.path, isAuthenticated, async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const user = await storage.getUser(userId);
+    
+    if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
+      return res.status(403).json({ message: "Only employers can access this" });
+    }
+
+    const jobs = await storage.getJobsByEmployer(userId);
+    res.json(jobs);
+  });
+
   // === APPLICATIONS ===
   app.post(api.applications.create.path, isAuthenticated, async (req, res) => {
     const user = await storage.getUser((req.user as any).claims.sub);
@@ -130,6 +163,34 @@ export async function registerRoutes(
     const userId = (req.user as any).claims.sub;
     const apps = await storage.getApplicationsForApplicant(userId);
     res.json(apps);
+  });
+
+  app.get(api.applications.get.path, isAuthenticated, async (req, res) => {
+    const appId = Number(req.params.id);
+    const application = await storage.getApplication(appId);
+    if (!application) return res.status(404).json({ message: "Application not found" });
+    res.json(application);
+  });
+
+  app.patch(api.applications.updateStatus.path, isAuthenticated, async (req, res) => {
+    const appId = Number(req.params.id);
+    const application = await storage.getApplication(appId);
+    if (!application) return res.status(404).json({ message: "Application not found" });
+
+    const userId = (req.user as any).claims.sub;
+    const job = await storage.getJob(application.jobId);
+    
+    if (!job || job.employerId !== userId) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    try {
+      const input = api.applications.updateStatus.input.parse(req.body);
+      const updatedApp = await storage.updateApplicationStatus(appId, input.status);
+      res.json(updatedApp);
+    } catch (err) {
+      res.status(400).json({ message: "Invalid input" });
+    }
   });
 
   // Initial Seed (Optional, but good for demo)

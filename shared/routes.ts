@@ -74,7 +74,24 @@ export const api = {
         204: z.void(),
         404: errorSchemas.notFound,
       },
-    }
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/jobs/:id',
+      input: insertJobSchema.partial(),
+      responses: {
+        200: z.custom<typeof jobs.$inferSelect>(),
+        404: errorSchemas.notFound,
+        403: errorSchemas.unauthorized,
+      },
+    },
+    listByEmployer: {
+      method: 'GET' as const,
+      path: '/api/employer/jobs',
+      responses: {
+        200: z.array(z.custom<typeof jobs.$inferSelect>()),
+      },
+    },
   },
   applications: {
     create: {
@@ -99,7 +116,27 @@ export const api = {
       responses: {
         200: z.array(z.custom<typeof applications.$inferSelect>()),
       },
-    }
+    },
+    updateStatus: {
+      method: 'PATCH' as const,
+      path: '/api/applications/:id/status',
+      input: z.object({
+        status: z.enum(['pending', 'accepted', 'rejected', 'offered']),
+      }),
+      responses: {
+        200: z.custom<typeof applications.$inferSelect>(),
+        404: errorSchemas.notFound,
+        403: errorSchemas.unauthorized,
+      },
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/applications/:id',
+      responses: {
+        200: z.custom<typeof applications.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
   }
 };
 
