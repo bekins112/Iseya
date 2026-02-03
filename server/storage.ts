@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 import { IAuthStorage } from "./replit_integrations/auth/storage";
 
@@ -41,7 +41,30 @@ export interface IStorage extends IAuthStorage {
   updateAdminPermissions(userId: string, permissions: Partial<AdminPermissions>): Promise<AdminPermissions>;
   deleteAdminPermissions(userId: string): Promise<void>;
   getAllAdmins(): Promise<(User & { permissions?: AdminPermissions })[]>;
-  getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number }>;
+  getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }>;
+  getDetailedStats(): Promise<{
+    usersByRole: { role: string; count: number }[];
+    jobsByCategory: { category: string; count: number }[];
+    applicationsByStatus: { status: string; count: number }[];
+    subscriptionStats: { status: string; count: number }[];
+    recentActivity: { date: string; users: number; jobs: number; applications: number }[];
+  }>;
+  
+  // Ticket methods
+  createTicket(ticket: InsertTicket): Promise<Ticket>;
+  getTicket(id: number): Promise<Ticket | undefined>;
+  getAllTickets(filters?: { status?: string; priority?: string }): Promise<Ticket[]>;
+  getTicketsByUser(userId: string): Promise<Ticket[]>;
+  updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket>;
+  
+  // Report methods
+  createReport(report: InsertReport): Promise<Report>;
+  getReport(id: number): Promise<Report | undefined>;
+  getAllReports(filters?: { status?: string; type?: string }): Promise<Report[]>;
+  updateReport(id: number, updates: Partial<Report>): Promise<Report>;
+  
+  // Subscription methods
+  getUsersBySubscription(status: string): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -215,12 +238,15 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number }> {
+  async getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }> {
     const [userCount] = await db.select({ count: count() }).from(users);
     const [jobCount] = await db.select({ count: count() }).from(jobs);
     const [appCount] = await db.select({ count: count() }).from(applications);
     const [employerCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "employer"));
     const [applicantCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "applicant"));
+    const [premiumCount] = await db.select({ count: count() }).from(users).where(and(eq(users.role, "employer"), eq(users.subscriptionStatus, "premium")));
+    const [activeJobCount] = await db.select({ count: count() }).from(jobs).where(eq(jobs.isActive, true));
+    const [pendingAppCount] = await db.select({ count: count() }).from(applications).where(eq(applications.status, "pending"));
     
     return {
       totalUsers: userCount.count,
@@ -228,7 +254,122 @@ export class DatabaseStorage implements IStorage {
       totalApplications: appCount.count,
       totalEmployers: employerCount.count,
       totalApplicants: applicantCount.count,
+      premiumEmployers: premiumCount.count,
+      activeJobs: activeJobCount.count,
+      pendingApplications: pendingAppCount.count,
     };
+  }
+
+  async getDetailedStats(): Promise<{
+    usersByRole: { role: string; count: number }[];
+    jobsByCategory: { category: string; count: number }[];
+    applicationsByStatus: { status: string; count: number }[];
+    subscriptionStats: { status: string; count: number }[];
+    recentActivity: { date: string; users: number; jobs: number; applications: number }[];
+  }> {
+    const usersByRole = await db
+      .select({ role: users.role, count: count() })
+      .from(users)
+      .groupBy(users.role);
+    
+    const jobsByCategory = await db
+      .select({ category: jobs.category, count: count() })
+      .from(jobs)
+      .groupBy(jobs.category);
+    
+    const applicationsByStatus = await db
+      .select({ status: applications.status, count: count() })
+      .from(applications)
+      .groupBy(applications.status);
+    
+    const subscriptionStats = await db
+      .select({ status: users.subscriptionStatus, count: count() })
+      .from(users)
+      .where(eq(users.role, "employer"))
+      .groupBy(users.subscriptionStatus);
+    
+    return {
+      usersByRole: usersByRole.map(r => ({ role: r.role || 'unknown', count: r.count })),
+      jobsByCategory: jobsByCategory.map(j => ({ category: j.category, count: j.count })),
+      applicationsByStatus: applicationsByStatus.map(a => ({ status: a.status || 'pending', count: a.count })),
+      subscriptionStats: subscriptionStats.map(s => ({ status: s.status || 'free', count: s.count })),
+      recentActivity: [],
+    };
+  }
+
+  // Ticket methods
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    const [newTicket] = await db.insert(tickets).values(ticket).returning();
+    return newTicket;
+  }
+
+  async getTicket(id: number): Promise<Ticket | undefined> {
+    const [ticket] = await db.select().from(tickets).where(eq(tickets.id, id));
+    return ticket;
+  }
+
+  async getAllTickets(filters?: { status?: string; priority?: string }): Promise<Ticket[]> {
+    const conditions: any[] = [];
+    if (filters?.status) conditions.push(eq(tickets.status, filters.status));
+    if (filters?.priority) conditions.push(eq(tickets.priority, filters.priority));
+    
+    if (conditions.length > 0) {
+      return await db.select().from(tickets).where(and(...conditions)).orderBy(desc(tickets.createdAt));
+    }
+    return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+  }
+
+  async getTicketsByUser(userId: string): Promise<Ticket[]> {
+    return await db.select().from(tickets).where(eq(tickets.userId, userId)).orderBy(desc(tickets.createdAt));
+  }
+
+  async updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket> {
+    const [ticket] = await db
+      .update(tickets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tickets.id, id))
+      .returning();
+    return ticket;
+  }
+
+  // Report methods
+  async createReport(report: InsertReport): Promise<Report> {
+    const [newReport] = await db.insert(reports).values(report).returning();
+    return newReport;
+  }
+
+  async getReport(id: number): Promise<Report | undefined> {
+    const [report] = await db.select().from(reports).where(eq(reports.id, id));
+    return report;
+  }
+
+  async getAllReports(filters?: { status?: string; type?: string }): Promise<Report[]> {
+    const conditions: any[] = [];
+    if (filters?.status) conditions.push(eq(reports.status, filters.status));
+    if (filters?.type) conditions.push(eq(reports.reportedType, filters.type));
+    
+    if (conditions.length > 0) {
+      return await db.select().from(reports).where(and(...conditions)).orderBy(desc(reports.createdAt));
+    }
+    return await db.select().from(reports).orderBy(desc(reports.createdAt));
+  }
+
+  async updateReport(id: number, updates: Partial<Report>): Promise<Report> {
+    const [report] = await db
+      .update(reports)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(reports.id, id))
+      .returning();
+    return report;
+  }
+
+  // Subscription methods
+  async getUsersBySubscription(status: string): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(and(eq(users.role, "employer"), eq(users.subscriptionStatus, status)))
+      .orderBy(desc(users.createdAt));
   }
 }
 

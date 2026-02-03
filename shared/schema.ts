@@ -31,6 +31,37 @@ export const applications = pgTable("applications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Support tickets table
+export const tickets = pgTable("tickets", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  subject: varchar("subject").notNull(),
+  description: text("description").notNull(),
+  category: varchar("category").notNull().default("general"), // 'general', 'payment', 'account', 'job', 'technical'
+  priority: varchar("priority").notNull().default("medium"), // 'low', 'medium', 'high', 'urgent'
+  status: varchar("status").notNull().default("open"), // 'open', 'in_progress', 'resolved', 'closed'
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  adminNotes: text("admin_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Reports table for user/job reports
+export const reports = pgTable("reports", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  reporterId: varchar("reporter_id").notNull().references(() => users.id),
+  reportedType: varchar("reported_type").notNull(), // 'user', 'job'
+  reportedUserId: varchar("reported_user_id").references(() => users.id),
+  reportedJobId: integer("reported_job_id").references(() => jobs.id),
+  reason: varchar("reason").notNull(), // 'spam', 'fraud', 'inappropriate', 'harassment', 'other'
+  description: text("description"),
+  status: varchar("status").notNull().default("pending"), // 'pending', 'reviewed', 'action_taken', 'dismissed'
+  adminNotes: text("admin_notes"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Admin permissions table for sub-admin access control
 export const adminPermissions = pgTable("admin_permissions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -49,6 +80,8 @@ export const adminPermissions = pgTable("admin_permissions", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
 export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, createdAt: true });
+export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Manual schema for admin permissions to avoid drizzle-zod type issues
 export const insertAdminPermissionsSchema = z.object({
@@ -101,6 +134,26 @@ export const createSubAdminSchema = z.object({
   }),
 });
 
+// Schema for admin ticket updates
+export const adminUpdateTicketSchema = z.object({
+  status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  assignedTo: z.string().nullable().optional(),
+  adminNotes: z.string().optional(),
+});
+
+// Schema for admin report updates
+export const adminUpdateReportSchema = z.object({
+  status: z.enum(["pending", "reviewed", "action_taken", "dismissed"]).optional(),
+  adminNotes: z.string().optional(),
+});
+
+// Schema for admin subscription updates
+export const adminUpdateSubscriptionSchema = z.object({
+  subscriptionStatus: z.enum(["free", "premium"]).optional(),
+  subscriptionEndDate: z.string().optional(),
+});
+
 // Types
 // User types are already exported from ./models/auth but we can re-export or aliases if needed
 // export type User = typeof users.$inferSelect; // Already in auth.ts
@@ -114,6 +167,12 @@ export type InsertApplication = z.infer<typeof insertApplicationSchema>;
 
 export type AdminPermissions = typeof adminPermissions.$inferSelect;
 export type InsertAdminPermissions = z.infer<typeof insertAdminPermissionsSchema>;
+
+export type Ticket = typeof tickets.$inferSelect;
+export type InsertTicket = z.infer<typeof insertTicketSchema>;
+
+export type Report = typeof reports.$inferSelect;
+export type InsertReport = z.infer<typeof insertReportSchema>;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;
