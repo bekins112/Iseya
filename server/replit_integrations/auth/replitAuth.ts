@@ -104,6 +104,10 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     ensureStrategy(req.hostname);
+    // Store redirect path in session for post-login redirect
+    if (typeof req.query.redirect === 'string') {
+      (req.session as any).returnTo = req.query.redirect;
+    }
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -112,18 +116,20 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     ensureStrategy(req.hostname);
+    const returnTo = (req.session as any)?.returnTo || "/";
     passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
+      successReturnToOrRedirect: returnTo,
       failureRedirect: "/api/login",
     })(req, res, next);
   });
 
   app.get("/api/logout", (req, res) => {
+    const redirectPath = typeof req.query.redirect === 'string' ? req.query.redirect : '';
     req.logout(() => {
       res.redirect(
         client.buildEndSessionUrl(config, {
           client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+          post_logout_redirect_uri: `${req.protocol}://${req.hostname}${redirectPath}`,
         }).href
       );
     });

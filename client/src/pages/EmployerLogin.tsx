@@ -15,13 +15,14 @@ export default function EmployerLogin() {
     localStorage.setItem("intended_role", "employer");
     if (isAuthenticated) {
       if (user && user.role !== "employer") {
-        window.location.href = "/api/logout";
+        // Log out and redirect back to employer login
+        window.location.href = "/api/logout?redirect=/employer";
         return;
       }
       setLocation("/dashboard");
       return;
     }
-    window.location.href = "/api/login";
+    window.location.href = "/api/login?redirect=/employer";
   };
 
   const container = {
