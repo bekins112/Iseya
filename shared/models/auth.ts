@@ -27,8 +27,10 @@ export const users = pgTable("users", {
   bio: text("bio"),
   cvUrl: varchar("cv_url"),
   location: varchar("location"),
+  companyName: varchar("company_name"),
   isVerified: boolean("is_verified").default(false),
   subscriptionStatus: varchar("subscription_status").default("free"), // 'free', 'premium'
+  subscriptionEndDate: timestamp("subscription_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

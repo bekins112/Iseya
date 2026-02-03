@@ -26,6 +26,10 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminJobs from "@/pages/AdminJobs";
 import AdminSubAdmins from "@/pages/AdminSubAdmins";
+import AdminSubscriptions from "@/pages/AdminSubscriptions";
+import AdminStatistics from "@/pages/AdminStatistics";
+import AdminTickets from "@/pages/AdminTickets";
+import AdminReports from "@/pages/AdminReports";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -146,6 +150,30 @@ function Router() {
       <Route path="/admin/sub-admins">
         <AuthenticatedLayout>
           <AdminSubAdmins />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/subscriptions">
+        <AuthenticatedLayout>
+          <AdminSubscriptions />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/statistics">
+        <AuthenticatedLayout>
+          <AdminStatistics />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/tickets">
+        <AuthenticatedLayout>
+          <AdminTickets />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/reports">
+        <AuthenticatedLayout>
+          <AdminReports />
         </AuthenticatedLayout>
       </Route>
 

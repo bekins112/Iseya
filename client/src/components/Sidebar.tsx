@@ -12,7 +12,10 @@ import {
   Crown,
   Shield,
   Users,
-  Settings
+  Settings,
+  BarChart3,
+  Ticket,
+  Flag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -28,8 +31,12 @@ export function Sidebar() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     ...(isAdmin ? [
       { href: "/admin/dashboard", label: "Admin Panel", icon: Shield },
+      { href: "/admin/statistics", label: "Statistics", icon: BarChart3 },
       { href: "/admin/users", label: "Manage Users", icon: Users },
       { href: "/admin/jobs", label: "Manage Jobs", icon: Briefcase },
+      { href: "/admin/subscriptions", label: "Subscriptions", icon: Crown },
+      { href: "/admin/tickets", label: "Support Tickets", icon: Ticket },
+      { href: "/admin/reports", label: "Reports", icon: Flag },
       { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },
     ] : isEmployer ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
