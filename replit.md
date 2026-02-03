@@ -86,7 +86,10 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
 - Premium tier: ₦5,000/month - Unlimited jobs, priority listing, verified badge
 
 ### Payment Integration (TODO)
-- **Stripe integration required** for real payment processing
+- **Paystack preferred** for Nigerian payment processing
 - Currently subscription upgrades are demonstration only (updates database status without payment)
-- When ready: Set up Stripe connector via Replit integrations to enable actual payments
-- Recommended: Create Stripe products for 'Premium Monthly' subscription
+- **REMINDER**: Add Paystack API keys to enable real payments:
+  - `PAYSTACK_SECRET_KEY` - Starts with 'sk_test_' or 'sk_live_'
+  - `PAYSTACK_PUBLIC_KEY` - Starts with 'pk_test_' or 'pk_live_'
+  - Get keys from: https://dashboard.paystack.com/#/settings/developers
+- Flutterwave can be added as an alternative payment option
