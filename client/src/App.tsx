@@ -20,6 +20,7 @@ import EmployerLogin from "@/pages/EmployerLogin";
 import EmployerSignup from "@/pages/EmployerSignup";
 import ManageJobs from "@/pages/ManageJobs";
 import ManageApplicants from "@/pages/ManageApplicants";
+import Subscription from "@/pages/Subscription";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -99,6 +100,12 @@ function Router() {
       <Route path="/jobs/:id/applications">
         <AuthenticatedLayout>
           <ManageApplicants />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/subscription">
+        <AuthenticatedLayout>
+          <Subscription />
         </AuthenticatedLayout>
       </Route>
 

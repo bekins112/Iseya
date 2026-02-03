@@ -76,3 +76,17 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
 - `drizzle-zod` - Generate Zod schemas from Drizzle table definitions
 - `framer-motion` - Animation library
 - `date-fns` - Date formatting utilities
+
+## Subscription System
+
+### Current Implementation
+- Subscription status tracked in `users.subscriptionStatus` field ('free' or 'premium')
+- Subscription page at `/subscription` for employers to view/upgrade plans
+- Free tier: Limited to 3 job postings, basic features
+- Premium tier: ₦5,000/month - Unlimited jobs, priority listing, verified badge
+
+### Payment Integration (TODO)
+- **Stripe integration required** for real payment processing
+- Currently subscription upgrades are demonstration only (updates database status without payment)
+- When ready: Set up Stripe connector via Replit integrations to enable actual payments
+- Recommended: Create Stripe products for 'Premium Monthly' subscription
