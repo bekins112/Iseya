@@ -110,8 +110,12 @@ Each sub-admin can be granted any combination of these permissions:
 
 ### Admin Pages
 - `/admin` - Dashboard with platform overview and stats
+- `/admin/statistics` - Detailed analytics with breakdowns by role, category, and status
 - `/admin/users` - User management with search and role filtering
 - `/admin/jobs` - Job management with activate/deactivate and delete options
+- `/admin/subscriptions` - Employer subscription management (upgrade/downgrade, set end dates)
+- `/admin/tickets` - Support ticket management with assignment, priority, and status workflow
+- `/admin/reports` - User and job reports review with action tracking
 - `/admin/sub-admins` - Sub-admin creation and permission management
 
 ### Admin API Routes (all require admin role)
