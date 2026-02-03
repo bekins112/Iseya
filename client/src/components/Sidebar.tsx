@@ -10,6 +10,7 @@ import {
   FolderOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import iseyaLogo from "@assets/Iseya_1770116961793.png";
 
 export function Sidebar() {
   const { user, logout } = useAuth();
@@ -52,10 +53,7 @@ export function Sidebar() {
 
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
       <div className="h-16 flex items-center px-6 border-b">
-         <div className="bg-primary rounded-lg p-1.5 mr-2">
-            <Briefcase className="w-5 h-5 text-white" />
-         </div>
-         <span className="font-display font-bold text-xl">Ìṣeyà</span>
+         <img src={iseyaLogo} alt="Ìṣeyà" className="h-6 w-auto" />
       </div>
 
       <nav className="flex-1 p-4 space-y-1">

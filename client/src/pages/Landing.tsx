@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe, Search } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
+import iseyaLogo from "@assets/Iseya_1770116961793.png";
 
 export default function Landing() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -56,10 +57,7 @@ export default function Landing() {
             animate={{ x: 0, opacity: 1 }}
             className="flex items-center gap-2"
           >
-            <div className="bg-primary rounded-lg p-1.5">
-              <Briefcase className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-display font-bold text-foreground">Ìṣeyà</span>
+            <img src={iseyaLogo} alt="Ìṣeyà" className="h-8 w-auto" />
           </motion.div>
           <motion.div
             initial={{ x: 20, opacity: 0 }}
@@ -293,8 +291,7 @@ export default function Landing() {
       <footer className="py-12 border-t">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Briefcase className="w-6 h-6 text-primary" />
-            <span className="text-xl font-display font-bold">Ìṣeyà</span>
+            <img src={iseyaLogo} alt="Ìṣeyà" className="h-6 w-auto" />
           </div>
           <p className="text-muted-foreground">© 2026 Ìṣeyà. All rights reserved.</p>
         </div>
