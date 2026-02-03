@@ -30,6 +30,7 @@ export default function Onboarding() {
   const updateUser = useUpdateUser();
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
+  const [isAutoUpdating, setIsAutoUpdating] = useState(false);
 
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
@@ -42,17 +43,21 @@ export default function Onboarding() {
     const intendedRole = localStorage.getItem("intended_role");
     if (intendedRole && user) {
       // Always update if we have an intended role from landing
+      setIsAutoUpdating(true);
       updateUser.mutate(
         { id: user.id, role: intendedRole as "applicant" | "employer", age: 18 },
         {
           onSuccess: () => {
             localStorage.removeItem("intended_role");
             setLocation("/dashboard");
+          },
+          onError: () => {
+            setIsAutoUpdating(false);
           }
         }
       );
     }
-  }, [user?.id, setLocation, updateUser]);
+  }, [user?.id, setLocation]);
 
   const onSubmit = (data: OnboardingFormValues) => {
     if (!user) return;
@@ -67,6 +72,28 @@ export default function Onboarding() {
     );
   };
 
+  // Show loading if auto-updating from landing page
+  if (isAutoUpdating || updateUser.isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
+        <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
+          <CardHeader>
+            <CardTitle className="text-2xl font-display text-center">Select Your Role</CardTitle>
+            <CardDescription className="text-center">
+              Welcome to Iṣéyá! Choose how you want to use the platform.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-10">
+            <div className="flex flex-col items-center justify-center space-y-6">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground font-medium italic">Setting up your experience...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
       <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
@@ -76,32 +103,58 @@ export default function Onboarding() {
             Welcome to Iṣéyá! Choose how you want to use the platform.
           </CardDescription>
         </CardHeader>
-        <CardContent className="py-10">
-          <div className="flex flex-col items-center justify-center space-y-6">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="text-muted-foreground font-medium italic">Setting up your experience...</p>
-          </div>
-          <div className="hidden">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value}>
-                          <RadioGroupItem value="applicant" />
-                          <RadioGroupItem value="employer" />
-                        </RadioGroup>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" id="submit-onboarding">Submit</Button>
-              </form>
-            </Form>
-          </div>
+        <CardContent className="py-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem className="space-y-4">
+                    <FormLabel className="text-base font-medium">I want to:</FormLabel>
+                    <FormControl>
+                      <RadioGroup 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        className="flex flex-col gap-4"
+                      >
+                        <div 
+                          className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover-elevate"
+                          onClick={() => field.onChange("applicant")}
+                          data-testid="role-applicant"
+                        >
+                          <RadioGroupItem value="applicant" id="applicant" />
+                          <div>
+                            <Label htmlFor="applicant" className="font-medium cursor-pointer">Find Work</Label>
+                            <p className="text-sm text-muted-foreground">I'm looking for casual job opportunities</p>
+                          </div>
+                        </div>
+                        <div 
+                          className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover-elevate"
+                          onClick={() => field.onChange("employer")}
+                          data-testid="role-employer"
+                        >
+                          <RadioGroupItem value="employer" id="employer" />
+                          <div>
+                            <Label htmlFor="employer" className="font-medium cursor-pointer">Hire Workers</Label>
+                            <p className="text-sm text-muted-foreground">I want to post jobs and find workers</p>
+                          </div>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="submit" 
+                className="w-full" 
+                data-testid="button-submit-onboarding"
+              >
+                Continue
+              </Button>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
