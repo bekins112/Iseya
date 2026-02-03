@@ -1,18 +1,23 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe, Search } from "lucide-react";
+import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_1770116961793.png";
+import { Card, CardContent } from "@/components/ui/card";
+
+type UserMode = "seeker" | "employer";
 
 export default function Landing() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const [activeMode, setActiveMode] = useState<UserMode>("seeker");
 
-  const handleApplicantLogin = () => {
-    localStorage.setItem("intended_role", "applicant");
+  const handleLogin = (role: "applicant" | "employer") => {
+    localStorage.setItem("intended_role", role);
     if (isAuthenticated) {
-      if (user && user.role !== "applicant") {
+      if (user && user.role !== role) {
         window.location.href = "/api/logout";
         return;
       }
@@ -20,10 +25,6 @@ export default function Landing() {
       return;
     }
     window.location.href = "/api/login";
-  };
-
-  const handleEmployerLogin = () => {
-    setLocation("/employer");
   };
 
   const containerVariants = {
@@ -63,20 +64,38 @@ export default function Landing() {
           <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-2"
           >
-            <Button onClick={handleApplicantLogin} variant="ghost" className="font-medium" data-testid="nav-job-seeker-login">
-              Job Seeker
-            </Button>
-            <Button onClick={handleEmployerLogin} variant="default" className="font-semibold rounded-full px-6" data-testid="nav-employer-login">
-              Employer Login
-            </Button>
+            <div className="bg-muted rounded-full p-1 flex">
+              <button
+                onClick={() => setActiveMode("seeker")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeMode === "seeker" 
+                    ? "bg-primary text-primary-foreground shadow-md" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="nav-toggle-seeker"
+              >
+                Job Seeker
+              </button>
+              <button
+                onClick={() => setActiveMode("employer")}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeMode === "employer" 
+                    ? "bg-primary text-primary-foreground shadow-md" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="nav-toggle-employer"
+              >
+                Hire Talent
+              </button>
+            </div>
           </motion.div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-4 overflow-hidden">
+      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-28 px-4 overflow-hidden">
         <motion.div 
           animate={{ 
             scale: [1, 1.2, 1],
@@ -108,59 +127,150 @@ export default function Landing() {
             <span>Safe & Secure Job Marketplace</span>
           </motion.div>
           
-          <motion.h1 
-            variants={itemVariants}
-            className="text-5xl md:text-8xl font-display font-extrabold text-foreground tracking-tight mb-6 text-balance leading-[1.1]"
-          >
-            Find Work. <span className="text-primary italic">Hire Talent.</span> <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-gradient">Simply Casual.</span>
-          </motion.h1>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeMode}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              {activeMode === "seeker" ? (
+                <>
+                  <h1 className="text-5xl md:text-7xl font-display font-extrabold text-foreground tracking-tight mb-6 text-balance leading-[1.1]">
+                    Find Your Next <span className="text-primary italic">Casual Job</span>
+                  </h1>
+                  <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 text-balance leading-relaxed">
+                    Discover flexible work opportunities near you. No CV required, just your skills and availability.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-5xl md:text-7xl font-display font-extrabold text-foreground tracking-tight mb-6 text-balance leading-[1.1]">
+                    Hire <span className="text-primary italic">Reliable Talent</span> Fast
+                  </h1>
+                  <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 text-balance leading-relaxed">
+                    Post jobs and get qualified applicants within hours. Build your workforce effortlessly.
+                  </p>
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
           
-          <motion.p 
-            variants={itemVariants}
-            className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 text-balance leading-relaxed"
-          >
-            The #1 platform connecting reliable workers with local employers. No paperwork, no hassle, just results.
-          </motion.p>
-          
+          {/* Role Selection Cards */}
           <motion.div 
             variants={itemVariants}
-            className="flex flex-col sm:flex-row items-center justify-center gap-8 mt-12"
+            className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-8"
           >
             <motion.button
-              whileHover={{ scale: 1.05, y: -5 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleApplicantLogin}
-              className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-primary text-primary-foreground shadow-2xl shadow-primary/40 min-w-[280px] group transition-all"
-              data-testid="button-signup-applicant"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveMode("seeker")}
+              className={`flex items-center gap-4 p-6 rounded-2xl min-w-[260px] transition-all ${
+                activeMode === "seeker" 
+                  ? "bg-primary text-primary-foreground shadow-2xl shadow-primary/40 ring-4 ring-primary/20" 
+                  : "bg-card border-2 border-border hover:border-primary/30"
+              }`}
+              data-testid="card-seeker"
             >
-              <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Search className="w-10 h-10" />
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                activeMode === "seeker" ? "bg-white/20" : "bg-primary/10"
+              }`}>
+                <Search className={`w-7 h-7 ${activeMode === "seeker" ? "" : "text-primary"}`} />
               </div>
-              <div className="text-center">
-                <span className="text-2xl font-display font-bold block">Seek for Job</span>
-                <span className="text-sm opacity-80 font-medium">Create applicant account</span>
+              <div className="text-left">
+                <span className="text-lg font-bold block">Seek for Job</span>
+                <span className={`text-sm ${activeMode === "seeker" ? "opacity-80" : "text-muted-foreground"}`}>
+                  Find work opportunities
+                </span>
               </div>
-              <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
             </motion.button>
 
             <motion.button
-              whileHover={{ scale: 1.05, y: -5 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleEmployerLogin}
-              className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-card border-2 border-primary/20 hover:border-primary/50 shadow-2xl shadow-black/5 min-w-[280px] group transition-all"
-              data-testid="button-signup-employer"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setActiveMode("employer")}
+              className={`flex items-center gap-4 p-6 rounded-2xl min-w-[260px] transition-all ${
+                activeMode === "employer" 
+                  ? "bg-primary text-primary-foreground shadow-2xl shadow-primary/40 ring-4 ring-primary/20" 
+                  : "bg-card border-2 border-border hover:border-primary/30"
+              }`}
+              data-testid="card-employer"
             >
-              <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform text-primary">
-                <UserCheck className="w-10 h-10" />
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                activeMode === "employer" ? "bg-white/20" : "bg-primary/10"
+              }`}>
+                <Building2 className={`w-7 h-7 ${activeMode === "employer" ? "" : "text-primary"}`} />
               </div>
-              <div className="text-center">
-                <span className="text-2xl font-display font-bold block text-foreground">Hire a Talent</span>
-                <span className="text-sm text-muted-foreground font-medium">Employer Portal</span>
+              <div className="text-left">
+                <span className="text-lg font-bold block">Hire Talent</span>
+                <span className={`text-sm ${activeMode === "employer" ? "opacity-80" : "text-muted-foreground"}`}>
+                  Post jobs & hire workers
+                </span>
               </div>
-              <ArrowRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
             </motion.button>
           </motion.div>
+
+          {/* Login/Signup Section */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`auth-${activeMode}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="mt-10"
+            >
+              <Card className="max-w-md mx-auto border-2 border-primary/20 shadow-xl rounded-3xl overflow-hidden">
+                <div className="h-1.5 bg-gradient-to-r from-primary to-accent" />
+                <CardContent className="p-8 space-y-6">
+                  <div className="text-center">
+                    <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 ${
+                      activeMode === "seeker" ? "bg-primary/10" : "bg-accent/10"
+                    }`}>
+                      {activeMode === "seeker" ? (
+                        <Search className="w-8 h-8 text-primary" />
+                      ) : (
+                        <Building2 className="w-8 h-8 text-accent" />
+                      )}
+                    </div>
+                    <h3 className="text-2xl font-display font-bold">
+                      {activeMode === "seeker" ? "Start Finding Jobs" : "Start Hiring Today"}
+                    </h3>
+                    <p className="text-muted-foreground mt-2">
+                      {activeMode === "seeker" 
+                        ? "Create your job seeker profile and apply to jobs" 
+                        : "Create your employer account and post your first job"}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => handleLogin(activeMode === "seeker" ? "applicant" : "employer")}
+                      className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/20 group"
+                      data-testid={`button-login-${activeMode}`}
+                    >
+                      Login
+                      <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => handleLogin(activeMode === "seeker" ? "applicant" : "employer")}
+                      variant="outline"
+                      className="w-full h-12 text-base font-bold rounded-xl"
+                      data-testid={`button-signup-${activeMode}`}
+                    >
+                      Create Account
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    By continuing, you agree to our Terms of Service and Privacy Policy
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
       </section>
 
@@ -304,4 +414,3 @@ export default function Landing() {
     </div>
   );
 }
-
