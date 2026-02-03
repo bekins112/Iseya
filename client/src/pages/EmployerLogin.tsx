@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Building2, Users, TrendingUp, ArrowRight, CheckCircle2, Briefcase, Calendar } from "lucide-react";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
-import iseyaLogo from "@assets/Iseya_1770116961793.png";
+import iseyaLogo from "@assets/Iseya_(2)_1770119862471.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 
