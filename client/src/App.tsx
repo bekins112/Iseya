@@ -21,6 +21,7 @@ import EmployerSignup from "@/pages/EmployerSignup";
 import ManageJobs from "@/pages/ManageJobs";
 import ManageApplicants from "@/pages/ManageApplicants";
 import Subscription from "@/pages/Subscription";
+import AdminLogin from "@/pages/AdminLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminJobs from "@/pages/AdminJobs";
@@ -121,6 +122,10 @@ function Router() {
 
       {/* Admin routes */}
       <Route path="/admin">
+        <AdminLogin />
+      </Route>
+
+      <Route path="/admin/dashboard">
         <AuthenticatedLayout>
           <AdminDashboard />
         </AuthenticatedLayout>

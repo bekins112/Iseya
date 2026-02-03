@@ -27,7 +27,7 @@ export function Sidebar() {
   const links = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     ...(isAdmin ? [
-      { href: "/admin", label: "Admin Panel", icon: Shield },
+      { href: "/admin/dashboard", label: "Admin Panel", icon: Shield },
       { href: "/admin/users", label: "Manage Users", icon: Users },
       { href: "/admin/jobs", label: "Manage Jobs", icon: Briefcase },
       { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },
