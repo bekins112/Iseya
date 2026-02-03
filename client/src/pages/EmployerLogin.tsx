@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { Building2, Users, TrendingUp, ArrowRight, CheckCircle2, Briefcase, Calendar } from "lucide-react";
@@ -10,6 +11,29 @@ import { PageHeader, StatusBadge } from "@/components/ui-extension";
 export default function EmployerLogin() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Redirect authenticated employers to dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // If user has completed onboarding (has role and age), go to dashboard
+      if (user.role === "employer" && user.age) {
+        setLocation("/dashboard");
+      } else if (!user.role || !user.age) {
+        // Needs to complete onboarding
+        localStorage.setItem("intended_role", "employer");
+        setLocation("/onboarding");
+      }
+    }
+  }, [isAuthenticated, user, setLocation]);
+
+  // Show loading while checking auth or redirecting
+  if (isLoading || (isAuthenticated && user)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const handleEmployerLogin = () => {
     localStorage.setItem("intended_role", "employer");

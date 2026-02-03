@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,9 +7,32 @@ import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function EmployerSignup() {
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Redirect authenticated employers to dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === "employer" && user.age) {
+        setLocation("/dashboard");
+      } else if (!user.role || !user.age) {
+        localStorage.setItem("intended_role", "employer");
+        setLocation("/onboarding");
+      }
+    }
+  }, [isAuthenticated, user, setLocation]);
+
+  // Show loading while checking auth
+  if (isLoading || (isAuthenticated && user)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const handleSignup = () => {
     localStorage.setItem("intended_role", "employer");
