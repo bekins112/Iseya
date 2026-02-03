@@ -105,7 +105,7 @@ function ApplicantCard({
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="gap-1 border-blue-500 text-blue-600 hover:bg-blue-50"
+                      className="gap-1"
                       onClick={() => onUpdateStatus(application.id, 'offered')}
                       data-testid={`button-offer-${application.id}`}
                     >
@@ -113,9 +113,9 @@ function ApplicantCard({
                       Send Offer
                     </Button>
                     <Button 
-                      variant="outline" 
+                      variant="destructive" 
                       size="sm" 
-                      className="gap-1 border-red-500 text-red-600 hover:bg-red-50"
+                      className="gap-1"
                       onClick={() => onUpdateStatus(application.id, 'rejected')}
                       data-testid={`button-reject-${application.id}`}
                     >
@@ -133,7 +133,7 @@ function ApplicantCard({
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" data-testid={`button-applicant-menu-${application.id}`}>
                       <MoreVertical className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -264,7 +264,7 @@ export default function ManageApplicants() {
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Job not found</h2>
         <Link href="/manage-jobs">
-          <Button variant="outline">Back to Jobs</Button>
+          <Button variant="outline" data-testid="button-back-to-jobs-notfound">Back to Jobs</Button>
         </Link>
       </div>
     );
@@ -274,7 +274,7 @@ export default function ManageApplicants() {
     <div className="space-y-8 pb-10">
       <div className="flex items-center gap-4">
         <Link href="/manage-jobs">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" data-testid="button-back-to-jobs">
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
