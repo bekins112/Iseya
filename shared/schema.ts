@@ -31,10 +31,25 @@ export const applications = pgTable("applications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Admin permissions table for sub-admin access control
+export const adminPermissions = pgTable("admin_permissions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  canManageUsers: boolean("can_manage_users").default(false),
+  canManageJobs: boolean("can_manage_jobs").default(false),
+  canManageApplications: boolean("can_manage_applications").default(false),
+  canManageAdmins: boolean("can_manage_admins").default(false),
+  canViewStats: boolean("can_view_stats").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Zod Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
 export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, createdAt: true });
+export const insertAdminPermissionsSchema = createInsertSchema(adminPermissions).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 // User types are already exported from ./models/auth but we can re-export or aliases if needed
@@ -46,6 +61,9 @@ export type InsertJob = z.infer<typeof insertJobSchema>;
 
 export type Application = typeof applications.$inferSelect;
 export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+
+export type AdminPermissions = typeof adminPermissions.$inferSelect;
+export type InsertAdminPermissions = z.infer<typeof insertAdminPermissionsSchema>;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;
