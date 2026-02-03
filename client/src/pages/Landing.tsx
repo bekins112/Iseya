@@ -9,16 +9,25 @@ export default function Landing() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  const handleLogin = (role?: string) => {
-    if (role) {
-      localStorage.setItem("intended_role", role);
-    }
+  const handleApplicantLogin = () => {
+    localStorage.setItem("intended_role", "applicant");
     if (isAuthenticated) {
-      if (role && user && user.role !== role) {
-        // If logged in as wrong role, logout first to allow switching
+      if (user && user.role !== "applicant") {
         window.location.href = "/api/logout";
         return;
       }
+      setLocation("/dashboard");
+      return;
+    }
+    window.location.href = "/api/login";
+  };
+
+  const handleEmployerLogin = () => {
+    setLocation("/employer");
+  };
+
+  const handleLogin = () => {
+    if (isAuthenticated) {
       setLocation("/dashboard");
       return;
     }
@@ -125,7 +134,7 @@ export default function Landing() {
             <motion.button
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => handleLogin("applicant")}
+              onClick={handleApplicantLogin}
               className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-primary text-primary-foreground shadow-2xl shadow-primary/40 min-w-[280px] group transition-all"
               data-testid="button-signup-applicant"
             >
@@ -142,7 +151,7 @@ export default function Landing() {
             <motion.button
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => handleLogin("employer")}
+              onClick={handleEmployerLogin}
               className="flex flex-col items-center gap-4 p-8 rounded-[2.5rem] bg-card border-2 border-primary/20 hover:border-primary/50 shadow-2xl shadow-black/5 min-w-[280px] group transition-all"
               data-testid="button-signup-employer"
             >
@@ -151,7 +160,7 @@ export default function Landing() {
               </div>
               <div className="text-center">
                 <span className="text-2xl font-display font-bold block text-foreground">Hire a Talent</span>
-                <span className="text-sm text-muted-foreground font-medium">Create employer account</span>
+                <span className="text-sm text-muted-foreground font-medium">Employer Portal</span>
               </div>
               <ArrowRight className="w-6 h-6 text-primary group-hover:translate-x-2 transition-transform" />
             </motion.button>

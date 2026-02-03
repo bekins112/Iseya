@@ -16,6 +16,7 @@ import JobListing from "@/pages/JobListing";
 import JobDetails from "@/pages/JobDetails";
 import Applications from "@/pages/Applications";
 import Profile from "@/pages/Profile";
+import EmployerLogin from "@/pages/EmployerLogin";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -45,6 +46,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/employer" component={EmployerLogin} />
       
       <Route path="/onboarding">
         <AuthenticatedLayout>
