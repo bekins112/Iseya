@@ -175,3 +175,73 @@ export function useJobApplications(jobId: number) {
     enabled: !!jobId,
   });
 }
+
+// === EMPLOYER SPECIFIC HOOKS ===
+export function useEmployerJobs() {
+  return useQuery({
+    queryKey: [api.jobs.listByEmployer.path],
+    queryFn: async () => {
+      const res = await fetch(api.jobs.listByEmployer.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch your jobs");
+      return api.jobs.listByEmployer.responses[200].parse(await res.json());
+    },
+  });
+}
+
+export function useUpdateJob() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: number } & Partial<InsertJob & { isActive: boolean }>) => {
+      const url = buildUrl(api.jobs.update.path, { id });
+      const res = await fetch(url, {
+        method: api.jobs.update.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+        credentials: "include",
+      });
+      
+      if (!res.ok) throw new Error("Failed to update job");
+      return api.jobs.update.responses[200].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.jobs.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.jobs.listByEmployer.path] });
+      toast({ title: "Job Updated", description: "Your changes have been saved." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+}
+
+export function useUpdateApplicationStatus() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: 'pending' | 'accepted' | 'rejected' | 'offered' }) => {
+      const url = buildUrl(api.applications.updateStatus.path, { id });
+      const res = await fetch(url, {
+        method: api.applications.updateStatus.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+      
+      if (!res.ok) throw new Error("Failed to update application");
+      return api.applications.updateStatus.responses[200].parse(await res.json());
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [api.applications.listForJob.path] });
+      const statusMsg = variables.status === 'accepted' ? 'accepted' : 
+                        variables.status === 'rejected' ? 'rejected' :
+                        variables.status === 'offered' ? 'offered the position' : 'updated';
+      toast({ title: "Application Updated", description: `The applicant has been ${statusMsg}.` });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  });
+}

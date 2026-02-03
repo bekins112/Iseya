@@ -18,6 +18,8 @@ import Applications from "@/pages/Applications";
 import Profile from "@/pages/Profile";
 import EmployerLogin from "@/pages/EmployerLogin";
 import EmployerSignup from "@/pages/EmployerSignup";
+import ManageJobs from "@/pages/ManageJobs";
+import ManageApplicants from "@/pages/ManageApplicants";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -74,10 +76,10 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
-      {/* For employers, reused component but maybe different data context in real app */}
-      <Route path="/my-jobs">
+      {/* Employer job management */}
+      <Route path="/manage-jobs">
         <AuthenticatedLayout>
-          <JobListing />
+          <ManageJobs />
         </AuthenticatedLayout>
       </Route>
 
@@ -93,10 +95,10 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
-      {/* For job specific applications view - simpler to reuse for MVP */}
+      {/* Employer applicant management */}
       <Route path="/jobs/:id/applications">
         <AuthenticatedLayout>
-          <Applications />
+          <ManageApplicants />
         </AuthenticatedLayout>
       </Route>
 

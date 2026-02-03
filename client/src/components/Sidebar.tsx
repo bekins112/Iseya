@@ -7,7 +7,9 @@ import {
   PlusCircle, 
   User, 
   LogOut,
-  FolderOpen
+  FolderOpen,
+  Users,
+  ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import iseyaLogo from "@assets/Iseya_(2)_1770119862471.png";
@@ -21,7 +23,7 @@ export function Sidebar() {
   const links = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     ...(isEmployer ? [
-      { href: "/my-jobs", label: "My Job Postings", icon: FolderOpen },
+      { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
       { href: "/post-job", label: "Post a Job", icon: PlusCircle },
     ] : [
       { href: "/jobs", label: "Find Jobs", icon: Briefcase },
