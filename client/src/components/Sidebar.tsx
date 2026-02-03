@@ -9,7 +9,10 @@ import {
   LogOut,
   FolderOpen,
   ClipboardList,
-  Crown
+  Crown,
+  Shield,
+  Users,
+  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -19,10 +22,16 @@ export function Sidebar() {
   const [location] = useLocation();
 
   const isEmployer = user?.role === "employer";
+  const isAdmin = user?.role === "admin";
 
   const links = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    ...(isEmployer ? [
+    ...(isAdmin ? [
+      { href: "/admin", label: "Admin Panel", icon: Shield },
+      { href: "/admin/users", label: "Manage Users", icon: Users },
+      { href: "/admin/jobs", label: "Manage Jobs", icon: Briefcase },
+      { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },
+    ] : isEmployer ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
       { href: "/post-job", label: "Post a Job", icon: PlusCircle },
       { href: "/subscription", label: "Subscription", icon: Crown },

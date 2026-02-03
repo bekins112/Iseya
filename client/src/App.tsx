@@ -21,6 +21,10 @@ import EmployerSignup from "@/pages/EmployerSignup";
 import ManageJobs from "@/pages/ManageJobs";
 import ManageApplicants from "@/pages/ManageApplicants";
 import Subscription from "@/pages/Subscription";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminUsers from "@/pages/AdminUsers";
+import AdminJobs from "@/pages/AdminJobs";
+import AdminSubAdmins from "@/pages/AdminSubAdmins";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -112,6 +116,31 @@ function Router() {
       <Route path="/profile">
         <AuthenticatedLayout>
           <Profile />
+        </AuthenticatedLayout>
+      </Route>
+
+      {/* Admin routes */}
+      <Route path="/admin">
+        <AuthenticatedLayout>
+          <AdminDashboard />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/users">
+        <AuthenticatedLayout>
+          <AdminUsers />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/jobs">
+        <AuthenticatedLayout>
+          <AdminJobs />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/sub-admins">
+        <AuthenticatedLayout>
+          <AdminSubAdmins />
         </AuthenticatedLayout>
       </Route>
 
