@@ -57,7 +57,7 @@ export default function Landing() {
             animate={{ x: 0, opacity: 1 }}
             className="flex items-center gap-2"
           >
-            <img src={iseyaLogo} alt="Ìṣeyà" className="h-8 w-auto" />
+            <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
           </motion.div>
           <motion.div
             initial={{ x: 20, opacity: 0 }}
@@ -291,9 +291,9 @@ export default function Landing() {
       <footer className="py-12 border-t">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <img src={iseyaLogo} alt="Ìṣeyà" className="h-6 w-auto" />
+            <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
           </div>
-          <p className="text-muted-foreground">© 2026 Ìṣeyà. All rights reserved.</p>
+          <p className="text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</p>
         </div>
       </footer>
     </div>

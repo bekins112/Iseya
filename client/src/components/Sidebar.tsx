@@ -53,7 +53,7 @@ export function Sidebar() {
 
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
       <div className="h-16 flex items-center px-6 border-b">
-         <img src={iseyaLogo} alt="Ìṣeyà" className="h-6 w-auto" />
+         <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
       </div>
 
       <nav className="flex-1 p-4 space-y-1">

@@ -73,7 +73,7 @@ export default function Onboarding() {
         <CardHeader>
           <CardTitle className="text-2xl font-display text-center">Select Your Role</CardTitle>
           <CardDescription className="text-center">
-            Welcome to Ìṣeyà! Choose how you want to use the platform.
+            Welcome to Iṣéyá! Choose how you want to use the platform.
           </CardDescription>
         </CardHeader>
         <CardContent className="py-10">
