@@ -93,3 +93,43 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
   - `PAYSTACK_PUBLIC_KEY` - Starts with 'pk_test_' or 'pk_live_'
   - Get keys from: https://dashboard.paystack.com/#/settings/developers
 - Flutterwave can be added as an alternative payment option
+
+## Admin Dashboard System
+
+### Admin Roles and Permissions
+- **Primary Admin**: Full access to all platform features (no permissions record needed)
+- **Sub-Admin**: Configurable access based on permissions record in `admin_permissions` table
+
+### Permission Levels
+Each sub-admin can be granted any combination of these permissions:
+- `canViewStats` - View platform statistics and analytics
+- `canManageUsers` - View, edit roles, and verify users
+- `canManageJobs` - View, edit, activate/deactivate, and delete job postings
+- `canManageApplications` - View all applications across the platform
+- `canManageAdmins` - Create and manage other sub-admin accounts
+
+### Admin Pages
+- `/admin` - Dashboard with platform overview and stats
+- `/admin/users` - User management with search and role filtering
+- `/admin/jobs` - Job management with activate/deactivate and delete options
+- `/admin/sub-admins` - Sub-admin creation and permission management
+
+### Admin API Routes (all require admin role)
+- `GET /api/admin/stats` - Platform statistics
+- `GET /api/admin/users` - List all users with optional role/search filters
+- `PATCH /api/admin/users/:id` - Update user role/verification
+- `GET /api/admin/jobs` - List all jobs
+- `PATCH /api/admin/jobs/:id` - Update job status
+- `DELETE /api/admin/jobs/:id` - Delete job
+- `GET /api/admin/applications` - List all applications
+- `GET /api/admin/admins` - List all admin users with permissions
+- `POST /api/admin/admins` - Create new sub-admin with permissions
+- `PATCH /api/admin/admins/:userId/permissions` - Update sub-admin permissions
+- `DELETE /api/admin/admins/:userId` - Remove admin privileges
+- `GET /api/admin/my-permissions` - Get current admin's permissions
+
+### Setting Up the First Admin
+To make yourself an admin, update your user role in the database:
+```sql
+UPDATE users SET role = 'admin' WHERE email = 'your-email@example.com';
+```

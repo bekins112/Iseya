@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { isAuthenticated } from "./replit_integrations/auth";
+import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -236,9 +237,13 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You don't have permission to manage users" });
     }
     try {
-      const user = await storage.updateUser(req.params.id, req.body);
+      const input = adminUpdateUserSchema.parse(req.body);
+      const user = await storage.updateUser(req.params.id, input);
       res.json(user);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
       res.status(400).json({ message: "Failed to update user" });
     }
   });
@@ -257,9 +262,13 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You don't have permission to manage jobs" });
     }
     try {
-      const job = await storage.updateJob(Number(req.params.id), req.body);
+      const input = adminUpdateJobSchema.parse(req.body);
+      const job = await storage.updateJob(Number(req.params.id), input);
       res.json(job);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
       res.status(400).json({ message: "Failed to update job" });
     }
   });
@@ -300,20 +309,27 @@ export async function registerRoutes(
     }
     
     try {
-      const { userId, permissions } = req.body;
+      const input = createSubAdminSchema.parse(req.body);
       
       // Update user role to admin
-      await storage.updateUser(userId, { role: 'admin' });
+      await storage.updateUser(input.userId, { role: 'admin' });
       
-      // Create permissions
+      // Create permissions with defaults
       const adminPerms = await storage.createAdminPermissions({
-        userId,
+        userId: input.userId,
         createdBy: req.adminUser.id,
-        ...permissions
+        canManageUsers: input.permissions.canManageUsers ?? false,
+        canManageJobs: input.permissions.canManageJobs ?? false,
+        canManageApplications: input.permissions.canManageApplications ?? false,
+        canManageAdmins: input.permissions.canManageAdmins ?? false,
+        canViewStats: input.permissions.canViewStats ?? true,
       });
       
       res.status(201).json(adminPerms);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
       res.status(400).json({ message: "Failed to create admin" });
     }
   });
@@ -324,9 +340,13 @@ export async function registerRoutes(
     }
     
     try {
-      const perms = await storage.updateAdminPermissions(req.params.userId, req.body);
+      const input = updateAdminPermissionsSchema.parse(req.body);
+      const perms = await storage.updateAdminPermissions(req.params.userId, input);
       res.json(perms);
     } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
       res.status(400).json({ message: "Failed to update permissions" });
     }
   });
