@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { isAuthenticated } from "./replit_integrations/auth";
-import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema } from "@shared/schema";
+import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -376,6 +376,163 @@ export async function registerRoutes(
       canManageAdmins: true,
       canViewStats: true,
     });
+  });
+
+  // Detailed stats for admin dashboard
+  app.get("/api/admin/stats/detailed", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canViewStats) {
+      return res.status(403).json({ message: "You don't have permission to view stats" });
+    }
+    const stats = await storage.getDetailedStats();
+    res.json(stats);
+  });
+
+  // === TICKETS ===
+  
+  // Create a support ticket (any authenticated user)
+  app.post("/api/tickets", isAuthenticated, async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    try {
+      const input = insertTicketSchema.parse({
+        ...req.body,
+        userId,
+        status: "open",
+        priority: req.body.priority || "medium",
+      });
+      const ticket = await storage.createTicket(input);
+      res.status(201).json(ticket);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  // Get user's own tickets
+  app.get("/api/tickets/my", isAuthenticated, async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    const tickets = await storage.getTicketsByUser(userId);
+    res.json(tickets);
+  });
+
+  // Admin: Get all tickets
+  app.get("/api/admin/tickets", isAuthenticated, isAdmin, async (req: any, res) => {
+    const { status, priority } = req.query;
+    const tickets = await storage.getAllTickets({ 
+      status: status as string, 
+      priority: priority as string 
+    });
+    res.json(tickets);
+  });
+
+  // Admin: Get single ticket
+  app.get("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    const ticket = await storage.getTicket(Number(req.params.id));
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+    res.json(ticket);
+  });
+
+  // Admin: Update ticket
+  app.patch("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const input = adminUpdateTicketSchema.parse(req.body);
+      const ticket = await storage.updateTicket(Number(req.params.id), input);
+      res.json(ticket);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(400).json({ message: "Failed to update ticket" });
+    }
+  });
+
+  // === REPORTS ===
+
+  // Create a report (any authenticated user)
+  app.post("/api/reports", isAuthenticated, async (req, res) => {
+    const userId = (req.user as any).claims.sub;
+    try {
+      const input = insertReportSchema.parse({
+        ...req.body,
+        reporterId: userId,
+        status: "pending",
+      });
+      const report = await storage.createReport(input);
+      res.status(201).json(report);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to create report" });
+    }
+  });
+
+  // Admin: Get all reports
+  app.get("/api/admin/reports", isAuthenticated, isAdmin, async (req: any, res) => {
+    const { status, type } = req.query;
+    const reports = await storage.getAllReports({ 
+      status: status as string, 
+      type: type as string 
+    });
+    res.json(reports);
+  });
+
+  // Admin: Get single report
+  app.get("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    const report = await storage.getReport(Number(req.params.id));
+    if (!report) return res.status(404).json({ message: "Report not found" });
+    res.json(report);
+  });
+
+  // Admin: Update report
+  app.patch("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const input = adminUpdateReportSchema.parse(req.body);
+      const report = await storage.updateReport(Number(req.params.id), input);
+      res.json(report);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(400).json({ message: "Failed to update report" });
+    }
+  });
+
+  // === SUBSCRIPTIONS ===
+
+  // Admin: Get users by subscription status
+  app.get("/api/admin/subscriptions", isAuthenticated, isAdmin, async (req: any, res) => {
+    const { status } = req.query;
+    if (status) {
+      const users = await storage.getUsersBySubscription(status as string);
+      res.json(users);
+    } else {
+      // Return all employers with subscription info
+      const users = await storage.getAllUsers({ role: "employer" });
+      res.json(users);
+    }
+  });
+
+  // Admin: Update user subscription
+  app.patch("/api/admin/subscriptions/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+      return res.status(403).json({ message: "You don't have permission to manage subscriptions" });
+    }
+    try {
+      const input = adminUpdateSubscriptionSchema.parse(req.body);
+      const updates: any = {};
+      if (input.subscriptionStatus) updates.subscriptionStatus = input.subscriptionStatus;
+      if (input.subscriptionEndDate) updates.subscriptionEndDate = new Date(input.subscriptionEndDate);
+      
+      const user = await storage.updateUser(req.params.userId, updates);
+      res.json(user);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(400).json({ message: "Failed to update subscription" });
+    }
   });
 
   return httpServer;
