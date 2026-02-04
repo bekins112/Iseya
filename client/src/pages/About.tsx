@@ -46,20 +46,21 @@ export default function About() {
     <div className="min-h-screen bg-background">
       <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/">
-            <a className="flex items-center gap-2">
-              <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
-            </a>
+          <Link href="/" className="flex items-center gap-2">
+            <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/about">
-              <a className="text-sm font-medium text-primary">About</a>
+            <Link href="/browse-jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Browse Jobs
             </Link>
-            <Link href="/faqs">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground">FAQs</a>
+            <Link href="/about" className="text-sm font-medium text-primary">
+              About
             </Link>
-            <Link href="/contact">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground">Contact</a>
+            <Link href="/faqs" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              FAQs
+            </Link>
+            <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Contact
             </Link>
           </div>
         </div>

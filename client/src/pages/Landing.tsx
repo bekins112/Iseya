@@ -84,14 +84,17 @@ export default function Landing() {
             className="flex items-center gap-4"
           >
             <div className="hidden md:flex items-center gap-4">
-              <Link href="/about">
-                <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">About</a>
+              <Link href="/browse-jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Browse Jobs
               </Link>
-              <Link href="/faqs">
-                <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQs</a>
+              <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                About
               </Link>
-              <Link href="/contact">
-                <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+              <Link href="/faqs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                FAQs
+              </Link>
+              <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Contact
               </Link>
             </div>
             <div className="bg-muted rounded-full p-1 flex">
@@ -446,18 +449,23 @@ export default function Landing() {
               <h4 className="font-bold mb-4">Quick Links</h4>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/about">
-                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">About Us</a>
+                  <Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Browse Jobs
                   </Link>
                 </li>
                 <li>
-                  <Link href="/faqs">
-                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQs</a>
+                  <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact">
-                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+                  <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    FAQs
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Contact
                   </Link>
                 </li>
               </ul>
@@ -474,8 +482,8 @@ export default function Landing() {
                   </button>
                 </li>
                 <li>
-                  <Link href="/employer">
-                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Hire Workers</a>
+                  <Link href="/employer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Hire Workers
                   </Link>
                 </li>
               </ul>
@@ -484,14 +492,14 @@ export default function Landing() {
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</p>
             <div className="flex items-center gap-6">
-              <Link href="/about">
-                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</a>
+              <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                About
               </Link>
-              <Link href="/faqs">
-                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQs</a>
+              <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                FAQs
               </Link>
-              <Link href="/contact">
-                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+              <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Contact
               </Link>
             </div>
           </div>

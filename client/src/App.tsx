@@ -33,6 +33,7 @@ import AdminReports from "@/pages/AdminReports";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
 import Contact from "@/pages/Contact";
+import BrowseJobs from "@/pages/BrowseJobs";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -67,6 +68,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/contact" component={Contact} />
+      <Route path="/browse-jobs" component={BrowseJobs} />
       
       <Route path="/onboarding">
         <AuthenticatedLayout>
