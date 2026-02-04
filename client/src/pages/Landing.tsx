@@ -1,12 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2 } from "lucide-react";
+import { Briefcase, UserCheck, ShieldCheck, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import workersImage from "@assets/file_0000000006b4722f93fd48732a248e00_1770125859585.png";
 import { Card, CardContent } from "@/components/ui/card";
+
+const bannerSlides = [
+  {
+    id: 1,
+    title: "Find Your Perfect Job",
+    subtitle: "Thousands of opportunities waiting for you",
+    gradient: "from-primary/90 to-amber-600/90",
+  },
+  {
+    id: 2,
+    title: "Hire Reliable Workers",
+    subtitle: "Connect with skilled candidates instantly",
+    gradient: "from-amber-600/90 to-yellow-500/90",
+  },
+  {
+    id: 3,
+    title: "Flexible Work, Your Schedule",
+    subtitle: "Part-time, full-time, or temporary - you choose",
+    gradient: "from-yellow-600/90 to-primary/90",
+  },
+];
 
 type UserMode = "seeker" | "employer";
 
@@ -14,6 +35,23 @@ export default function Landing() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [activeMode, setActiveMode] = useState<UserMode>("seeker");
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-rotate banner slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
+  }, []);
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
@@ -125,8 +163,92 @@ export default function Landing() {
         </div>
       </nav>
 
+      {/* Top Banner Slider */}
+      <section className="relative pt-16 overflow-hidden">
+        <div className="relative h-48 sm:h-64 md:h-80 lg:h-96 w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              transition={{ duration: 0.5 }}
+              className={`absolute inset-0 bg-gradient-to-r ${bannerSlides[currentSlide].gradient}`}
+            >
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIwOS0xLjc5MS00LTQtNHMtNCAxLjc5MS00IDQgMS43OTEgNCA0IDQgNC0xLjc5MSA0LTR6bTAtMThjMC0yLjIwOS0xLjc5MS00LTQtNHMtNCAxLjc5MS00IDQgMS43OTEgNCA0IDQgNC0xLjc5MSA0LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+              <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
+                <motion.h2 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-4 drop-shadow-lg"
+                >
+                  {bannerSlides[currentSlide].title}
+                </motion.h2>
+                <motion.p 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-lg sm:text-xl md:text-2xl text-white/90 max-w-2xl drop-shadow"
+                >
+                  {bannerSlides[currentSlide].subtitle}
+                </motion.p>
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="mt-6"
+                >
+                  <Link href="/browse-jobs">
+                    <Button size="lg" variant="secondary" className="font-semibold shadow-lg" data-testid="button-banner-browse">
+                      Browse Jobs
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                </motion.div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+          
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-sm"
+            aria-label="Previous slide"
+            data-testid="button-banner-prev"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-sm"
+            aria-label="Next slide"
+            data-testid="button-banner-next"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+          
+          {/* Slide Indicators */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {bannerSlides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  currentSlide === index 
+                    ? "bg-white w-8" 
+                    : "bg-white/50 hover:bg-white/70"
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+                data-testid={`button-banner-dot-${index}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-28 px-4 overflow-hidden">
+      <section className="relative pt-16 pb-20 lg:pt-20 lg:pb-28 px-4 overflow-hidden">
         <motion.div 
           animate={{ 
             scale: [1, 1.2, 1],
