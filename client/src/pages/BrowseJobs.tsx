@@ -378,11 +378,13 @@ export default function BrowseJobs() {
                       <span className="font-bold text-primary">
                         {formatSalary(job.salaryMin, job.salaryMax)}
                       </span>
-                      <Link href={`/jobs/${job.id}`}>
-                        <Button size="sm" variant="ghost" className="gap-1" data-testid={`button-view-job-${job.id}`}>
-                          View Details
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
+                      <Link 
+                        href={`/jobs/${job.id}`}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+                        data-testid={`button-view-job-${job.id}`}
+                      >
+                        View Details
+                        <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>
                   </CardContent>
