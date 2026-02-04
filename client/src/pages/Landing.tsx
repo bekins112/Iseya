@@ -81,8 +81,19 @@ export default function Landing() {
           <motion.div
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-4"
           >
+            <div className="hidden md:flex items-center gap-4">
+              <Link href="/about">
+                <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">About</a>
+              </Link>
+              <Link href="/faqs">
+                <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">FAQs</a>
+              </Link>
+              <Link href="/contact">
+                <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+              </Link>
+            </div>
             <div className="bg-muted rounded-full p-1 flex">
               <button
                 onClick={() => setActiveMode("seeker")}
@@ -421,11 +432,69 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="py-12 border-t">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
+              </div>
+              <p className="text-muted-foreground text-sm max-w-md">
+                Connecting Nigerian workers with opportunities. Find casual jobs or hire reliable workers through our trusted platform.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4">Quick Links</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/about">
+                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">About Us</a>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faqs">
+                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQs</a>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact">
+                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4">Get Started</h4>
+              <ul className="space-y-2">
+                <li>
+                  <button 
+                    onClick={() => handleLogin("applicant")}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Find Work
+                  </button>
+                </li>
+                <li>
+                  <Link href="/employer">
+                    <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Hire Workers</a>
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
-          <p className="text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</p>
+          <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</p>
+            <div className="flex items-center gap-6">
+              <Link href="/about">
+                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</a>
+              </Link>
+              <Link href="/faqs">
+                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQs</a>
+              </Link>
+              <Link href="/contact">
+                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+              </Link>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

@@ -30,6 +30,9 @@ import AdminSubscriptions from "@/pages/AdminSubscriptions";
 import AdminStatistics from "@/pages/AdminStatistics";
 import AdminTickets from "@/pages/AdminTickets";
 import AdminReports from "@/pages/AdminReports";
+import About from "@/pages/About";
+import FAQs from "@/pages/FAQs";
+import Contact from "@/pages/Contact";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -61,6 +64,9 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/employer" component={EmployerLogin} />
       <Route path="/employer/signup" component={EmployerSignup} />
+      <Route path="/about" component={About} />
+      <Route path="/faqs" component={FAQs} />
+      <Route path="/contact" component={Contact} />
       
       <Route path="/onboarding">
         <AuthenticatedLayout>
