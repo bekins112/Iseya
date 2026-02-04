@@ -14,12 +14,31 @@ import {
   Clock, 
   Building2, 
   ArrowLeft,
-  ChevronRight
+  ChevronRight,
+  Calendar
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+
+function formatTimeAgo(date: Date | string | null | undefined): string {
+  if (!date) return "Recently";
+  
+  const now = new Date();
+  const posted = new Date(date);
+  const diffMs = now.getTime() - posted.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) !== 1 ? 's' : ''} ago`;
+  return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) !== 1 ? 's' : ''} ago`;
+}
 
 const categories = [
   "Cleaning",
@@ -320,9 +339,15 @@ export default function BrowseJobs() {
                         <h3 className="font-semibold text-lg group-hover:text-primary transition-colors line-clamp-1">
                           {job.title}
                         </h3>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Building2 className="w-3 h-3" />
-                          <span>Employer</span>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            Employer
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatTimeAgo(job.createdAt)}
+                          </span>
                         </div>
                       </div>
                       <Badge variant={job.isActive ? "default" : "secondary"}>

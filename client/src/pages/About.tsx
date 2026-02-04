@@ -175,14 +175,17 @@ export default function About() {
             <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/about">
-              <a className="text-sm text-muted-foreground hover:text-foreground">About</a>
+            <Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground">
+              Browse Jobs
             </Link>
-            <Link href="/faqs">
-              <a className="text-sm text-muted-foreground hover:text-foreground">FAQs</a>
+            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground">
+              About
             </Link>
-            <Link href="/contact">
-              <a className="text-sm text-muted-foreground hover:text-foreground">Contact</a>
+            <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground">
+              FAQs
+            </Link>
+            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
+              Contact
             </Link>
           </div>
         </div>
