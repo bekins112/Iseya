@@ -1,10 +1,11 @@
 import { useRoute, Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useJob, useCreateApplication } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
@@ -19,8 +20,11 @@ import {
   Banknote,
   CheckCircle2,
   LogIn,
-  UserPlus
+  UserPlus,
+  ChevronRight
 } from "lucide-react";
+import { api } from "@shared/routes";
+import type { Job } from "@shared/schema";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
@@ -57,6 +61,20 @@ export default function JobDetails() {
   const [message, setMessage] = useState("");
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+
+  // Fetch similar jobs (same category, excluding current job)
+  const { data: similarJobs } = useQuery<Job[]>({
+    queryKey: [api.jobs.list.path, 'similar', job?.category],
+    queryFn: async () => {
+      if (!job?.category) return [];
+      const params = new URLSearchParams({ category: job.category });
+      const res = await fetch(`${api.jobs.list.path}?${params}`);
+      if (!res.ok) return [];
+      const jobs = await res.json();
+      return jobs.filter((j: Job) => j.id !== id && j.isActive).slice(0, 3);
+    },
+    enabled: !!job?.category,
+  });
 
   const handleApplyClick = () => {
     if (!user) {
@@ -298,6 +316,58 @@ export default function JobDetails() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Similar Jobs Section */}
+        {similarJobs && similarJobs.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-8"
+          >
+            <h2 className="text-xl font-bold mb-4">Similar Jobs</h2>
+            <div className="grid md:grid-cols-3 gap-4">
+              {similarJobs.map((similarJob) => (
+                <Card key={similarJob.id} className="hover-elevate transition-all group" data-testid={`card-similar-job-${similarJob.id}`}>
+                  <CardContent className="p-4">
+                    <div className="mb-2">
+                      <Badge variant="outline" className="mb-2">{similarJob.category}</Badge>
+                      <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-1">
+                        {similarJob.title}
+                      </h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                      {similarJob.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {similarJob.location}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {similarJob.jobType}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t">
+                      <span className="font-semibold text-primary text-sm">
+                        {formatSalary(similarJob.salaryMin, similarJob.salaryMax, similarJob.wage)}
+                      </span>
+                      <Link 
+                        href={`/jobs/${similarJob.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+                        data-testid={`link-similar-job-${similarJob.id}`}
+                      >
+                        View
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </main>
 
       <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
