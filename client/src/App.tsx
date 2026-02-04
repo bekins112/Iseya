@@ -101,10 +101,9 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
+      {/* Public job details page - no auth required */}
       <Route path="/jobs/:id">
-        <AuthenticatedLayout>
-          <JobDetails />
-        </AuthenticatedLayout>
+        <JobDetails />
       </Route>
 
       <Route path="/my-applications">
