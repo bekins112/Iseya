@@ -9,6 +9,8 @@ import NotFound from "@/pages/not-found";
 
 // Pages
 import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
 import Onboarding from "@/pages/Onboarding";
 import PostJob from "@/pages/PostJob";
@@ -63,6 +65,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/employer" component={EmployerLogin} />
       <Route path="/employer/signup" component={EmployerSignup} />
       <Route path="/about" component={About} />

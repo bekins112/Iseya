@@ -40,13 +40,13 @@ export default function EmployerLogin() {
     if (isAuthenticated) {
       if (user && user.role !== "employer") {
         // Log out and redirect back to employer login
-        window.location.href = "/api/logout?redirect=/employer";
+        window.location.href = "/login";
         return;
       }
       setLocation("/dashboard");
       return;
     }
-    window.location.href = "/api/login?redirect=/employer";
+    window.location.href = "/login";
   };
 
   const container = {

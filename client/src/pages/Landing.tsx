@@ -95,7 +95,7 @@ export default function Landing() {
       setLocation("/onboarding");
       return;
     }
-    window.location.href = "/api/login";
+    setLocation("/login");
   };
 
   const handleSignup = (role: "applicant" | "employer") => {
@@ -103,7 +103,7 @@ export default function Landing() {
     if (role === "employer") {
       setLocation("/employer/signup");
     } else {
-      window.location.href = "/api/login";
+      setLocation("/register");
     }
   };
 

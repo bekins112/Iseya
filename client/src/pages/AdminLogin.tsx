@@ -18,7 +18,7 @@ export default function AdminLogin() {
 
   const handleAdminLogin = () => {
     localStorage.setItem("admin_login_redirect", "true");
-    window.location.href = "/api/login";
+    window.location.href = "/login";
   };
 
   if (isLoading) {

@@ -1,9 +1,7 @@
 import { db } from "./db";
 import { users, jobs, applications, adminPermissions, tickets, reports, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
-import { IAuthStorage } from "./replit_integrations/auth/storage";
-
-export interface IStorage extends IAuthStorage {
+export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
@@ -374,4 +372,3 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
-export const authStorage = storage; // Export for auth module

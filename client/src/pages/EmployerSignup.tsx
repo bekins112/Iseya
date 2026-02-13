@@ -37,7 +37,7 @@ export default function EmployerSignup() {
 
   const handleSignup = () => {
     localStorage.setItem("intended_role", "employer");
-    window.location.href = "/api/login";
+    window.location.href = "/register";
   };
 
   const container = {

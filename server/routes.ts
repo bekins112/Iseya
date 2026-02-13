@@ -1,23 +1,20 @@
 import type { Express } from "express";
 import type { Server } from "http";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { isAuthenticated } from "./replit_integrations/auth";
 import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema } from "@shared/schema";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Set up auth first
   await setupAuth(app);
-  registerAuthRoutes(app);
 
   // === USERS ===
   app.patch(api.users.update.path, isAuthenticated, async (req, res) => {
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     try {
       const input = api.users.update.input.parse(req.body);
       const user = await storage.updateUser(userId, input);
@@ -48,7 +45,7 @@ export async function registerRoutes(
 
   app.post(api.jobs.create.path, isAuthenticated, async (req, res) => {
     // Check if user is employer or admin
-    const user = await storage.getUser((req.user as any).claims.sub);
+    const user = await storage.getUser(req.session.userId!);
     if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
       return res.status(403).json({ message: "Only employers can post jobs" });
     }
@@ -76,7 +73,7 @@ export async function registerRoutes(
     const job = await storage.getJob(jobId);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     const user = await storage.getUser(userId);
 
     // Only owner or admin can delete
@@ -93,7 +90,7 @@ export async function registerRoutes(
     const job = await storage.getJob(jobId);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     const user = await storage.getUser(userId);
 
     if (job.employerId !== userId && user?.role !== 'admin') {
@@ -110,7 +107,7 @@ export async function registerRoutes(
   });
 
   app.get(api.jobs.listByEmployer.path, isAuthenticated, async (req, res) => {
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     const user = await storage.getUser(userId);
     
     if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
@@ -123,7 +120,7 @@ export async function registerRoutes(
 
   // === APPLICATIONS ===
   app.post(api.applications.create.path, isAuthenticated, async (req, res) => {
-    const user = await storage.getUser((req.user as any).claims.sub);
+    const user = await storage.getUser(req.session.userId!);
     
     // Check age (16+)
     if (!user?.age || user.age < 16) {
@@ -151,7 +148,7 @@ export async function registerRoutes(
   app.get(api.applications.listForJob.path, isAuthenticated, async (req, res) => {
     const jobId = Number(req.params.jobId);
     const job = await storage.getJob(jobId);
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
 
     if (!job) return res.status(404).json({ message: "Job not found" });
     if (job.employerId !== userId) return res.status(403).json({ message: "Forbidden" });
@@ -161,7 +158,7 @@ export async function registerRoutes(
   });
 
   app.get(api.applications.listForApplicant.path, isAuthenticated, async (req, res) => {
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     const apps = await storage.getApplicationsForApplicant(userId);
     res.json(apps);
   });
@@ -178,7 +175,7 @@ export async function registerRoutes(
     const application = await storage.getApplication(appId);
     if (!application) return res.status(404).json({ message: "Application not found" });
 
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     const job = await storage.getJob(application.jobId);
     
     if (!job || job.employerId !== userId) {
@@ -198,7 +195,7 @@ export async function registerRoutes(
   
   // Middleware to check admin permissions
   const isAdmin = async (req: any, res: any, next: any) => {
-    const userId = (req.user as any)?.claims?.sub;
+    const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
     
     const user = await storage.getUser(userId);
@@ -391,7 +388,7 @@ export async function registerRoutes(
   
   // Create a support ticket (any authenticated user)
   app.post("/api/tickets", isAuthenticated, async (req, res) => {
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     try {
       const input = insertTicketSchema.parse({
         ...req.body,
@@ -411,7 +408,7 @@ export async function registerRoutes(
 
   // Get user's own tickets
   app.get("/api/tickets/my", isAuthenticated, async (req, res) => {
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     const tickets = await storage.getTicketsByUser(userId);
     res.json(tickets);
   });
@@ -451,7 +448,7 @@ export async function registerRoutes(
 
   // Create a report (any authenticated user)
   app.post("/api/reports", isAuthenticated, async (req, res) => {
-    const userId = (req.user as any).claims.sub;
+    const userId = req.session.userId!;
     try {
       const input = insertReportSchema.parse({
         ...req.body,
