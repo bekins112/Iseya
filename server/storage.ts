@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -60,6 +60,11 @@ export interface IStorage {
   getReport(id: number): Promise<Report | undefined>;
   getAllReports(filters?: { status?: string; type?: string }): Promise<Report[]>;
   updateReport(id: number, updates: Partial<Report>): Promise<Report>;
+  
+  // Job history methods
+  getJobHistoryByUser(userId: string): Promise<JobHistory[]>;
+  createJobHistory(entry: InsertJobHistory): Promise<JobHistory>;
+  deleteJobHistory(id: number, userId: string): Promise<void>;
   
   // Subscription methods
   getUsersBySubscription(status: string): Promise<User[]>;
@@ -359,6 +364,20 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reports.id, id))
       .returning();
     return report;
+  }
+
+  // Job history methods
+  async getJobHistoryByUser(userId: string): Promise<JobHistory[]> {
+    return await db.select().from(jobHistory).where(eq(jobHistory.userId, userId)).orderBy(desc(jobHistory.createdAt));
+  }
+
+  async createJobHistory(entry: InsertJobHistory): Promise<JobHistory> {
+    const [newEntry] = await db.insert(jobHistory).values(entry).returning();
+    return newEntry;
+  }
+
+  async deleteJobHistory(id: number, userId: string): Promise<void> {
+    await db.delete(jobHistory).where(and(eq(jobHistory.id, id), eq(jobHistory.userId, userId)));
   }
 
   // Subscription methods

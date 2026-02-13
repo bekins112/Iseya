@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useJobs, useMyApplications, useUpdateUser } from "@/hooks/use-casual";
+import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobHistory, useDeleteJobHistory, useUploadCV, useUploadProfilePicture } from "@/hooks/use-casual";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-import { PlusCircle, Search, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X } from "lucide-react";
+import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle } from "lucide-react";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
 
@@ -30,9 +32,331 @@ const businessCategories = [
   "Other",
 ];
 
+function ApplicantProfile() {
+  const { user } = useAuth();
+  const updateUser = useUpdateUser();
+  const { data: jobHistoryData, isLoading: historyLoading } = useJobHistory();
+  const createHistory = useCreateJobHistory();
+  const deleteHistory = useDeleteJobHistory();
+  const uploadCV = useUploadCV();
+  const uploadPicture = useUploadProfilePicture();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editGender, setEditGender] = useState(user?.gender || "");
+  const [editSalaryMin, setEditSalaryMin] = useState(user?.expectedSalaryMin?.toString() || "");
+  const [editSalaryMax, setEditSalaryMax] = useState(user?.expectedSalaryMax?.toString() || "");
+  const [editBio, setEditBio] = useState(user?.bio || "");
+
+  const [showAddHistory, setShowAddHistory] = useState(false);
+  const [historyTitle, setHistoryTitle] = useState("");
+  const [historyCompany, setHistoryCompany] = useState("");
+  const [historyDuration, setHistoryDuration] = useState("");
+  const [historyDescription, setHistoryDescription] = useState("");
+
+  const cvInputRef = useRef<HTMLInputElement>(null);
+  const pictureInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSaveProfile = () => {
+    updateUser.mutate(
+      {
+        id: user!.id,
+        gender: editGender || undefined,
+        expectedSalaryMin: editSalaryMin ? parseInt(editSalaryMin) : undefined,
+        expectedSalaryMax: editSalaryMax ? parseInt(editSalaryMax) : undefined,
+        bio: editBio || undefined,
+      } as any,
+      { onSuccess: () => setIsEditing(false) }
+    );
+  };
+
+  const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadCV.mutate(file);
+  };
+
+  const handlePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadPicture.mutate(file);
+  };
+
+  const handleAddHistory = () => {
+    if (!historyTitle.trim() || !historyCompany.trim()) return;
+    createHistory.mutate(
+      {
+        jobTitle: historyTitle.trim(),
+        company: historyCompany.trim(),
+        duration: historyDuration.trim() || undefined,
+        description: historyDescription.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setHistoryTitle("");
+          setHistoryCompany("");
+          setHistoryDuration("");
+          setHistoryDescription("");
+          setShowAddHistory(false);
+        },
+      }
+    );
+  };
+
+  const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-border/40 shadow-md">
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="relative group">
+              <Avatar className="w-20 h-20 border-2 border-border">
+                <AvatarImage src={user?.profileImageUrl || undefined} alt={user?.firstName || "Profile"} />
+                <AvatarFallback className="text-lg bg-primary/10 text-primary">{initials || <UserCircle className="w-8 h-8" />}</AvatarFallback>
+              </Avatar>
+              <button
+                onClick={() => pictureInputRef.current?.click()}
+                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                data-testid="button-change-photo"
+              >
+                <Camera className="w-5 h-5 text-white" />
+              </button>
+              <input
+                ref={pictureInputRef}
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp"
+                className="hidden"
+                onChange={handlePictureUpload}
+                data-testid="input-profile-picture"
+              />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-bold" data-testid="text-applicant-name">
+                  {user?.firstName} {user?.lastName}
+                </h3>
+                {user?.isVerified && (
+                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground" data-testid="text-applicant-email">{user?.email}</p>
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                {user?.gender && (
+                  <span className="text-xs bg-muted px-2 py-0.5 rounded-md text-muted-foreground" data-testid="text-gender">{user.gender}</span>
+                )}
+                {user?.age && (
+                  <span className="text-xs bg-muted px-2 py-0.5 rounded-md text-muted-foreground" data-testid="text-age">{user.age} years old</span>
+                )}
+                {user?.location && (
+                  <span className="text-xs bg-muted px-2 py-0.5 rounded-md text-muted-foreground" data-testid="text-location">{user.location}</span>
+                )}
+              </div>
+              {user?.bio && (
+                <p className="text-sm mt-2 text-muted-foreground" data-testid="text-bio">{user.bio}</p>
+              )}
+              {(user?.expectedSalaryMin || user?.expectedSalaryMax) && (
+                <p className="text-sm mt-1 text-muted-foreground" data-testid="text-salary-range">
+                  Expected salary: {user.expectedSalaryMin ? `₦${user.expectedSalaryMin.toLocaleString()}` : "Any"} - {user.expectedSalaryMax ? `₦${user.expectedSalaryMax.toLocaleString()}` : "Any"}
+                </p>
+              )}
+            </div>
+
+            <Button
+              size="icon"
+              variant="ghost"
+              data-testid="button-edit-applicant-profile"
+              onClick={() => {
+                setEditGender(user?.gender || "");
+                setEditSalaryMin(user?.expectedSalaryMin?.toString() || "");
+                setEditSalaryMax(user?.expectedSalaryMax?.toString() || "");
+                setEditBio(user?.bio || "");
+                setIsEditing(true);
+              }}
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {isEditing && (
+            <div className="mt-4 pt-4 border-t border-border/40 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Gender</Label>
+                  <Select value={editGender} onValueChange={setEditGender}>
+                    <SelectTrigger data-testid="select-edit-gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Bio / About</Label>
+                  <Textarea
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value)}
+                    placeholder="Tell employers about yourself..."
+                    className="resize-none"
+                    data-testid="input-edit-bio"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Expected Salary Min (₦)</Label>
+                  <Input
+                    type="number"
+                    value={editSalaryMin}
+                    onChange={(e) => setEditSalaryMin(e.target.value)}
+                    placeholder="e.g. 5000"
+                    data-testid="input-salary-min"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Expected Salary Max (₦)</Label>
+                  <Input
+                    type="number"
+                    value={editSalaryMax}
+                    onChange={(e) => setEditSalaryMax(e.target.value)}
+                    placeholder="e.g. 50000"
+                    data-testid="input-salary-max"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={handleSaveProfile} disabled={updateUser.isPending} data-testid="button-save-applicant-profile">
+                  <Check className="w-4 h-4 mr-1" />
+                  {updateUser.isPending ? "Saving..." : "Save"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} data-testid="button-cancel-applicant-edit">
+                  <X className="w-4 h-4 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/40 shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" />
+            CV / Resume
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={() => cvInputRef.current?.click()} disabled={uploadCV.isPending} data-testid="button-upload-cv">
+            <Upload className="w-4 h-4 mr-1" />
+            {uploadCV.isPending ? "Uploading..." : "Upload CV"}
+          </Button>
+          <input
+            ref={cvInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            className="hidden"
+            onChange={handleCVUpload}
+            data-testid="input-cv-file"
+          />
+        </CardHeader>
+        <CardContent>
+          {user?.cvUrl ? (
+            <a href={user.cvUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-primary hover:underline" data-testid="link-view-cv">
+              <FileText className="w-4 h-4" />
+              View uploaded CV
+            </a>
+          ) : (
+            <p className="text-sm text-muted-foreground">No CV uploaded yet. Upload a PDF or DOC file (max 5MB).</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/40 shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-primary" />
+            Job History
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={() => setShowAddHistory(true)} data-testid="button-add-history">
+            <PlusCircle className="w-4 h-4 mr-1" />
+            Add
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {showAddHistory && (
+            <div className="p-4 bg-muted/30 rounded-md border border-border/40 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Job Title *</Label>
+                  <Input value={historyTitle} onChange={(e) => setHistoryTitle(e.target.value)} placeholder="e.g. Delivery Rider" data-testid="input-history-title" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Company *</Label>
+                  <Input value={historyCompany} onChange={(e) => setHistoryCompany(e.target.value)} placeholder="e.g. Jumia" data-testid="input-history-company" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Duration</Label>
+                  <Input value={historyDuration} onChange={(e) => setHistoryDuration(e.target.value)} placeholder="e.g. 6 months" data-testid="input-history-duration" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Description</Label>
+                  <Input value={historyDescription} onChange={(e) => setHistoryDescription(e.target.value)} placeholder="Brief description" data-testid="input-history-description" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={handleAddHistory} disabled={createHistory.isPending} data-testid="button-save-history">
+                  <Check className="w-4 h-4 mr-1" />
+                  {createHistory.isPending ? "Adding..." : "Add Entry"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowAddHistory(false)} data-testid="button-cancel-history">
+                  <X className="w-4 h-4 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {historyLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map(i => <div key={i} className="h-16 bg-muted/40 rounded-md animate-pulse" />)}
+            </div>
+          ) : jobHistoryData && jobHistoryData.length > 0 ? (
+            <div className="space-y-3">
+              {jobHistoryData.map((entry) => (
+                <div key={entry.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-md border border-border/30" data-testid={`history-entry-${entry.id}`}>
+                  <Briefcase className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium" data-testid={`text-history-title-${entry.id}`}>{entry.jobTitle}</p>
+                    <p className="text-xs text-muted-foreground">{entry.company}{entry.duration ? ` - ${entry.duration}` : ""}</p>
+                    {entry.description && <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>}
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="flex-shrink-0"
+                    onClick={() => deleteHistory.mutate(entry.id)}
+                    disabled={deleteHistory.isPending}
+                    data-testid={`button-delete-history-${entry.id}`}
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No job history added yet.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const isEmployer = user?.role === "employer";
+  const isApplicant = user?.role === "applicant";
   const updateUser = useUpdateUser();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editCompanyName, setEditCompanyName] = useState(user?.companyName || "");
@@ -41,17 +365,13 @@ export default function Dashboard() {
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: myApplications } = useMyApplications();
 
-  // Employer specific data
   const myJobs = jobs?.filter(j => j.employerId === user?.id) || [];
-  const totalApplicants = myJobs.reduce((acc, job) => acc + (job.id ? 0 : 0), 0); // Placeholder for actual count logic if needed
   
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+      transition: { staggerChildren: 0.1 }
     }
   };
 
@@ -72,7 +392,7 @@ export default function Dashboard() {
           actions={
             isEmployer && (
               <Link href="/post-job">
-                <Button className="gap-2 rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-all">
+                <Button className="gap-2 rounded-xl shadow-lg shadow-primary/20" data-testid="button-post-job">
                   <PlusCircle className="w-4 h-4" /> Post a Job
                 </Button>
               </Link>
@@ -90,14 +410,14 @@ export default function Dashboard() {
         <motion.div variants={item}>
           <Card className="bg-primary text-primary-foreground overflow-hidden relative group border-none shadow-xl shadow-primary/10">
             <TrendingUp className="absolute right-[-10px] top-[-10px] w-24 h-24 opacity-10 group-hover:scale-110 transition-transform" />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium uppercase tracking-wider opacity-80">
                 {isEmployer ? "Active Jobs" : "Applications Sent"}
               </CardTitle>
               <Briefcase className="w-4 h-4 opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">
+              <div className="text-4xl font-bold" data-testid="text-stat-primary">
                 {isEmployer ? (jobs?.filter(j => j.employerId === user?.id).length || 0) : (myApplications?.length || 0)}
               </div>
             </CardContent>
@@ -107,15 +427,15 @@ export default function Dashboard() {
         <motion.div variants={item}>
           <Card className="bg-accent text-accent-foreground overflow-hidden relative group border-none shadow-xl shadow-accent/10">
             <CheckCircle2 className="absolute right-[-10px] top-[-10px] w-24 h-24 opacity-10 group-hover:scale-110 transition-transform" />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium uppercase tracking-wider opacity-80">
                 {isEmployer ? "Total Applicants" : "Pending Reviews"}
               </CardTitle>
               <Users className="w-4 h-4 opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">
-                {isEmployer ? (jobs?.filter(j => j.employerId === user?.id).reduce((acc, job) => acc + (Number(job.id) ? 1 : 0), 0) || 0) : 0}
+              <div className="text-4xl font-bold" data-testid="text-stat-secondary">
+                {isEmployer ? (jobs?.filter(j => j.employerId === user?.id).reduce((acc) => acc + 1, 0) || 0) : 0}
               </div>
               <p className="text-xs opacity-70">
                 {isEmployer ? "Across all your job postings" : "Analytics coming soon"}
@@ -127,13 +447,13 @@ export default function Dashboard() {
         <motion.div variants={item}>
           <Card className="bg-card overflow-hidden relative group border-border/40 shadow-xl shadow-black/5">
             <Calendar className="absolute right-[-10px] top-[-10px] w-24 h-24 opacity-5 group-hover:scale-110 transition-transform text-green-500" />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Subscription</CardTitle>
               <Users className="w-4 h-4 text-green-500" />
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold capitalize">{user?.subscriptionStatus}</span>
+                <span className="text-2xl font-bold capitalize" data-testid="text-subscription-status">{user?.subscriptionStatus}</span>
                 <StatusBadge status={user?.subscriptionStatus || "free"} />
               </div>
             </CardContent>
@@ -192,9 +512,7 @@ export default function Dashboard() {
                           companyName: editCompanyName.trim(),
                           businessCategory: editBusinessCategory,
                         } as any,
-                        {
-                          onSuccess: () => setIsEditingProfile(false),
-                        }
+                        { onSuccess: () => setIsEditingProfile(false) }
                       );
                     }}
                   >
@@ -254,18 +572,28 @@ export default function Dashboard() {
         </motion.div>
       )}
 
+      {isApplicant && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <ApplicantProfile />
+        </motion.div>
+      )}
+
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
         className="space-y-6"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <h2 className="text-2xl font-display font-bold flex items-center gap-2">
             {isEmployer ? "Your Recent Postings" : "Recent Opportunities"}
           </h2>
           <Link href={isEmployer ? "/my-jobs" : "/jobs"}>
-            <Button variant="ghost" className="text-primary hover:text-primary/80 font-bold group">
+            <Button variant="ghost" className="text-primary font-bold group" data-testid="button-view-all-jobs">
               View All <TrendingUp className="ml-2 w-4 h-4 group-hover:-translate-y-1 transition-transform" />
             </Button>
           </Link>
@@ -293,7 +621,7 @@ export default function Dashboard() {
                 <p className="text-xl font-bold text-muted-foreground">No jobs found.</p>
                 {isEmployer && (
                   <Link href="/post-job">
-                    <Button variant="ghost" className="mt-2 text-primary font-bold">Create your first job post</Button>
+                    <Button variant="ghost" className="mt-2 text-primary font-bold" data-testid="button-create-first-job">Create your first job post</Button>
                   </Link>
                 )}
               </div>

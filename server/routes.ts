@@ -4,7 +4,48 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema } from "@shared/schema";
+import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema } from "@shared/schema";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+const cvStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/cv"),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.session.userId}_${Date.now()}${ext}`);
+  },
+});
+
+const profileStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/profile"),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.session.userId}_${Date.now()}${ext}`);
+  },
+});
+
+const uploadCV = multer({
+  storage: cvStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".pdf", ".doc", ".docx"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only PDF and DOC files are allowed"));
+  },
+});
+
+const uploadProfile = multer({
+  storage: profileStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".webp"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only image files (JPG, PNG, WEBP) are allowed"));
+  },
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -494,6 +535,57 @@ export async function registerRoutes(
       }
       res.status(400).json({ message: "Failed to update report" });
     }
+  });
+
+  // === FILE UPLOADS ===
+  
+  app.use("/uploads", (await import("express")).default.static("uploads"));
+
+  app.post("/api/upload/cv", isAuthenticated, uploadCV.single("cv"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const userId = req.session.userId!;
+    const filePath = `/uploads/cv/${req.file.filename}`;
+    await storage.updateUser(userId, { cvUrl: filePath });
+    res.json({ url: filePath });
+  });
+
+  app.post("/api/upload/profile-picture", isAuthenticated, uploadProfile.single("picture"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const userId = req.session.userId!;
+    const filePath = `/uploads/profile/${req.file.filename}`;
+    await storage.updateUser(userId, { profileImageUrl: filePath });
+    res.json({ url: filePath });
+  });
+
+  // === JOB HISTORY ===
+
+  app.get("/api/job-history", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const history = await storage.getJobHistoryByUser(userId);
+    res.json(history);
+  });
+
+  app.post("/api/job-history", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    try {
+      const input = insertJobHistorySchema.parse({
+        ...req.body,
+        userId,
+      });
+      const entry = await storage.createJobHistory(input);
+      res.status(201).json(entry);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to add job history" });
+    }
+  });
+
+  app.delete("/api/job-history/:id", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    await storage.deleteJobHistory(Number(req.params.id), userId);
+    res.status(204).send();
   });
 
   // === SUBSCRIPTIONS ===

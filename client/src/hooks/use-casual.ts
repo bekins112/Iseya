@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, errorSchemas } from "@shared/routes";
-import { insertUserSchema, insertJobSchema, insertApplicationSchema, type InsertJob, type InsertApplication, type User } from "@shared/schema";
+import { insertUserSchema, insertJobSchema, insertApplicationSchema, type InsertJob, type InsertApplication, type User, type JobHistory } from "@shared/schema";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 
@@ -243,5 +243,116 @@ export function useUpdateApplicationStatus() {
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
+  });
+}
+
+// === JOB HISTORY HOOKS ===
+export function useJobHistory() {
+  return useQuery<JobHistory[]>({
+    queryKey: ["/api/job-history"],
+    queryFn: async () => {
+      const res = await fetch("/api/job-history", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch job history");
+      return res.json();
+    },
+  });
+}
+
+export function useCreateJobHistory() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: { jobTitle: string; company: string; duration?: string; description?: string }) => {
+      const res = await fetch("/api/job-history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to add job history");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/job-history"] });
+      toast({ title: "Added", description: "Job history entry added." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useDeleteJobHistory() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/job-history/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete entry");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/job-history"] });
+      toast({ title: "Removed", description: "Job history entry removed." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useUploadCV() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("cv", file);
+      const res = await fetch("/api/upload/cv", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to upload CV");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "CV Uploaded", description: "Your CV has been saved." });
+    },
+    onError: (error) => {
+      toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useUploadProfilePicture() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("picture", file);
+      const res = await fetch("/api/upload/profile-picture", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to upload picture");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "Photo Updated", description: "Your profile picture has been saved." });
+    },
+    onError: (error) => {
+      toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    },
   });
 }

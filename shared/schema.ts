@@ -34,6 +34,17 @@ export const applications = pgTable("applications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Job history table for applicant profiles
+export const jobHistory = pgTable("job_history", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  jobTitle: varchar("job_title").notNull(),
+  company: varchar("company").notNull(),
+  duration: varchar("duration"),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Support tickets table
 export const tickets = pgTable("tickets", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -83,6 +94,7 @@ export const adminPermissions = pgTable("admin_permissions", {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
 export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, createdAt: true });
+export const insertJobHistorySchema = createInsertSchema(jobHistory).omit({ id: true, createdAt: true });
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, updatedAt: true });
 
@@ -176,6 +188,9 @@ export type InsertTicket = z.infer<typeof insertTicketSchema>;
 
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = z.infer<typeof insertReportSchema>;
+
+export type JobHistory = typeof jobHistory.$inferSelect;
+export type InsertJobHistory = z.infer<typeof insertJobHistorySchema>;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;
