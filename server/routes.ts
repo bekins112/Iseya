@@ -195,7 +195,19 @@ export async function registerRoutes(
     if (job.employerId !== userId) return res.status(403).json({ message: "Forbidden" });
 
     const apps = await storage.getApplicationsForJob(jobId);
-    res.json(apps);
+    const enriched = await Promise.all(apps.map(async (app) => {
+      const applicant = await storage.getUser(app.applicantId);
+      return {
+        ...app,
+        applicantName: applicant ? `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim() : 'Unknown',
+        applicantEmail: applicant?.email || null,
+        applicantProfileImageUrl: applicant?.profileImageUrl || null,
+        applicantCvUrl: applicant?.cvUrl || null,
+        applicantGender: applicant?.gender || null,
+        applicantAge: applicant?.age || null,
+      };
+    }));
+    res.json(enriched);
   });
 
   app.get(api.applications.listForApplicant.path, isAuthenticated, async (req, res) => {
@@ -555,6 +567,58 @@ export async function registerRoutes(
     const filePath = `/uploads/profile/${req.file.filename}`;
     await storage.updateUser(userId, { profileImageUrl: filePath });
     res.json({ url: filePath });
+  });
+
+  // === APPLICANT PROFILE (for employer viewing - scoped to their job applicants) ===
+
+  app.get("/api/applicant-profile/:applicantId", isAuthenticated, async (req, res) => {
+    const viewerId = req.session.userId!;
+    const viewer = await storage.getUser(viewerId);
+    if (!viewer || (viewer.role !== "employer" && viewer.role !== "admin")) {
+      return res.status(403).json({ message: "Only employers can view applicant profiles" });
+    }
+
+    const applicantId = req.params.applicantId;
+
+    if (viewer.role === "employer") {
+      const employerJobs = await storage.getJobsByEmployer(viewerId);
+      let hasApplied = false;
+      for (const job of employerJobs) {
+        const apps = await storage.getApplicationsForJob(job.id);
+        if (apps.some(a => a.applicantId === applicantId)) {
+          hasApplied = true;
+          break;
+        }
+      }
+      if (!hasApplied) {
+        return res.status(403).json({ message: "This applicant has not applied to any of your jobs" });
+      }
+    }
+
+    const applicant = await storage.getUser(applicantId);
+    if (!applicant || applicant.role !== "applicant") {
+      return res.status(404).json({ message: "Applicant not found" });
+    }
+
+    const history = await storage.getJobHistoryByUser(applicantId);
+
+    res.json({
+      id: applicant.id,
+      firstName: applicant.firstName,
+      lastName: applicant.lastName,
+      email: applicant.email,
+      profileImageUrl: applicant.profileImageUrl,
+      gender: applicant.gender,
+      age: applicant.age,
+      bio: applicant.bio,
+      location: applicant.location,
+      cvUrl: applicant.cvUrl,
+      expectedSalaryMin: applicant.expectedSalaryMin,
+      expectedSalaryMax: applicant.expectedSalaryMax,
+      isVerified: applicant.isVerified,
+      createdAt: applicant.createdAt,
+      jobHistory: history,
+    });
   });
 
   // === JOB HISTORY ===

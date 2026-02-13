@@ -331,6 +331,18 @@ export function useUploadCV() {
   });
 }
 
+export function useApplicantProfile(applicantId: string | null) {
+  return useQuery({
+    queryKey: ["/api/applicant-profile", applicantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/applicant-profile/${applicantId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch profile");
+      return res.json();
+    },
+    enabled: !!applicantId,
+  });
+}
+
 export function useUploadProfilePicture() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

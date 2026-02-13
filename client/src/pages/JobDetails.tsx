@@ -1,6 +1,6 @@
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useJob, useCreateApplication } from "@/hooks/use-casual";
+import { useJob, useCreateApplication, useUploadCV } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { 
   MapPin, 
@@ -21,7 +21,10 @@ import {
   CheckCircle2,
   LogIn,
   UserPlus,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  Upload,
+  X
 } from "lucide-react";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
@@ -58,7 +61,10 @@ export default function JobDetails() {
   const { data: job, isLoading } = useJob(id);
   const { user, isLoading: authLoading } = useAuth();
   const createApplication = useCreateApplication();
+  const uploadCV = useUploadCV();
+  const cvInputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
+  const [cvFile, setCvFile] = useState<File | null>(null);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
 
@@ -84,8 +90,15 @@ export default function JobDetails() {
     }
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!user) return;
+    if (cvFile) {
+      try {
+        await uploadCV.mutateAsync(cvFile);
+      } catch {
+        return;
+      }
+    }
     createApplication.mutate({
       jobId: job!.id,
       applicantId: user.id,
@@ -95,6 +108,7 @@ export default function JobDetails() {
       onSuccess: () => {
         setApplyDialogOpen(false);
         setMessage("");
+        setCvFile(null);
       }
     });
   };
@@ -385,21 +399,78 @@ export default function JobDetails() {
                 placeholder="Hi, I'm interested in this position because..." 
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="min-h-[150px]"
+                className="min-h-[120px]"
                 data-testid="textarea-application-message"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <FileText className="w-4 h-4" />
+                CV / Resume
+              </Label>
+              {user?.cvUrl && !cvFile && (
+                <div className="flex items-center gap-2 text-sm bg-muted/40 p-3 rounded-lg">
+                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-muted-foreground flex-1">Current CV on file</span>
+                  <Badge variant="outline" className="text-xs">Uploaded</Badge>
+                </div>
+              )}
+              {cvFile ? (
+                <div className="flex items-center gap-2 text-sm bg-primary/5 border border-primary/20 p-3 rounded-lg">
+                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                  <span className="flex-1 truncate">{cvFile.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCvFile(null)}
+                    data-testid="button-remove-cv"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => cvInputRef.current?.click()}
+                  data-testid="button-upload-cv-apply"
+                >
+                  <Upload className="w-4 h-4" />
+                  {user?.cvUrl ? "Update CV" : "Upload CV"}
+                </Button>
+              )}
+              <input
+                ref={cvInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert("File must be under 5MB");
+                      return;
+                    }
+                    setCvFile(file);
+                  }
+                  e.target.value = "";
+                }}
+                data-testid="input-cv-file-apply"
+              />
+              <p className="text-xs text-muted-foreground">PDF or DOC, max 5MB</p>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApplyDialogOpen(false)}>
+            <Button variant="outline" onClick={() => { setApplyDialogOpen(false); setCvFile(null); }}>
               Cancel
             </Button>
             <Button 
               onClick={handleApply} 
-              disabled={createApplication.isPending}
+              disabled={createApplication.isPending || uploadCV.isPending}
               data-testid="button-send-application"
             >
-              {createApplication.isPending ? "Sending..." : "Send Application"}
+              {uploadCV.isPending ? "Uploading CV..." : createApplication.isPending ? "Sending..." : "Send Application"}
             </Button>
           </DialogFooter>
         </DialogContent>
