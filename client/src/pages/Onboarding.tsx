@@ -32,6 +32,9 @@ export default function Onboarding() {
   
   // Get intended role from localStorage (set from landing/employer pages)
   const intendedRole = localStorage.getItem("intended_role") as "applicant" | "employer" | null;
+  
+  // Check if this is a role switch (user already has a role but wants a different one)
+  const isRoleSwitch = user?.role && intendedRole && user.role !== intendedRole;
 
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
@@ -43,7 +46,7 @@ export default function Onboarding() {
   const onSubmit = (data: OnboardingFormValues) => {
     if (!user) return;
     updateUser.mutate(
-      { id: user.id, ...data, age: 18 },
+      { id: user.id, ...data, age: user.age || 18 },
       {
         onSuccess: () => {
           localStorage.removeItem("intended_role");
@@ -71,6 +74,59 @@ export default function Onboarding() {
                 {form.getValues("role") === "employer" ? "Setting up your employer dashboard..." : "Finding opportunities for you..."}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Handle role switching for existing users
+  if (isRoleSwitch) {
+    const switchingTo = intendedRole;
+    const switchingFrom = user.role;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
+        <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              {switchingTo === "employer" ? (
+                <Building2 className="w-8 h-8 text-primary" />
+              ) : (
+                <Search className="w-8 h-8 text-primary" />
+              )}
+            </div>
+            <CardTitle className="text-2xl font-display">Switch Your Role?</CardTitle>
+            <CardDescription>
+              You are currently signed in as {switchingFrom === "applicant" ? "a Job Seeker" : "an Employer"}.
+              Would you like to switch to {switchingTo === "employer" ? "an Employer" : "a Job Seeker"} account?
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="py-6 space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Important</AlertTitle>
+              <AlertDescription>
+                Switching roles will change your dashboard and available features. Your previous data will be preserved.
+              </AlertDescription>
+            </Alert>
+            <Button
+              onClick={() => onSubmit({ role: switchingTo! })}
+              className="w-full"
+              data-testid="button-confirm-switch"
+            >
+              Switch to {switchingTo === "employer" ? "Employer" : "Job Seeker"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                localStorage.removeItem("intended_role");
+                setLocation("/dashboard");
+              }}
+              className="w-full"
+              data-testid="button-cancel-switch"
+            >
+              Stay as {switchingFrom === "applicant" ? "Job Seeker" : "Employer"}
+            </Button>
           </CardContent>
         </Card>
       </div>

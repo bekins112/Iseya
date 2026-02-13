@@ -37,11 +37,6 @@ export default function Landing() {
   const [activeMode, setActiveMode] = useState<UserMode>("seeker");
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Clear stale intended_role on landing page load
-  useEffect(() => {
-    localStorage.removeItem("intended_role");
-  }, []);
-
   // Auto-rotate banner slides
   useEffect(() => {
     const timer = setInterval(() => {
@@ -58,20 +53,38 @@ export default function Landing() {
     setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
   }, []);
 
-  // Redirect authenticated users to dashboard
+  // Handle authenticated user redirect with role switching
   useEffect(() => {
-    if (isAuthenticated && user && user.role && user.age) {
-      setLocation("/dashboard");
+    if (!isAuthenticated || !user) return;
+
+    const intendedRole = localStorage.getItem("intended_role") as "applicant" | "employer" | null;
+
+    if (!user.role || !user.age) {
+      // User hasn't completed onboarding yet
+      if (intendedRole) {
+        setLocation("/onboarding");
+      }
+      return;
     }
+
+    // User is fully onboarded
+    if (intendedRole && intendedRole !== user.role) {
+      // User wants to switch roles - send them to onboarding to confirm
+      setLocation("/onboarding");
+      return;
+    }
+
+    // Clear intended role and go to dashboard
+    localStorage.removeItem("intended_role");
+    setLocation("/dashboard");
   }, [isAuthenticated, user, setLocation]);
 
   const handleLogin = (role: "applicant" | "employer") => {
     localStorage.setItem("intended_role", role);
     if (isAuthenticated && user) {
       if (user.role && user.role !== role) {
-        // User already has a different role - log them out first so they can re-login
-        localStorage.setItem("intended_role", role);
-        window.location.href = "/api/logout";
+        // User has a different role - send to onboarding to offer role switch
+        setLocation("/onboarding");
         return;
       }
       if (user.role && user.age) {

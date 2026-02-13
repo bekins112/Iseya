@@ -13,12 +13,13 @@ export default function EmployerSignup() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Redirect authenticated employers to dashboard
+  // Redirect authenticated users appropriately
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === "employer" && user.age) {
         setLocation("/dashboard");
-      } else if (!user.role || !user.age) {
+      } else {
+        // User doesn't have employer role yet (new user OR role switch)
         localStorage.setItem("intended_role", "employer");
         setLocation("/onboarding");
       }
