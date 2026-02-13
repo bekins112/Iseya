@@ -7,15 +7,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, Briefcase, Search, Building2, UserCheck } from "lucide-react";
+
+const businessCategories = [
+  "Restaurant & Food Service",
+  "Hospitality & Hotels",
+  "Retail & Sales",
+  "Construction & Labour",
+  "Cleaning & Maintenance",
+  "Logistics & Delivery",
+  "Agriculture & Farming",
+  "Event Management",
+  "Domestic & Household",
+  "Manufacturing",
+  "Security Services",
+  "Healthcare & Wellness",
+  "Education & Tutoring",
+  "Transportation",
+  "Other",
+];
 
 export default function Onboarding() {
   const { user } = useAuth();
   const updateUser = useUpdateUser();
   const [, setLocation] = useLocation();
   const [age, setAge] = useState<string>("");
+  const [companyName, setCompanyName] = useState("");
+  const [businessCategory, setBusinessCategory] = useState("");
   const [ageError, setAgeError] = useState("");
+  const [formError, setFormError] = useState("");
 
   const intendedRole = localStorage.getItem("intended_role") as "applicant" | "employer" | null;
   const role = intendedRole || user?.role || "applicant";
@@ -30,6 +52,7 @@ export default function Onboarding() {
 
   const handleContinue = () => {
     setAgeError("");
+    setFormError("");
 
     const ageNum = parseInt(age);
     if (!age || isNaN(ageNum)) {
@@ -45,15 +68,29 @@ export default function Onboarding() {
       return;
     }
 
-    updateUser.mutate(
-      { id: user!.id, role, age: ageNum },
-      {
-        onSuccess: () => {
-          localStorage.removeItem("intended_role");
-          setLocation("/dashboard");
-        }
+    if (isEmployer) {
+      if (!companyName.trim()) {
+        setFormError("Please enter your company or business name");
+        return;
       }
-    );
+      if (!businessCategory) {
+        setFormError("Please select a business category");
+        return;
+      }
+    }
+
+    const updateData: Record<string, any> = { id: user!.id, role, age: ageNum };
+    if (isEmployer) {
+      updateData.companyName = companyName.trim();
+      updateData.businessCategory = businessCategory;
+    }
+
+    updateUser.mutate(updateData as any, {
+      onSuccess: () => {
+        localStorage.removeItem("intended_role");
+        setLocation("/dashboard");
+      },
+    });
   };
 
   if (updateUser.isPending) {
@@ -95,7 +132,7 @@ export default function Onboarding() {
           </CardTitle>
           <CardDescription>
             {isEmployer
-              ? "Almost there! Just one more step to start posting jobs."
+              ? "Tell us about your business to get started."
               : "Almost there! Just one more step to start finding work."}
           </CardDescription>
         </CardHeader>
@@ -114,6 +151,38 @@ export default function Onboarding() {
               <span>{isEmployer ? "Browse applicant profiles" : "Track your applications"}</span>
             </div>
           </div>
+
+          {isEmployer && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company / Business Name</Label>
+                <Input
+                  id="companyName"
+                  type="text"
+                  placeholder="e.g. Lagos Catering Services"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  data-testid="input-onboarding-company"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessCategory">Business Category</Label>
+                <Select value={businessCategory} onValueChange={setBusinessCategory}>
+                  <SelectTrigger data-testid="select-onboarding-category">
+                    <SelectValue placeholder="Select your business category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {businessCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat} data-testid={`option-category-${cat.toLowerCase().replace(/\s+/g, "-")}`}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="age">How old are you?</Label>
@@ -137,6 +206,13 @@ export default function Onboarding() {
               You must be at least 16 years old to use this platform
             </p>
           </div>
+
+          {formError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
 
           <Button
             onClick={handleContinue}

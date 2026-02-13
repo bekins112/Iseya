@@ -4,7 +4,7 @@ import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { PlusCircle, Search, Calendar, Briefcase, TrendingUp, Users, CheckCircle2 } from "lucide-react";
+import { PlusCircle, Search, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag } from "lucide-react";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
 
@@ -114,6 +114,35 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </motion.div>
+
+      {isEmployer && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <Card className="border-border/40 shadow-md">
+            <CardHeader className="flex flex-row items-center gap-3 pb-2">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle className="text-lg font-bold truncate" data-testid="text-company-name">
+                  {user?.companyName || "No company name set"}
+                </CardTitle>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {user?.businessCategory && (
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md" data-testid="text-business-category">
+                      <Tag className="w-3 h-3" />
+                      {user.businessCategory}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </motion.div>
+      )}
 
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
