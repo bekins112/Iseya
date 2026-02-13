@@ -251,10 +251,21 @@ export default function PostJob() {
                   name="wage"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Wage Period (e.g. /hr, /mo)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. /hr" {...field} data-testid="input-job-wage" />
-                      </FormControl>
+                      <FormLabel>Wage Type (e.g. /hr, /mo)</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-job-wage">
+                            <SelectValue placeholder="Select wage type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="/hr">Per Hour</SelectItem>
+                          <SelectItem value="/day">Per Day</SelectItem>
+                          <SelectItem value="/wk">Per Week</SelectItem>
+                          <SelectItem value="/mo">Per Month</SelectItem>
+                          <SelectItem value="fixed">Fixed</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
