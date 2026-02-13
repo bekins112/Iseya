@@ -42,7 +42,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
 
-  if (!user) return <Redirect to="/" />;
+  if (!user) return <Redirect to="/login" />;
 
   // Redirect to onboarding if role or age is missing
   if ((!user.role || !user.age) && window.location.pathname !== "/onboarding") {
@@ -67,8 +67,12 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      <Route path="/employer" component={EmployerLogin} />
-      <Route path="/employer/signup" component={EmployerSignup} />
+      <Route path="/employer">
+        <Redirect to="/register" />
+      </Route>
+      <Route path="/employer/signup">
+        <Redirect to="/register" />
+      </Route>
       <Route path="/about" component={About} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/contact" component={Contact} />

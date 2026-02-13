@@ -1,52 +1,52 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUpdateUser } from "@/hooks/use-casual";
-import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Briefcase, Search, Building2, UserCheck } from "lucide-react";
-
-// Schema for onboarding form
-const onboardingSchema = insertUserSchema.pick({
-  role: true,
-}).extend({
-  role: z.enum(["applicant", "employer"]),
-});
-
-type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 
 export default function Onboarding() {
   const { user } = useAuth();
   const updateUser = useUpdateUser();
   const [, setLocation] = useLocation();
-  
-  // Get intended role from localStorage (set from landing/employer pages)
+  const [age, setAge] = useState<string>("");
+  const [ageError, setAgeError] = useState("");
+
   const intendedRole = localStorage.getItem("intended_role") as "applicant" | "employer" | null;
-  
-  // Check if this is a role switch (user already has a role but wants a different one)
-  const isRoleSwitch = user?.role && intendedRole && user.role !== intendedRole;
+  const role = intendedRole || user?.role || "applicant";
+  const isEmployer = role === "employer";
 
-  const form = useForm<OnboardingFormValues>({
-    resolver: zodResolver(onboardingSchema),
-    defaultValues: {
-      role: intendedRole || "applicant",
+  useEffect(() => {
+    if (user?.role && user?.age) {
+      localStorage.removeItem("intended_role");
+      setLocation("/dashboard");
     }
-  });
+  }, [user, setLocation]);
 
-  const onSubmit = (data: OnboardingFormValues) => {
-    if (!user) return;
+  const handleContinue = () => {
+    setAgeError("");
+
+    const ageNum = parseInt(age);
+    if (!age || isNaN(ageNum)) {
+      setAgeError("Please enter your age");
+      return;
+    }
+    if (ageNum < 16) {
+      setAgeError("You must be at least 16 years old to use this platform");
+      return;
+    }
+    if (ageNum > 100) {
+      setAgeError("Please enter a valid age");
+      return;
+    }
+
     updateUser.mutate(
-      { id: user.id, ...data, age: user.age || 18 },
+      { id: user!.id, role, age: ageNum },
       {
         onSuccess: () => {
           localStorage.removeItem("intended_role");
@@ -56,7 +56,6 @@ export default function Onboarding() {
     );
   };
 
-  // Show loading while submitting
   if (updateUser.isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
@@ -71,170 +70,9 @@ export default function Onboarding() {
             <div className="flex flex-col items-center justify-center space-y-6">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               <p className="text-muted-foreground font-medium italic">
-                {form.getValues("role") === "employer" ? "Setting up your employer dashboard..." : "Finding opportunities for you..."}
+                {isEmployer ? "Setting up your employer dashboard..." : "Finding opportunities for you..."}
               </p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Handle role switching for existing users
-  if (isRoleSwitch) {
-    const switchingTo = intendedRole;
-    const switchingFrom = user.role;
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
-        <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              {switchingTo === "employer" ? (
-                <Building2 className="w-8 h-8 text-primary" />
-              ) : (
-                <Search className="w-8 h-8 text-primary" />
-              )}
-            </div>
-            <CardTitle className="text-2xl font-display">Switch Your Role?</CardTitle>
-            <CardDescription>
-              You are currently signed in as {switchingFrom === "applicant" ? "a Job Seeker" : "an Employer"}.
-              Would you like to switch to {switchingTo === "employer" ? "an Employer" : "a Job Seeker"} account?
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="py-6 space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Important</AlertTitle>
-              <AlertDescription>
-                Switching roles will change your dashboard and available features. Your previous data will be preserved.
-              </AlertDescription>
-            </Alert>
-            <Button
-              onClick={() => onSubmit({ role: switchingTo! })}
-              className="w-full"
-              data-testid="button-confirm-switch"
-            >
-              Switch to {switchingTo === "employer" ? "Employer" : "Job Seeker"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                localStorage.removeItem("intended_role");
-                setLocation("/dashboard");
-              }}
-              className="w-full"
-              data-testid="button-cancel-switch"
-            >
-              Stay as {switchingFrom === "applicant" ? "Job Seeker" : "Employer"}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If user came from employer login, show employer-specific confirmation
-  if (intendedRole === "employer") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
-        <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Building2 className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl font-display">Welcome, Employer!</CardTitle>
-            <CardDescription>
-              You're signing up as an employer on Iṣéyá. You'll be able to post jobs and hire workers.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="py-6 space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm">
-                <Briefcase className="w-5 h-5 text-primary" />
-                <span>Post unlimited job listings</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <UserCheck className="w-5 h-5 text-primary" />
-                <span>Access verified workers</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Search className="w-5 h-5 text-primary" />
-                <span>Browse applicant profiles</span>
-              </div>
-            </div>
-            <Button 
-              onClick={() => onSubmit({ role: "employer" })}
-              className="w-full"
-              data-testid="button-confirm-employer"
-            >
-              Continue as Employer
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Not an employer?{" "}
-              <button 
-                onClick={() => {
-                  localStorage.removeItem("intended_role");
-                  window.location.reload();
-                }}
-                className="text-primary hover:underline"
-              >
-                Choose a different role
-              </button>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // If user came from job seeker login, show job seeker confirmation
-  if (intendedRole === "applicant") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
-        <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Search className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl font-display">Welcome, Job Seeker!</CardTitle>
-            <CardDescription>
-              You're signing up to find work on Iṣéyá. You'll be able to browse and apply for jobs.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="py-6 space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm">
-                <Briefcase className="w-5 h-5 text-primary" />
-                <span>Browse available jobs</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <UserCheck className="w-5 h-5 text-primary" />
-                <span>Apply with one click</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Search className="w-5 h-5 text-primary" />
-                <span>Track your applications</span>
-              </div>
-            </div>
-            <Button 
-              onClick={() => onSubmit({ role: "applicant" })}
-              className="w-full"
-              data-testid="button-confirm-applicant"
-            >
-              Continue as Job Seeker
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Want to hire instead?{" "}
-              <button 
-                onClick={() => {
-                  localStorage.removeItem("intended_role");
-                  window.location.reload();
-                }}
-                className="text-primary hover:underline"
-              >
-                Choose a different role
-              </button>
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -244,64 +82,70 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/20 p-4">
       <Card className="max-w-lg w-full shadow-xl border-t-4 border-t-primary">
-        <CardHeader>
-          <CardTitle className="text-2xl font-display text-center">Select Your Role</CardTitle>
-          <CardDescription className="text-center">
-            Welcome to Iṣéyá! Choose how you want to use the platform.
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            {isEmployer ? (
+              <Building2 className="w-8 h-8 text-primary" />
+            ) : (
+              <Search className="w-8 h-8 text-primary" />
+            )}
+          </div>
+          <CardTitle className="text-2xl font-display">
+            {isEmployer ? "Welcome, Employer!" : "Welcome, Job Seeker!"}
+          </CardTitle>
+          <CardDescription>
+            {isEmployer
+              ? "Almost there! Just one more step to start posting jobs."
+              : "Almost there! Just one more step to start finding work."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="py-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem className="space-y-4">
-                    <FormLabel className="text-base font-medium">I want to:</FormLabel>
-                    <FormControl>
-                      <RadioGroup 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                        className="flex flex-col gap-4"
-                      >
-                        <div 
-                          className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover-elevate"
-                          onClick={() => field.onChange("applicant")}
-                          data-testid="role-applicant"
-                        >
-                          <RadioGroupItem value="applicant" id="applicant" />
-                          <div>
-                            <Label htmlFor="applicant" className="font-medium cursor-pointer">Find Work</Label>
-                            <p className="text-sm text-muted-foreground">I'm looking for casual job opportunities</p>
-                          </div>
-                        </div>
-                        <div 
-                          className="flex items-center space-x-3 border rounded-lg p-4 cursor-pointer hover-elevate"
-                          onClick={() => field.onChange("employer")}
-                          data-testid="role-employer"
-                        >
-                          <RadioGroupItem value="employer" id="employer" />
-                          <div>
-                            <Label htmlFor="employer" className="font-medium cursor-pointer">Hire Workers</Label>
-                            <p className="text-sm text-muted-foreground">I want to post jobs and find workers</p>
-                          </div>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button 
-                type="submit" 
-                className="w-full" 
-                data-testid="button-submit-onboarding"
-              >
-                Continue
-              </Button>
-            </form>
-          </Form>
+        <CardContent className="py-6 space-y-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <Briefcase className="w-5 h-5 text-primary flex-shrink-0" />
+              <span>{isEmployer ? "Post job listings and manage applicants" : "Browse and apply for jobs"}</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <UserCheck className="w-5 h-5 text-primary flex-shrink-0" />
+              <span>{isEmployer ? "Access verified workers" : "Apply with one click"}</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Search className="w-5 h-5 text-primary flex-shrink-0" />
+              <span>{isEmployer ? "Browse applicant profiles" : "Track your applications"}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="age">How old are you?</Label>
+            <Input
+              id="age"
+              type="number"
+              placeholder="Enter your age (must be 16+)"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              min={16}
+              max={100}
+              data-testid="input-onboarding-age"
+            />
+            {ageError && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{ageError}</AlertDescription>
+              </Alert>
+            )}
+            <p className="text-xs text-muted-foreground">
+              You must be at least 16 years old to use this platform
+            </p>
+          </div>
+
+          <Button
+            onClick={handleContinue}
+            className="w-full font-bold"
+            disabled={updateUser.isPending}
+            data-testid="button-onboarding-continue"
+          >
+            {isEmployer ? "Start Hiring" : "Start Finding Jobs"}
+          </Button>
         </CardContent>
       </Card>
     </div>

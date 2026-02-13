@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus, Search, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
@@ -19,6 +19,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<"applicant" | "employer">("applicant");
   const [error, setError] = useState("");
 
   if (isAuthenticated && user) {
@@ -45,6 +46,7 @@ export default function Register() {
     }
 
     try {
+      localStorage.setItem("intended_role", selectedRole);
       await register({ email, password, firstName, lastName });
       setLocation("/onboarding");
     } catch (err: any) {
@@ -94,6 +96,50 @@ export default function Register() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>I want to:</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("applicant")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        selectedRole === "applicant"
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                      data-testid="role-select-applicant"
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        selectedRole === "applicant" ? "bg-primary/10" : "bg-muted"
+                      }`}>
+                        <Search className={`w-5 h-5 ${selectedRole === "applicant" ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <span className={`text-sm font-semibold ${selectedRole === "applicant" ? "text-primary" : "text-muted-foreground"}`}>
+                        Find Jobs
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("employer")}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                        selectedRole === "employer"
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                      data-testid="role-select-employer"
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        selectedRole === "employer" ? "bg-primary/10" : "bg-muted"
+                      }`}>
+                        <Building2 className={`w-5 h-5 ${selectedRole === "employer" ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <span className={`text-sm font-semibold ${selectedRole === "employer" ? "text-primary" : "text-muted-foreground"}`}>
+                        Hire Workers
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
