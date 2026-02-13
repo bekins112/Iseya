@@ -40,7 +40,9 @@ export const jobHistory = pgTable("job_history", {
   userId: varchar("user_id").notNull().references(() => users.id),
   jobTitle: varchar("job_title").notNull(),
   company: varchar("company").notNull(),
-  duration: varchar("duration"),
+  startDate: varchar("start_date"),
+  endDate: varchar("end_date"),
+  isCurrent: boolean("is_current").default(false),
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
 });

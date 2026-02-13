@@ -263,7 +263,7 @@ export function useCreateJobHistory() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: { jobTitle: string; company: string; duration?: string; description?: string }) => {
+    mutationFn: async (data: { jobTitle: string; company: string; startDate?: string; endDate?: string; isCurrent?: boolean; description?: string }) => {
       const res = await fetch("/api/job-history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -276,6 +276,31 @@ export function useCreateJobHistory() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/job-history"] });
       toast({ title: "Added", description: "Job history entry added." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useUpdateJobHistory() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: number; jobTitle?: string; company?: string; startDate?: string; endDate?: string | null; isCurrent?: boolean; description?: string }) => {
+      const res = await fetch(`/api/job-history/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update job history");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/job-history"] });
+      toast({ title: "Updated", description: "Job history entry updated." });
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });

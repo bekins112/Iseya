@@ -64,6 +64,7 @@ export interface IStorage {
   // Job history methods
   getJobHistoryByUser(userId: string): Promise<JobHistory[]>;
   createJobHistory(entry: InsertJobHistory): Promise<JobHistory>;
+  updateJobHistory(id: number, userId: string, updates: Partial<InsertJobHistory>): Promise<JobHistory>;
   deleteJobHistory(id: number, userId: string): Promise<void>;
   
   // Subscription methods
@@ -374,6 +375,15 @@ export class DatabaseStorage implements IStorage {
   async createJobHistory(entry: InsertJobHistory): Promise<JobHistory> {
     const [newEntry] = await db.insert(jobHistory).values(entry).returning();
     return newEntry;
+  }
+
+  async updateJobHistory(id: number, userId: string, updates: Partial<InsertJobHistory>): Promise<JobHistory> {
+    const [updated] = await db
+      .update(jobHistory)
+      .set(updates)
+      .where(and(eq(jobHistory.id, id), eq(jobHistory.userId, userId)))
+      .returning();
+    return updated;
   }
 
   async deleteJobHistory(id: number, userId: string): Promise<void> {

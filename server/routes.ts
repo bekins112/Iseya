@@ -646,6 +646,30 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/job-history/:id", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const id = Number(req.params.id);
+    try {
+      const updateSchema = z.object({
+        jobTitle: z.string().min(1).optional(),
+        company: z.string().min(1).optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().nullable().optional(),
+        isCurrent: z.boolean().optional(),
+        description: z.string().optional(),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const entry = await storage.updateJobHistory(id, userId, parsed);
+      if (!entry) return res.status(404).json({ message: "Entry not found" });
+      res.json(entry);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to update job history" });
+    }
+  });
+
   app.delete("/api/job-history/:id", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     await storage.deleteJobHistory(Number(req.params.id), userId);

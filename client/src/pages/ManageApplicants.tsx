@@ -181,8 +181,15 @@ function ApplicantProfileDialog({ applicantId, open, onOpenChange }: { applicant
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Building2 className="w-3 h-3" />
                             {entry.company}
-                            {entry.duration && <span className="ml-2">({entry.duration})</span>}
+                            {entry.startDate && (
+                              <span className="ml-1">
+                                ({entry.startDate} - {entry.isCurrent ? "Present" : (entry.endDate || "N/A")})
+                              </span>
+                            )}
                           </p>
+                          {entry.isCurrent && (
+                            <span className="text-xs text-primary font-medium mt-0.5 inline-block">Currently working here</span>
+                          )}
                         </div>
                       </div>
                       {entry.description && (

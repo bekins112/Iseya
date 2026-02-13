@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobHistory, useDeleteJobHistory, useUploadCV, useUploadProfilePicture } from "@/hooks/use-casual";
+import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobHistory, useUpdateJobHistory, useDeleteJobHistory, useUploadCV, useUploadProfilePicture } from "@/hooks/use-casual";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ function ApplicantProfile() {
   const updateUser = useUpdateUser();
   const { data: jobHistoryData, isLoading: historyLoading } = useJobHistory();
   const createHistory = useCreateJobHistory();
+  const updateHistory = useUpdateJobHistory();
   const deleteHistory = useDeleteJobHistory();
   const uploadCV = useUploadCV();
   const uploadPicture = useUploadProfilePicture();
@@ -48,9 +49,12 @@ function ApplicantProfile() {
   const [editBio, setEditBio] = useState(user?.bio || "");
 
   const [showAddHistory, setShowAddHistory] = useState(false);
+  const [editingHistoryId, setEditingHistoryId] = useState<number | null>(null);
   const [historyTitle, setHistoryTitle] = useState("");
   const [historyCompany, setHistoryCompany] = useState("");
-  const [historyDuration, setHistoryDuration] = useState("");
+  const [historyStartDate, setHistoryStartDate] = useState("");
+  const [historyEndDate, setHistoryEndDate] = useState("");
+  const [historyIsCurrent, setHistoryIsCurrent] = useState(false);
   const [historyDescription, setHistoryDescription] = useState("");
 
   const cvInputRef = useRef<HTMLInputElement>(null);
@@ -79,25 +83,44 @@ function ApplicantProfile() {
     if (file) uploadPicture.mutate(file);
   };
 
-  const handleAddHistory = () => {
+  const resetHistoryForm = () => {
+    setHistoryTitle("");
+    setHistoryCompany("");
+    setHistoryStartDate("");
+    setHistoryEndDate("");
+    setHistoryIsCurrent(false);
+    setHistoryDescription("");
+    setEditingHistoryId(null);
+    setShowAddHistory(false);
+  };
+
+  const startEditHistory = (entry: any) => {
+    setEditingHistoryId(entry.id);
+    setHistoryTitle(entry.jobTitle);
+    setHistoryCompany(entry.company);
+    setHistoryStartDate(entry.startDate || "");
+    setHistoryEndDate(entry.endDate || "");
+    setHistoryIsCurrent(entry.isCurrent || false);
+    setHistoryDescription(entry.description || "");
+    setShowAddHistory(false);
+  };
+
+  const handleSaveHistory = () => {
     if (!historyTitle.trim() || !historyCompany.trim()) return;
-    createHistory.mutate(
-      {
-        jobTitle: historyTitle.trim(),
-        company: historyCompany.trim(),
-        duration: historyDuration.trim() || undefined,
-        description: historyDescription.trim() || undefined,
-      },
-      {
-        onSuccess: () => {
-          setHistoryTitle("");
-          setHistoryCompany("");
-          setHistoryDuration("");
-          setHistoryDescription("");
-          setShowAddHistory(false);
-        },
-      }
-    );
+    const data = {
+      jobTitle: historyTitle.trim(),
+      company: historyCompany.trim(),
+      startDate: historyStartDate || undefined,
+      endDate: historyIsCurrent ? undefined : (historyEndDate || undefined),
+      isCurrent: historyIsCurrent,
+      description: historyDescription.trim() || undefined,
+    };
+
+    if (editingHistoryId) {
+      updateHistory.mutate({ id: editingHistoryId, ...data }, { onSuccess: resetHistoryForm });
+    } else {
+      createHistory.mutate(data, { onSuccess: resetHistoryForm });
+    }
   };
 
   const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase();
@@ -276,13 +299,13 @@ function ApplicantProfile() {
             <Briefcase className="w-4 h-4 text-primary" />
             Job History
           </CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setShowAddHistory(true)} data-testid="button-add-history">
+          <Button size="sm" variant="outline" onClick={() => { resetHistoryForm(); setShowAddHistory(true); }} data-testid="button-add-history">
             <PlusCircle className="w-4 h-4 mr-1" />
             Add
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {showAddHistory && (
+          {(showAddHistory || editingHistoryId !== null) && (
             <div className="p-4 bg-muted/30 rounded-md border border-border/40 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -296,20 +319,34 @@ function ApplicantProfile() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Duration</Label>
-                  <Input value={historyDuration} onChange={(e) => setHistoryDuration(e.target.value)} placeholder="e.g. 6 months" data-testid="input-history-duration" />
+                  <Label className="text-xs">Start Date</Label>
+                  <Input type="month" value={historyStartDate} onChange={(e) => setHistoryStartDate(e.target.value)} data-testid="input-history-start-date" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Description</Label>
-                  <Input value={historyDescription} onChange={(e) => setHistoryDescription(e.target.value)} placeholder="Brief description" data-testid="input-history-description" />
+                  <Label className="text-xs">End Date</Label>
+                  <Input type="month" value={historyEndDate} onChange={(e) => setHistoryEndDate(e.target.value)} disabled={historyIsCurrent} placeholder={historyIsCurrent ? "Present" : ""} data-testid="input-history-end-date" />
                 </div>
               </div>
+              <label className="flex items-center gap-2 cursor-pointer" data-testid="label-is-current">
+                <input
+                  type="checkbox"
+                  checked={historyIsCurrent}
+                  onChange={(e) => { setHistoryIsCurrent(e.target.checked); if (e.target.checked) setHistoryEndDate(""); }}
+                  className="rounded border-border"
+                  data-testid="checkbox-is-current"
+                />
+                <span className="text-xs text-muted-foreground">I currently work here</span>
+              </label>
+              <div className="space-y-1">
+                <Label className="text-xs">Description</Label>
+                <Input value={historyDescription} onChange={(e) => setHistoryDescription(e.target.value)} placeholder="Brief description of your role" data-testid="input-history-description" />
+              </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={handleAddHistory} disabled={createHistory.isPending} data-testid="button-save-history">
+                <Button size="sm" onClick={handleSaveHistory} disabled={createHistory.isPending || updateHistory.isPending} data-testid="button-save-history">
                   <Check className="w-4 h-4 mr-1" />
-                  {createHistory.isPending ? "Adding..." : "Add Entry"}
+                  {createHistory.isPending || updateHistory.isPending ? "Saving..." : editingHistoryId ? "Update Entry" : "Add Entry"}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowAddHistory(false)} data-testid="button-cancel-history">
+                <Button size="sm" variant="ghost" onClick={resetHistoryForm} data-testid="button-cancel-history">
                   <X className="w-4 h-4 mr-1" />
                   Cancel
                 </Button>
@@ -323,24 +360,43 @@ function ApplicantProfile() {
             </div>
           ) : jobHistoryData && jobHistoryData.length > 0 ? (
             <div className="space-y-3">
-              {jobHistoryData.map((entry) => (
+              {jobHistoryData.map((entry: any) => (
                 <div key={entry.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-md border border-border/30" data-testid={`history-entry-${entry.id}`}>
                   <Briefcase className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium" data-testid={`text-history-title-${entry.id}`}>{entry.jobTitle}</p>
-                    <p className="text-xs text-muted-foreground">{entry.company}{entry.duration ? ` - ${entry.duration}` : ""}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.company}
+                      {entry.startDate && (
+                        <span className="ml-1">
+                          ({entry.startDate}{" - "}{entry.isCurrent ? <span className="text-primary font-medium">Present</span> : (entry.endDate || "N/A")})
+                        </span>
+                      )}
+                    </p>
+                    {entry.isCurrent && (
+                      <span className="inline-block mt-1 text-xs text-primary font-medium" data-testid={`badge-current-${entry.id}`}>Currently working here</span>
+                    )}
                     {entry.description && <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>}
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="flex-shrink-0"
-                    onClick={() => deleteHistory.mutate(entry.id)}
-                    disabled={deleteHistory.isPending}
-                    data-testid={`button-delete-history-${entry.id}`}
-                  >
-                    <Trash2 className="w-4 h-4 text-muted-foreground" />
-                  </Button>
+                  <div className="flex flex-shrink-0 gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => startEditHistory(entry)}
+                      data-testid={`button-edit-history-${entry.id}`}
+                    >
+                      <Pencil className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => deleteHistory.mutate(entry.id)}
+                      disabled={deleteHistory.isPending}
+                      data-testid={`button-delete-history-${entry.id}`}
+                    >
+                      <Trash2 className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
