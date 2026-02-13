@@ -6,25 +6,28 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import workersImage from "@assets/file_0000000006b4722f93fd48732a248e00_1770125859585.png";
+import bannerImg1 from "@assets/file_00000000290071f4a0ad1bcee632895e_(1)_1770976988086.png";
+import bannerImg2 from "@assets/file_00000000290071f4a0ad1bcee632895e_1770976988300.png";
+import bannerImg3 from "@assets/file_00000000290071f4a0ad1bcee632895e_(2)_1770976988376.png";
 
 const bannerSlides = [
   {
     id: 1,
     title: "Find Your Perfect Job",
     subtitle: "Thousands of opportunities waiting for you",
-    gradient: "from-primary/90 to-amber-600/90",
+    image: bannerImg1,
   },
   {
     id: 2,
     title: "Hire Reliable Workers",
     subtitle: "Connect with skilled candidates instantly",
-    gradient: "from-amber-600/90 to-yellow-500/90",
+    image: bannerImg2,
   },
   {
     id: 3,
     title: "Flexible Work, Your Schedule",
     subtitle: "Part-time, full-time, or temporary - you choose",
-    gradient: "from-yellow-600/90 to-primary/90",
+    image: bannerImg3,
   },
 ];
 
@@ -127,9 +130,14 @@ export default function Landing() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -100 }}
               transition={{ duration: 0.5 }}
-              className={`absolute inset-0 bg-gradient-to-r ${bannerSlides[currentSlide].gradient}`}
+              className="absolute inset-0"
             >
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIwOS0xLjc5MS00LTQtNHMtNCAxLjc5MS00IDQgMS43OTEgNCA0IDQgNC0xLjc5MSA0LTR6bTAtMThjMC0yLjIwOS0xLjc5MS00LTQtNHMtNCAxLjc5MS00IDQgMS43OTEgNCA0IDQgNC0xLjc5MSA0LTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+              <img
+                src={bannerSlides[currentSlide].image}
+                alt={bannerSlides[currentSlide].title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/30" />
               <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
                 <motion.h2
                   initial={{ y: 20, opacity: 0 }}
