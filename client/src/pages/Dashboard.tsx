@@ -1,16 +1,42 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useJobs, useMyApplications } from "@/hooks/use-casual";
+import { useJobs, useMyApplications, useUpdateUser } from "@/hooks/use-casual";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { PlusCircle, Search, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag } from "lucide-react";
+import { PlusCircle, Search, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X } from "lucide-react";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
+
+const businessCategories = [
+  "Restaurant & Food Service",
+  "Hospitality & Hotels",
+  "Retail & Sales",
+  "Construction & Labour",
+  "Cleaning & Maintenance",
+  "Logistics & Delivery",
+  "Agriculture & Farming",
+  "Event Management",
+  "Domestic & Household",
+  "Manufacturing",
+  "Security Services",
+  "Healthcare & Wellness",
+  "Education & Tutoring",
+  "Transportation",
+  "Other",
+];
 
 export default function Dashboard() {
   const { user } = useAuth();
   const isEmployer = user?.role === "employer";
+  const updateUser = useUpdateUser();
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editCompanyName, setEditCompanyName] = useState(user?.companyName || "");
+  const [editBusinessCategory, setEditBusinessCategory] = useState(user?.businessCategory || "");
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: myApplications } = useMyApplications();
@@ -122,24 +148,108 @@ export default function Dashboard() {
           transition={{ delay: 0.25 }}
         >
           <Card className="border-border/40 shadow-md">
-            <CardHeader className="flex flex-row items-center gap-3 pb-2">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Building2 className="w-5 h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <CardTitle className="text-lg font-bold truncate" data-testid="text-company-name">
-                  {user?.companyName || "No company name set"}
-                </CardTitle>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  {user?.businessCategory && (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md" data-testid="text-business-category">
-                      <Tag className="w-3 h-3" />
-                      {user.businessCategory}
-                    </span>
-                  )}
+            {isEditingProfile ? (
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="w-5 h-5 text-primary" />
+                  <h3 className="font-bold text-lg">Edit Business Profile</h3>
                 </div>
-              </div>
-            </CardHeader>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-company">Company / Business Name</Label>
+                  <Input
+                    id="edit-company"
+                    placeholder="e.g. Lagos Catering Services"
+                    value={editCompanyName}
+                    onChange={(e) => setEditCompanyName(e.target.value)}
+                    data-testid="input-edit-company"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Business Category</Label>
+                  <Select value={editBusinessCategory} onValueChange={setEditBusinessCategory}>
+                    <SelectTrigger data-testid="select-edit-category">
+                      <SelectValue placeholder="Select your business category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {businessCategories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    disabled={updateUser.isPending}
+                    data-testid="button-save-profile"
+                    onClick={() => {
+                      if (!editCompanyName.trim()) return;
+                      updateUser.mutate(
+                        {
+                          id: user!.id,
+                          companyName: editCompanyName.trim(),
+                          businessCategory: editBusinessCategory,
+                        } as any,
+                        {
+                          onSuccess: () => setIsEditingProfile(false),
+                        }
+                      );
+                    }}
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    {updateUser.isPending ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    data-testid="button-cancel-edit"
+                    onClick={() => {
+                      setEditCompanyName(user?.companyName || "");
+                      setEditBusinessCategory(user?.businessCategory || "");
+                      setIsEditingProfile(false);
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            ) : (
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="w-5 h-5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-lg font-bold truncate" data-testid="text-company-name">
+                    {user?.companyName || "No company name set"}
+                  </CardTitle>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {user?.businessCategory ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md" data-testid="text-business-category">
+                        <Tag className="w-3 h-3" />
+                        {user.businessCategory}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">No category set</span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  data-testid="button-edit-profile"
+                  onClick={() => {
+                    setEditCompanyName(user?.companyName || "");
+                    setEditBusinessCategory(user?.businessCategory || "");
+                    setIsEditingProfile(true);
+                  }}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              </CardHeader>
+            )}
           </Card>
         </motion.div>
       )}
