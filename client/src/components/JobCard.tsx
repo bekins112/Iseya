@@ -1,5 +1,5 @@
 import { Job } from "@shared/schema";
-import { MapPin, DollarSign, Briefcase, ChevronRight, Clock } from "lucide-react";
+import { MapPin, DollarSign, Briefcase, ChevronRight, Clock, Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -69,6 +69,38 @@ export function JobCard({ job, isEmployer = false }: JobCardProps) {
                 <span className="text-sm font-semibold">₦{job.salaryMin.toLocaleString()} - ₦{job.salaryMax.toLocaleString()} ({job.wage})</span>
               </div>
             </div>
+            {(job.gender || job.ageMin || job.ageMax) && (
+              <>
+                {job.gender && job.gender !== "Any" && (
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 group-hover:bg-primary/5 transition-colors duration-300">
+                    <div className="bg-background p-2 rounded-xl shadow-sm">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Gender</span>
+                      <span className="text-sm font-semibold">{job.gender}</span>
+                    </div>
+                  </div>
+                )}
+                {(job.ageMin || job.ageMax) && (
+                  <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 group-hover:bg-primary/5 transition-colors duration-300">
+                    <div className="bg-background p-2 rounded-xl shadow-sm">
+                      <Calendar className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Age Range</span>
+                      <span className="text-sm font-semibold">
+                        {job.ageMin && job.ageMax
+                          ? `${job.ageMin} - ${job.ageMax} yrs`
+                          : job.ageMin
+                            ? `${job.ageMin}+ yrs`
+                            : `Up to ${job.ageMax} yrs`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 italic">
             "{job.description}"

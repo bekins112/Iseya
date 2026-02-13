@@ -18,6 +18,9 @@ export const jobs = pgTable("jobs", {
   salaryMax: integer("salary_max").notNull().default(0),
   wage: varchar("wage").notNull(),
   location: varchar("location").notNull(),
+  gender: varchar("gender").default("Any"),
+  ageMin: integer("age_min"),
+  ageMax: integer("age_max"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });

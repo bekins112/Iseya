@@ -24,7 +24,7 @@ const categories = [
   "Other"
 ];
 
-const postJobSchema = insertJobSchema.extend({
+const postJobSchema = insertJobSchema.omit({ employerId: true, isActive: true }).extend({
   category: z.string().min(1, "Category is required"),
   jobType: z.string().min(1, "Job type is required"),
   salaryMin: z.coerce.number().min(0, "Minimum salary must be at least 0"),
@@ -33,6 +33,9 @@ const postJobSchema = insertJobSchema.extend({
   location: z.string().min(1, "Location is required"),
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(20, "Please provide a detailed description"),
+  gender: z.string().default("Any"),
+  ageMin: z.coerce.number().min(16, "Minimum age must be at least 16").nullable().optional(),
+  ageMax: z.coerce.number().max(100, "Maximum age cannot exceed 100").nullable().optional(),
 });
 
 type JobFormValues = z.infer<typeof postJobSchema>;
@@ -45,7 +48,6 @@ export default function PostJob() {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(postJobSchema),
     defaultValues: {
-      employerId: user?.id || "",
       title: "",
       description: "",
       category: "",
@@ -54,14 +56,19 @@ export default function PostJob() {
       salaryMax: 0,
       wage: "",
       location: "",
-      isActive: true,
+      gender: "Any",
+      ageMin: null,
+      ageMax: null,
     }
   });
 
   const onSubmit = (data: JobFormValues) => {
     createJob.mutate({
         ...data,
-        employerId: user?.id!
+        ageMin: data.ageMin || null,
+        ageMax: data.ageMax || null,
+        employerId: user!.id,
+        isActive: true,
     }, {
       onSuccess: () => setLocation("/dashboard")
     });
@@ -82,7 +89,7 @@ export default function PostJob() {
                   <FormItem>
                     <FormLabel>Job Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Weekend Waitress Needed" {...field} />
+                      <Input placeholder="e.g. Weekend Waitress Needed" {...field} data-testid="input-job-title" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -98,7 +105,7 @@ export default function PostJob() {
                       <FormLabel>Category</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger data-testid="select-job-category">
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
@@ -121,7 +128,7 @@ export default function PostJob() {
                       <FormLabel>Job Type</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger data-testid="select-job-type">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                         </FormControl>
@@ -137,15 +144,88 @@ export default function PostJob() {
                 />
               </div>
 
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preferred Gender</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-job-gender">
+                            <SelectValue placeholder="Select gender preference" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Any">Any</SelectItem>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-2">
+                  <FormLabel>Age Range</FormLabel>
+                  <div className="grid grid-cols-2 gap-2">
+                    <FormField
+                      control={form.control}
+                      name="ageMin"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Min (16+)"
+                              min={16}
+                              max={100}
+                              data-testid="input-job-age-min"
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ageMax"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Max"
+                              min={16}
+                              max={100}
+                              data-testid="input-job-age-max"
+                              {...field}
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="salaryMin"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Min Salary (₦)</FormLabel>
+                      <FormLabel>Min Salary (&#8358;)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" {...field} data-testid="input-job-salary-min" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -157,9 +237,9 @@ export default function PostJob() {
                   name="salaryMax"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Max Salary (₦)</FormLabel>
+                      <FormLabel>Max Salary (&#8358;)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" {...field} data-testid="input-job-salary-max" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -173,7 +253,7 @@ export default function PostJob() {
                     <FormItem>
                       <FormLabel>Wage Period (e.g. /hr, /mo)</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. /hr" {...field} />
+                        <Input placeholder="e.g. /hr" {...field} data-testid="input-job-wage" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -188,7 +268,7 @@ export default function PostJob() {
                   <FormItem>
                     <FormLabel>Location</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Downtown Cafe, Main St." {...field} />
+                      <Input placeholder="e.g. Downtown Cafe, Main St." {...field} data-testid="input-job-location" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -205,6 +285,7 @@ export default function PostJob() {
                       <Textarea 
                         placeholder="Describe the responsibilities, hours, and requirements..." 
                         className="min-h-[150px]"
+                        data-testid="input-job-description"
                         {...field} 
                       />
                     </FormControl>
@@ -214,8 +295,8 @@ export default function PostJob() {
               />
 
               <div className="flex justify-end gap-4 pt-4">
-                <Button type="button" variant="ghost" onClick={() => setLocation("/dashboard")}>Cancel</Button>
-                <Button type="submit" disabled={createJob.isPending}>
+                <Button type="button" variant="ghost" onClick={() => setLocation("/dashboard")} data-testid="button-job-cancel">Cancel</Button>
+                <Button type="submit" disabled={createJob.isPending} data-testid="button-job-submit">
                   {createJob.isPending ? "Posting..." : "Publish Job"}
                 </Button>
               </div>
