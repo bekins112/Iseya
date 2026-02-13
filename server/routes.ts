@@ -9,6 +9,10 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
+for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo"]) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
 const cvStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, "uploads/cv"),
   filename: (req, file, cb) => {
@@ -36,8 +40,27 @@ const uploadCV = multer({
   },
 });
 
+const logoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/logo"),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.session.userId}_${Date.now()}${ext}`);
+  },
+});
+
 const uploadProfile = multer({
   storage: profileStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".webp"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only image files (JPG, PNG, WEBP) are allowed"));
+  },
+});
+
+const uploadLogo = multer({
+  storage: logoStorage,
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = [".jpg", ".jpeg", ".png", ".webp"];
@@ -566,6 +589,16 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const filePath = `/uploads/profile/${req.file.filename}`;
     await storage.updateUser(userId, { profileImageUrl: filePath });
+    res.json({ url: filePath });
+  });
+
+  app.post("/api/upload/company-logo", isAuthenticated, uploadLogo.single("logo"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (user?.role !== "employer") return res.status(403).json({ message: "Only employers can upload a company logo" });
+    const filePath = `/uploads/logo/${req.file.filename}`;
+    await storage.updateUser(userId, { companyLogo: filePath });
     res.json({ url: filePath });
   });
 

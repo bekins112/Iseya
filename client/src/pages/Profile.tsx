@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useUpdateUser } from "@/hooks/use-casual";
+import { useUpdateUser, useUploadProfilePicture, useUploadCompanyLogo } from "@/hooks/use-casual";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@shared/schema";
@@ -38,6 +39,20 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 export default function Profile() {
   const { user } = useAuth();
   const updateUser = useUpdateUser();
+  const uploadPicture = useUploadProfilePicture();
+  const uploadLogo = useUploadCompanyLogo();
+  const pictureInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (user?.role === "employer") {
+        uploadLogo.mutate(file);
+      } else {
+        uploadPicture.mutate(file);
+      }
+    }
+  };
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -78,14 +93,27 @@ export default function Profile() {
             <CardContent className="pt-0 text-center relative">
               <div className="relative inline-block -mt-16 mb-6">
                 <Avatar className="w-32 h-32 border-8 border-background shadow-2xl">
-                  <AvatarImage src={user?.profileImageUrl || undefined} />
+                  <AvatarImage src={(user?.role === "employer" ? user?.companyLogo : user?.profileImageUrl) || undefined} />
                   <AvatarFallback className="text-3xl bg-primary/10 text-primary font-bold">
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </AvatarFallback>
                 </Avatar>
-                <Button size="icon" className="absolute bottom-2 right-2 rounded-full w-10 h-10 shadow-lg shadow-primary/30 border-2 border-background">
+                <Button
+                  size="icon"
+                  className="absolute bottom-2 right-2 rounded-full w-10 h-10 shadow-lg shadow-primary/30 border-2 border-background"
+                  onClick={() => pictureInputRef.current?.click()}
+                  data-testid="button-upload-avatar"
+                >
                   <Camera className="w-5 h-5" />
                 </Button>
+                <input
+                  ref={pictureInputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                  onChange={handlePictureUpload}
+                  data-testid="input-avatar-upload"
+                />
               </div>
               <h3 className="text-2xl font-display font-bold">{user?.firstName} {user?.lastName}</h3>
               <p className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-xs mb-6">{user?.role}</p>

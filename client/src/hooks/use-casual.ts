@@ -393,3 +393,29 @@ export function useUploadProfilePicture() {
     },
   });
 }
+
+export function useUploadCompanyLogo() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("logo", file);
+      const res = await fetch("/api/upload/company-logo", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to upload logo");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "Logo Updated", description: "Your company logo has been saved." });
+    },
+    onError: (error) => {
+      toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    },
+  });
+}

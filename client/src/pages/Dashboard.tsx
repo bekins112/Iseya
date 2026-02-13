@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobHistory, useUpdateJobHistory, useDeleteJobHistory, useUploadCV, useUploadProfilePicture } from "@/hooks/use-casual";
+import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobHistory, useUpdateJobHistory, useDeleteJobHistory, useUploadCV, useUploadProfilePicture, useUploadCompanyLogo } from "@/hooks/use-casual";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -414,9 +414,16 @@ export default function Dashboard() {
   const isEmployer = user?.role === "employer";
   const isApplicant = user?.role === "applicant";
   const updateUser = useUpdateUser();
+  const uploadLogo = useUploadCompanyLogo();
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editCompanyName, setEditCompanyName] = useState(user?.companyName || "");
   const [editBusinessCategory, setEditBusinessCategory] = useState(user?.businessCategory || "");
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadLogo.mutate(file);
+  };
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: myApplications } = useMyApplications();
@@ -592,8 +599,28 @@ export default function Dashboard() {
               </CardContent>
             ) : (
               <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-5 h-5 text-primary" />
+                <div className="relative group flex-shrink-0">
+                  <Avatar className="w-12 h-12 border-2 border-border">
+                    <AvatarImage src={user?.companyLogo || undefined} alt={user?.companyName || "Company"} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      <Building2 className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    onClick={() => logoInputRef.current?.click()}
+                    className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                    data-testid="button-change-logo"
+                  >
+                    <Camera className="w-4 h-4 text-white" />
+                  </button>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                    data-testid="input-company-logo"
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
                   <CardTitle className="text-lg font-bold truncate" data-testid="text-company-name">

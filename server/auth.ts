@@ -42,6 +42,8 @@ const registerSchema = z.object({
   password: z.string().min(6),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
+  role: z.enum(["applicant", "employer"]).optional(),
+  age: z.number().min(16).optional(),
 });
 
 const loginSchema = z.object({
@@ -75,6 +77,8 @@ export async function setupAuth(app: Express) {
           password: hashedPassword,
           firstName: input.firstName,
           lastName: input.lastName,
+          role: input.role || "applicant",
+          age: input.age,
         })
         .returning();
 
