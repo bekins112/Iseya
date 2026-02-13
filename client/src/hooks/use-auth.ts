@@ -18,6 +18,7 @@ async function fetchUser(): Promise<User | null> {
 }
 
 async function logout(): Promise<void> {
+  localStorage.removeItem("intended_role");
   window.location.href = "/api/logout";
 }
 

@@ -37,6 +37,11 @@ export default function Landing() {
   const [activeMode, setActiveMode] = useState<UserMode>("seeker");
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Clear stale intended_role on landing page load
+  useEffect(() => {
+    localStorage.removeItem("intended_role");
+  }, []);
+
   // Auto-rotate banner slides
   useEffect(() => {
     const timer = setInterval(() => {
@@ -62,22 +67,29 @@ export default function Landing() {
 
   const handleLogin = (role: "applicant" | "employer") => {
     localStorage.setItem("intended_role", role);
-    if (isAuthenticated) {
-      if (user && user.role !== role) {
+    if (isAuthenticated && user) {
+      if (user.role && user.role !== role) {
+        // User already has a different role - log them out first so they can re-login
+        localStorage.setItem("intended_role", role);
         window.location.href = "/api/logout";
         return;
       }
-      setLocation("/dashboard");
+      if (user.role && user.age) {
+        setLocation("/dashboard");
+        return;
+      }
+      // User exists but hasn't completed onboarding
+      setLocation("/onboarding");
       return;
     }
     window.location.href = "/api/login";
   };
 
   const handleSignup = (role: "applicant" | "employer") => {
+    localStorage.setItem("intended_role", role);
     if (role === "employer") {
       setLocation("/employer/signup");
     } else {
-      localStorage.setItem("intended_role", role);
       window.location.href = "/api/login";
     }
   };
