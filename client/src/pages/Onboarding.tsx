@@ -9,7 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Briefcase, Search, Building2, UserCheck } from "lucide-react";
+import { AlertCircle, Briefcase, Search, Building2, UserCheck, MapPin } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const nigerianStates = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
+  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
+  "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
+  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
+  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
+];
 
 const businessCategories = [
   "Restaurant & Food Service",
@@ -36,6 +45,10 @@ export default function Onboarding() {
   const [age, setAge] = useState<string>("");
   const [companyName, setCompanyName] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [companyCity, setCompanyCity] = useState("");
+  const [companyState, setCompanyState] = useState("");
+  const [isRegisteredCompany, setIsRegisteredCompany] = useState(false);
   const [ageError, setAgeError] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -83,6 +96,10 @@ export default function Onboarding() {
     if (isEmployer) {
       updateData.companyName = companyName.trim();
       updateData.businessCategory = businessCategory;
+      if (companyAddress.trim()) updateData.companyAddress = companyAddress.trim();
+      if (companyCity.trim()) updateData.companyCity = companyCity.trim();
+      if (companyState) updateData.companyState = companyState;
+      updateData.isRegisteredCompany = isRegisteredCompany;
     }
 
     updateUser.mutate(updateData as any, {
@@ -180,6 +197,59 @@ export default function Onboarding() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="companyAddress">Company Address <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                <Input
+                  id="companyAddress"
+                  type="text"
+                  placeholder="e.g. 12 Broad Street"
+                  value={companyAddress}
+                  onChange={(e) => setCompanyAddress(e.target.value)}
+                  data-testid="input-onboarding-address"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="companyCity">City <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                  <Input
+                    id="companyCity"
+                    type="text"
+                    placeholder="e.g. Lagos"
+                    value={companyCity}
+                    onChange={(e) => setCompanyCity(e.target.value)}
+                    data-testid="input-onboarding-city"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="companyState">State <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                  <Select value={companyState} onValueChange={setCompanyState}>
+                    <SelectTrigger data-testid="select-onboarding-state">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nigerianStates.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="isRegistered"
+                  checked={isRegisteredCompany}
+                  onCheckedChange={(v) => setIsRegisteredCompany(!!v)}
+                  data-testid="checkbox-onboarding-registered"
+                />
+                <Label htmlFor="isRegistered" className="text-sm cursor-pointer">
+                  This company is officially registered (CAC)
+                </Label>
               </div>
             </>
           )}

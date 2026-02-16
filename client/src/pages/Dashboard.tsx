@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail } from "lucide-react";
+import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail, MapPin, ShieldCheck } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { JobCard } from "@/components/JobCard";
@@ -32,6 +33,14 @@ const businessCategories = [
   "Education & Tutoring",
   "Transportation",
   "Other",
+];
+
+const nigerianStates = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
+  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
+  "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
+  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
+  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
 ];
 
 function ApplicantProfile() {
@@ -572,6 +581,10 @@ export default function Dashboard() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editCompanyName, setEditCompanyName] = useState(user?.companyName || "");
   const [editBusinessCategory, setEditBusinessCategory] = useState(user?.businessCategory || "");
+  const [editCompanyAddress, setEditCompanyAddress] = useState((user as any)?.companyAddress || "");
+  const [editCompanyCity, setEditCompanyCity] = useState((user as any)?.companyCity || "");
+  const [editCompanyState, setEditCompanyState] = useState((user as any)?.companyState || "");
+  const [editIsRegistered, setEditIsRegistered] = useState((user as any)?.isRegisteredCompany || false);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -632,6 +645,9 @@ export default function Dashboard() {
           if (!user?.companyName) missingItems.push("company name");
           if (!user?.businessCategory) missingItems.push("business category");
           if (!user?.companyLogo) missingItems.push("company logo");
+          if (!(user as any)?.companyAddress) missingItems.push("company address");
+          if (!(user as any)?.companyCity) missingItems.push("city");
+          if (!(user as any)?.companyState) missingItems.push("state");
         }
         if (missingItems.length === 0) return null;
         return (
@@ -763,6 +779,54 @@ export default function Dashboard() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-address">Company Address</Label>
+                  <Input
+                    id="edit-address"
+                    placeholder="e.g. 12 Broad Street"
+                    value={editCompanyAddress}
+                    onChange={(e) => setEditCompanyAddress(e.target.value)}
+                    data-testid="input-edit-address"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-city">City</Label>
+                    <Input
+                      id="edit-city"
+                      placeholder="e.g. Lagos"
+                      value={editCompanyCity}
+                      onChange={(e) => setEditCompanyCity(e.target.value)}
+                      data-testid="input-edit-city"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-state">State</Label>
+                    <Select value={editCompanyState} onValueChange={setEditCompanyState}>
+                      <SelectTrigger data-testid="select-edit-state">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {nigerianStates.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <Checkbox
+                    id="edit-registered"
+                    checked={editIsRegistered}
+                    onCheckedChange={(v) => setEditIsRegistered(!!v)}
+                    data-testid="checkbox-registered"
+                  />
+                  <Label htmlFor="edit-registered" className="text-sm cursor-pointer">
+                    This company is officially registered (CAC)
+                  </Label>
+                </div>
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
@@ -775,6 +839,10 @@ export default function Dashboard() {
                           id: user!.id,
                           companyName: editCompanyName.trim(),
                           businessCategory: editBusinessCategory,
+                          companyAddress: editCompanyAddress.trim() || null,
+                          companyCity: editCompanyCity.trim() || null,
+                          companyState: editCompanyState || null,
+                          isRegisteredCompany: editIsRegistered,
                         } as any,
                         { onSuccess: () => setIsEditingProfile(false) }
                       );
@@ -790,6 +858,10 @@ export default function Dashboard() {
                     onClick={() => {
                       setEditCompanyName(user?.companyName || "");
                       setEditBusinessCategory(user?.businessCategory || "");
+                      setEditCompanyAddress((user as any)?.companyAddress || "");
+                      setEditCompanyCity((user as any)?.companyCity || "");
+                      setEditCompanyState((user as any)?.companyState || "");
+                      setEditIsRegistered((user as any)?.isRegisteredCompany || false);
                       setIsEditingProfile(false);
                     }}
                   >
@@ -824,9 +896,17 @@ export default function Dashboard() {
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <CardTitle className="text-lg font-bold truncate" data-testid="text-company-name">
-                    {user?.companyName || "No company name set"}
-                  </CardTitle>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <CardTitle className="text-lg font-bold truncate" data-testid="text-company-name">
+                      {user?.companyName || "No company name set"}
+                    </CardTitle>
+                    {(user as any)?.isRegisteredCompany && (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-md" data-testid="badge-registered">
+                        <ShieldCheck className="w-3 h-3" />
+                        Registered
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {user?.businessCategory ? (
                       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md" data-testid="text-business-category">
@@ -836,7 +916,18 @@ export default function Dashboard() {
                     ) : (
                       <span className="text-xs text-muted-foreground italic">No category set</span>
                     )}
+                    {((user as any)?.companyCity || (user as any)?.companyState) && (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md" data-testid="text-company-location">
+                        <MapPin className="w-3 h-3" />
+                        {[(user as any)?.companyCity, (user as any)?.companyState].filter(Boolean).join(", ")}
+                      </span>
+                    )}
                   </div>
+                  {(user as any)?.companyAddress && (
+                    <p className="text-xs text-muted-foreground mt-1" data-testid="text-company-address">
+                      {(user as any).companyAddress}
+                    </p>
+                  )}
                 </div>
                 <Button
                   size="icon"
@@ -845,6 +936,10 @@ export default function Dashboard() {
                   onClick={() => {
                     setEditCompanyName(user?.companyName || "");
                     setEditBusinessCategory(user?.businessCategory || "");
+                    setEditCompanyAddress((user as any)?.companyAddress || "");
+                    setEditCompanyCity((user as any)?.companyCity || "");
+                    setEditCompanyState((user as any)?.companyState || "");
+                    setEditIsRegistered((user as any)?.isRegisteredCompany || false);
                     setIsEditingProfile(true);
                   }}
                 >
