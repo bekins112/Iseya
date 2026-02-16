@@ -1,6 +1,6 @@
 import { useRoute, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useJob, useCreateApplication, useUploadCV } from "@/hooks/use-casual";
+import { useJob, useCreateApplication, useUploadCV, useMyApplications } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -160,9 +160,12 @@ export default function JobDetails() {
     );
   }
 
+  const { data: myApplications } = useMyApplications();
   const isEmployer = user?.role === "employer";
   const isMyJob = job.employerId === user?.id;
   const isApplicant = user?.role === "applicant";
+  const existingApplication = (myApplications as any[])?.find((a: any) => a.jobId === job.id);
+  const hasApplied = !!existingApplication;
 
   return (
     <div className="min-h-screen bg-background">
@@ -223,7 +226,7 @@ export default function JobDetails() {
                     {formatSalary(job.salaryMin, job.salaryMax, job.wage)}
                   </div>
                   
-                  {!isEmployer && job.isActive && (
+                  {!isEmployer && job.isActive && !hasApplied && (
                     <Button 
                       size="lg" 
                       onClick={handleApplyClick}
@@ -232,6 +235,18 @@ export default function JobDetails() {
                     >
                       Apply Now
                     </Button>
+                  )}
+
+                  {hasApplied && (
+                    <div className="flex flex-col items-start md:items-end gap-1">
+                      <Badge variant="secondary" className="gap-1 text-sm" data-testid="badge-already-applied">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Already Applied
+                      </Badge>
+                      <span className="text-xs text-muted-foreground capitalize">
+                        Status: {existingApplication?.status || "pending"}
+                      </span>
+                    </div>
                   )}
                   
                   {isMyJob && (
