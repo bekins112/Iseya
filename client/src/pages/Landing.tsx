@@ -51,12 +51,7 @@ export default function Landing() {
     setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-    if (user.role && user.age) {
-      setLocation("/dashboard");
-    }
-  }, [isAuthenticated, user, setLocation]);
+  
 
   const containerVariants = {
     hidden: { opacity: 0 },

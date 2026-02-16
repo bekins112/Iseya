@@ -61,13 +61,21 @@ export function Sidebar() {
               <button className={cn(
                 "flex flex-col items-center justify-center gap-1 transition-all",
                 isActive ? "text-primary scale-110" : "text-muted-foreground"
-              )}>
+              )} data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
                 <Icon className={cn("w-6 h-6", isActive && "stroke-[2.5px]")} />
                 <span className="text-[10px] font-bold uppercase tracking-tighter">{link.label.split(' ')[0]}</span>
               </button>
             </Link>
           );
         })}
+        <button
+          className="flex flex-col items-center justify-center gap-1 transition-all text-red-500"
+          onClick={() => logout()}
+          data-testid="mobile-nav-logout"
+        >
+          <LogOut className="w-6 h-6" />
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Logout</span>
+        </button>
       </nav>
 
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
