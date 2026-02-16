@@ -6,15 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, RefreshCw, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
-
-function generateCaptcha() {
-  const a = Math.floor(Math.random() * 20) + 1;
-  const b = Math.floor(Math.random() * 20) + 1;
-  return { a, b, answer: a + b };
-}
 
 export default function Login() {
   const { login, isLoggingIn, loginError, isAuthenticated, user } = useAuth();
@@ -23,12 +17,12 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [captcha, setCaptcha] = useState(generateCaptcha);
   const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(Date.now());
 
   const refreshCaptcha = useCallback(() => {
-    setCaptcha(generateCaptcha());
     setCaptchaAnswer("");
+    setCaptchaKey(Date.now());
   }, []);
 
   if (isAuthenticated && user) {
@@ -43,13 +37,12 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (parseInt(captchaAnswer) !== captcha.answer) {
-      setError("Incorrect answer. Please solve the math problem.");
-      refreshCaptcha();
+    if (!captchaAnswer.trim()) {
+      setError("Please enter the text shown in the image.");
       return;
     }
     try {
-      const loggedInUser = await login({ email, password });
+      const loggedInUser = await login({ email, password, captcha: captchaAnswer });
       if (loggedInUser.role && loggedInUser.age) {
         setLocation("/dashboard");
       } else {
@@ -85,7 +78,7 @@ export default function Login() {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md"
         >
-          <Card className="border-2 border-primary/20 shadow-xl rounded-3xl overflow-hidden">
+          <Card className="border-2 border-primary/20 shadow-xl rounded-3xl overflow-visible">
             <div className="h-1.5 bg-gradient-to-r from-primary to-accent" />
             <CardHeader className="text-center pt-8 pb-4">
               <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
@@ -146,10 +139,19 @@ export default function Login() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Verify you're human</Label>
+                  <Label className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-primary" />
+                    Verify you're human
+                  </Label>
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-muted rounded-lg px-4 py-2.5 text-center font-mono text-lg font-bold select-none tracking-wider" data-testid="text-captcha-question">
-                      {captcha.a} + {captcha.b} = ?
+                    <div className="flex-1 bg-muted rounded-lg flex items-center justify-center overflow-hidden select-none" style={{ minHeight: 60 }}>
+                      <img
+                        src={`/api/auth/captcha?t=${captchaKey}`}
+                        alt="CAPTCHA"
+                        className="h-[60px] w-auto"
+                        data-testid="captcha-image"
+                        draggable={false}
+                      />
                     </div>
                     <Button
                       type="button"
@@ -162,11 +164,12 @@ export default function Login() {
                     </Button>
                   </div>
                   <Input
-                    type="number"
-                    placeholder="Enter the answer"
+                    type="text"
+                    placeholder="Type the characters you see above"
                     value={captchaAnswer}
                     onChange={(e) => setCaptchaAnswer(e.target.value)}
                     required
+                    autoComplete="off"
                     data-testid="input-captcha-answer"
                   />
                 </div>

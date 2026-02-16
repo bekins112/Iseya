@@ -111,8 +111,10 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
 - API routes: `POST /api/auth/send-verification`, `POST /api/auth/verify-email`
 
 ### Login Security
-- Math-based CAPTCHA on login form (no external service required)
-- Users must solve a simple addition problem before logging in
+- Image-based CAPTCHA on login form using svg-captcha (server-side validated)
+- Server generates distorted text image, user must type the characters they see
+- CAPTCHA stored in session and validated on the server during login (not bypassable)
+- Fresh CAPTCHA loaded on page load and after each failed attempt
 
 ## Employer Company Profile Fields
 - `companyName`, `businessCategory`, `companyLogo` (original)

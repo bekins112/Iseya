@@ -42,7 +42,7 @@ export function useAuth() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string }) => {
+    mutationFn: async (data: { email: string; password: string; captcha: string }) => {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -1,6 +1,7 @@
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
+import svgCaptcha from "svg-captcha";
 import { z } from "zod";
 import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
@@ -11,6 +12,7 @@ import { eq } from "drizzle-orm";
 declare module "express-session" {
   interface SessionData {
     userId: string;
+    captchaText: string;
   }
 }
 
@@ -30,7 +32,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: sessionTtl,
     },
@@ -49,11 +51,29 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  captcha: z.string().min(1, "Please enter the CAPTCHA text"),
 });
 
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
+
+  app.get("/api/auth/captcha", (req, res) => {
+    const captcha = svgCaptcha.create({
+      size: 5,
+      noise: 3,
+      color: true,
+      background: "#f0f0f0",
+      width: 200,
+      height: 60,
+      fontSize: 50,
+      charPreset: "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789",
+    });
+    req.session.captchaText = captcha.text;
+    req.session.save(() => {
+      res.type("svg").send(captcha.data);
+    });
+  });
 
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -109,6 +129,12 @@ export async function setupAuth(app: Express) {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const input = loginSchema.parse(req.body);
+
+      const storedCaptcha = req.session.captchaText;
+      if (!storedCaptcha || input.captcha.toLowerCase() !== storedCaptcha.toLowerCase()) {
+        return res.status(400).json({ message: "Incorrect CAPTCHA. Please try again." });
+      }
+      delete req.session.captchaText;
 
       const [user] = await db
         .select()
