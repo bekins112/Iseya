@@ -7,14 +7,35 @@ import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
 import { users } from "@shared/models/auth";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
+import passport from "passport";
+import * as client from "openid-client";
+import { Strategy, type VerifyFunction } from "openid-client/passport";
+import memoize from "memoizee";
 
 declare module "express-session" {
   interface SessionData {
     userId: string;
     captchaText: string;
+    googlePending?: {
+      sub: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      profileImageUrl: string;
+    };
   }
 }
+
+const getOidcConfig = memoize(
+  async () => {
+    return await client.discovery(
+      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      process.env.REPL_ID!
+    );
+  },
+  { maxAge: 3600 * 1000 }
+);
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
@@ -328,6 +349,125 @@ export async function setupAuth(app: Express) {
       res.clearCookie("connect.sid");
       res.json({ message: "Logged out" });
     });
+  });
+
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  passport.serializeUser((user: any, cb) => cb(null, user));
+  passport.deserializeUser((user: any, cb) => cb(null, user));
+
+  const registeredStrategies = new Set<string>();
+
+  const ensureStrategy = async (domain: string) => {
+    const strategyName = `replitauth:${domain}`;
+    if (!registeredStrategies.has(strategyName)) {
+      const config = await getOidcConfig();
+      const verify: VerifyFunction = async (tokens, verified) => {
+        const claims = tokens.claims();
+        verified(null, { claims });
+      };
+      const strategy = new Strategy(
+        {
+          name: strategyName,
+          config,
+          scope: "openid email profile offline_access",
+          callbackURL: `https://${domain}/api/auth/google/callback`,
+        },
+        verify
+      );
+      passport.use(strategy);
+      registeredStrategies.add(strategyName);
+    }
+    return strategyName;
+  };
+
+  app.get("/api/auth/google", async (req, res, next) => {
+    try {
+      const strategyName = await ensureStrategy(req.hostname);
+      passport.authenticate(strategyName, {
+        prompt: "login consent",
+        scope: ["openid", "email", "profile", "offline_access"],
+      })(req, res, next);
+    } catch (err) {
+      console.error("Google auth init error:", err);
+      res.redirect("/login?error=google_auth_failed");
+    }
+  });
+
+  app.get("/api/auth/google/callback", async (req, res, next) => {
+    try {
+      const strategyName = await ensureStrategy(req.hostname);
+      passport.authenticate(strategyName, async (err: any, passportUser: any) => {
+        if (err || !passportUser) {
+          console.error("Google auth callback error:", err);
+          return res.redirect("/login?error=google_auth_failed");
+        }
+
+        try {
+          const claims = passportUser.claims;
+          const googleId = claims.sub;
+          const email = claims.email;
+          const firstName = claims.first_name || claims.given_name || "";
+          const lastName = claims.last_name || claims.family_name || "";
+          const profileImageUrl = claims.profile_image_url || claims.picture || "";
+
+          let [existingUser] = await db
+            .select()
+            .from(users)
+            .where(eq(users.googleId, googleId));
+
+          if (!existingUser && email) {
+            [existingUser] = await db
+              .select()
+              .from(users)
+              .where(eq(users.email, email));
+
+            if (existingUser) {
+              await db
+                .update(users)
+                .set({ googleId, profileImageUrl: profileImageUrl || existingUser.profileImageUrl, updatedAt: new Date() })
+                .where(eq(users.id, existingUser.id));
+              existingUser.googleId = googleId;
+            }
+          }
+
+          if (existingUser) {
+            req.session.userId = existingUser.id;
+            req.session.save(() => {
+              if (existingUser.role && existingUser.role !== "applicant" || existingUser.age) {
+                res.redirect("/dashboard");
+              } else {
+                res.redirect("/onboarding");
+              }
+            });
+          } else {
+            const [newUser] = await db
+              .insert(users)
+              .values({
+                googleId,
+                email,
+                firstName,
+                lastName,
+                profileImageUrl,
+                emailVerified: true,
+              })
+              .returning();
+
+            req.session.userId = newUser.id;
+            req.session.save(() => {
+              res.redirect("/onboarding");
+            });
+          }
+        } catch (dbErr) {
+          console.error("Google auth DB error:", dbErr);
+          res.redirect("/login?error=google_auth_failed");
+        }
+      })(req, res, next);
+    } catch (err) {
+      console.error("Google auth callback error:", err);
+      res.redirect("/login?error=google_auth_failed");
+    }
   });
 }
 

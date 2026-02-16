@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,13 @@ export default function Login() {
   const [error, setError] = useState("");
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [captchaKey, setCaptchaKey] = useState(Date.now());
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "google_auth_failed") {
+      setError("Google sign-in failed. Please try again or use email/password.");
+    }
+  }, []);
 
   const refreshCaptcha = useCallback(() => {
     setCaptchaAnswer("");
