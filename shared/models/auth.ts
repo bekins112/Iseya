@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   role: varchar("role", { length: 20 }).default("applicant"),
   age: integer("age"),
   gender: varchar("gender"),
+  phone: varchar("phone"),
   bio: text("bio"),
   cvUrl: varchar("cv_url"),
   location: varchar("location"),

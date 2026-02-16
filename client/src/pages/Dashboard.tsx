@@ -10,7 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle } from "lucide-react";
+import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
 
@@ -41,12 +43,46 @@ function ApplicantProfile() {
   const deleteHistory = useDeleteJobHistory();
   const uploadCV = useUploadCV();
   const uploadPicture = useUploadProfilePicture();
+  const { toast } = useToast();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editGender, setEditGender] = useState(user?.gender || "");
+  const [editPhone, setEditPhone] = useState((user as any)?.phone || "");
+  const [editAge, setEditAge] = useState(user?.age?.toString() || "");
   const [editSalaryMin, setEditSalaryMin] = useState(user?.expectedSalaryMin?.toString() || "");
   const [editSalaryMax, setEditSalaryMax] = useState(user?.expectedSalaryMax?.toString() || "");
   const [editBio, setEditBio] = useState(user?.bio || "");
+
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to change password");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Password changed successfully" });
+      setShowChangePassword(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message, variant: "destructive" });
+    },
+  });
 
   const [showAddHistory, setShowAddHistory] = useState(false);
   const [editingHistoryId, setEditingHistoryId] = useState<number | null>(null);
@@ -65,12 +101,22 @@ function ApplicantProfile() {
       {
         id: user!.id,
         gender: editGender || undefined,
+        phone: editPhone || undefined,
+        age: editAge ? parseInt(editAge) : undefined,
         expectedSalaryMin: editSalaryMin ? parseInt(editSalaryMin) : undefined,
         expectedSalaryMax: editSalaryMax ? parseInt(editSalaryMax) : undefined,
         bio: editBio || undefined,
       } as any,
       { onSuccess: () => setIsEditing(false) }
     );
+  };
+
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      toast({ title: "New passwords do not match", variant: "destructive" });
+      return;
+    }
+    changePasswordMutation.mutate({ currentPassword, newPassword });
   };
 
   const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,7 +207,16 @@ function ApplicantProfile() {
                   <CheckCircle2 className="w-4 h-4 text-primary" />
                 )}
               </div>
-              <p className="text-sm text-muted-foreground" data-testid="text-applicant-email">{user?.email}</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Mail className="w-3 h-3 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground" data-testid="text-applicant-email">{user?.email}</p>
+              </div>
+              {(user as any)?.phone && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Phone className="w-3 h-3 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground" data-testid="text-phone">{(user as any).phone}</p>
+                </div>
+              )}
               <div className="flex items-center gap-3 mt-2 flex-wrap">
                 {user?.gender && (
                   <span className="text-xs bg-muted px-2 py-0.5 rounded-md text-muted-foreground" data-testid="text-gender">{user.gender}</span>
@@ -189,6 +244,8 @@ function ApplicantProfile() {
               data-testid="button-edit-applicant-profile"
               onClick={() => {
                 setEditGender(user?.gender || "");
+                setEditPhone((user as any)?.phone || "");
+                setEditAge(user?.age?.toString() || "");
                 setEditSalaryMin(user?.expectedSalaryMin?.toString() || "");
                 setEditSalaryMax(user?.expectedSalaryMax?.toString() || "");
                 setEditBio(user?.bio || "");
@@ -201,6 +258,29 @@ function ApplicantProfile() {
 
           {isEditing && (
             <div className="mt-4 pt-4 border-t border-border/40 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="e.g. 08012345678"
+                    data-testid="input-edit-phone"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Age</Label>
+                  <Input
+                    type="number"
+                    min={16}
+                    value={editAge}
+                    onChange={(e) => setEditAge(e.target.value)}
+                    placeholder="e.g. 25"
+                    data-testid="input-edit-age"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Gender</Label>
@@ -257,6 +337,79 @@ function ApplicantProfile() {
                   Cancel
                 </Button>
               </div>
+            </div>
+          )}
+
+          {!isEditing && (
+            <div className="mt-4 pt-4 border-t border-border/40">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowChangePassword(!showChangePassword)}
+                data-testid="button-toggle-change-password"
+              >
+                <Lock className="w-4 h-4 mr-1" />
+                Change Password
+              </Button>
+              {showChangePassword && (
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Current Password</Label>
+                      <Input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Current password"
+                        data-testid="input-current-password"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">New Password</Label>
+                      <Input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="New password (min 6 chars)"
+                        data-testid="input-new-password"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Confirm New Password</Label>
+                      <Input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        data-testid="input-confirm-password"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleChangePassword}
+                      disabled={changePasswordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
+                      data-testid="button-save-password"
+                    >
+                      {changePasswordMutation.isPending ? "Changing..." : "Update Password"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setShowChangePassword(false);
+                        setCurrentPassword("");
+                        setNewPassword("");
+                        setConfirmPassword("");
+                      }}
+                      data-testid="button-cancel-password"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -468,6 +621,8 @@ export default function Dashboard() {
         const missingItems: string[] = [];
         if (isApplicant) {
           if (!user?.gender) missingItems.push("gender");
+          if (!(user as any)?.phone) missingItems.push("phone number");
+          if (!user?.age) missingItems.push("age");
           if (!user?.bio) missingItems.push("bio");
           if (!user?.expectedSalaryMin && !user?.expectedSalaryMax) missingItems.push("expected salary");
           if (!user?.cvUrl) missingItems.push("CV");
