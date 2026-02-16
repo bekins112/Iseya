@@ -32,7 +32,7 @@ const bannerSlides = [
 ];
 
 export default function Landing() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -106,16 +106,31 @@ export default function Landing() {
               </Link>
             </div>
             <div className="flex items-center gap-2">
-              <Link href="/login">
-                <Button variant="ghost" className="font-medium" data-testid="button-nav-login">
-                  Login
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button className="font-medium" data-testid="button-nav-register">
-                  Sign Up
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link href="/dashboard">
+                    <Button variant="ghost" className="font-medium" data-testid="button-nav-dashboard">
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" className="font-medium" onClick={() => logout()} data-testid="button-nav-logout">
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" className="font-medium" data-testid="button-nav-login">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button className="font-medium" data-testid="button-nav-register">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         </div>
@@ -242,12 +257,21 @@ export default function Landing() {
             variants={itemVariants}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8"
           >
-            <Link href="/register">
-              <Button size="lg" className="text-lg font-bold px-8 shadow-lg shadow-primary/20 group" data-testid="button-hero-register">
-                Get Started
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button size="lg" className="text-lg font-bold px-8 shadow-lg shadow-primary/20 group" data-testid="button-hero-dashboard">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/register">
+                <Button size="lg" className="text-lg font-bold px-8 shadow-lg shadow-primary/20 group" data-testid="button-hero-register">
+                  Get Started
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            )}
             <Link href="/browse-jobs">
               <Button size="lg" variant="outline" className="text-lg font-bold px-8" data-testid="button-hero-browse">
                 <Search className="mr-2 w-5 h-5" />
@@ -256,15 +280,17 @@ export default function Landing() {
             </Link>
           </motion.div>
 
-          <motion.p
-            variants={itemVariants}
-            className="mt-4 text-sm text-muted-foreground"
-          >
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary font-semibold hover:underline" data-testid="link-hero-login">
-              Sign in here
-            </Link>
-          </motion.p>
+          {!isAuthenticated && (
+            <motion.p
+              variants={itemVariants}
+              className="mt-4 text-sm text-muted-foreground"
+            >
+              Already have an account?{" "}
+              <Link href="/login" className="text-primary font-semibold hover:underline" data-testid="link-hero-login">
+                Sign in here
+              </Link>
+            </motion.p>
+          )}
         </motion.div>
       </section>
 
@@ -356,9 +382,9 @@ export default function Landing() {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
               Post jobs and find reliable workers fast. Create an employer account and start hiring within minutes.
             </p>
-            <Link href="/register">
+            <Link href={isAuthenticated ? "/dashboard" : "/register"}>
               <Button size="lg" className="font-bold px-8 group" data-testid="button-employer-cta">
-                Create Employer Account
+                {isAuthenticated ? "Go to Dashboard" : "Create Employer Account"}
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
@@ -399,9 +425,9 @@ export default function Landing() {
                 ))}
               </div>
               <div className="mt-10">
-                <Link href="/register">
+                <Link href={isAuthenticated ? "/dashboard" : "/register"}>
                   <Button size="lg" className="font-bold group" data-testid="button-bottom-register">
-                    Create Free Account
+                    {isAuthenticated ? "Go to Dashboard" : "Create Free Account"}
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
@@ -447,9 +473,18 @@ export default function Landing() {
             <div>
               <h4 className="font-bold mb-4">Get Started</h4>
               <ul className="space-y-2">
-                <li><Link href="/register" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Create Account</Link></li>
-                <li><Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link></li>
-                <li><Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Find Work</Link></li>
+                {isAuthenticated ? (
+                  <>
+                    <li><Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Dashboard</Link></li>
+                    <li><Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Find Work</Link></li>
+                  </>
+                ) : (
+                  <>
+                    <li><Link href="/register" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Create Account</Link></li>
+                    <li><Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign In</Link></li>
+                    <li><Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Find Work</Link></li>
+                  </>
+                )}
               </ul>
             </div>
           </div>
