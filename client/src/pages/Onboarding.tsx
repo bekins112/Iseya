@@ -49,6 +49,7 @@ export default function Onboarding() {
   const [companyCity, setCompanyCity] = useState("");
   const [companyState, setCompanyState] = useState("");
   const [isRegisteredCompany, setIsRegisteredCompany] = useState(false);
+  const [companyRegNo, setCompanyRegNo] = useState("");
   const [ageError, setAgeError] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -100,6 +101,7 @@ export default function Onboarding() {
       if (companyCity.trim()) updateData.companyCity = companyCity.trim();
       if (companyState) updateData.companyState = companyState;
       updateData.isRegisteredCompany = isRegisteredCompany;
+      if (isRegisteredCompany && companyRegNo.trim()) updateData.companyRegNo = companyRegNo.trim();
     }
 
     updateUser.mutate(updateData as any, {
@@ -251,6 +253,19 @@ export default function Onboarding() {
                   This company is officially registered (CAC)
                 </Label>
               </div>
+              {isRegisteredCompany && (
+                <div className="space-y-2">
+                  <Label htmlFor="companyRegNo">CAC Registration Number</Label>
+                  <Input
+                    id="companyRegNo"
+                    type="text"
+                    placeholder="e.g. RC-123456"
+                    value={companyRegNo}
+                    onChange={(e) => setCompanyRegNo(e.target.value)}
+                    data-testid="input-onboarding-regno"
+                  />
+                </div>
+              )}
             </>
           )}
 

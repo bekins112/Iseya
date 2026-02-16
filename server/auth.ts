@@ -84,6 +84,18 @@ export async function setupAuth(app: Express) {
 
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+      await db.update(users).set({ emailVerificationCode: code, emailVerificationExpiry: expiry }).where(eq(users.id, user.id));
+
+      try {
+        const { sendVerificationEmail } = await import("./email");
+        await sendVerificationEmail(input.email, code, input.firstName);
+      } catch (emailErr) {
+        console.log(`[Email Verification] Code for ${input.email}: ${code}`);
+      }
+
       res.status(201).json(safeUser);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -181,6 +193,104 @@ export async function setupAuth(app: Express) {
       }
       console.error("Change password error:", err);
       res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
+  app.post("/api/auth/send-verification", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.session.userId));
+
+      if (!user || !user.email) {
+        return res.status(400).json({ message: "No email associated with this account" });
+      }
+
+      if (user.emailVerified) {
+        return res.json({ message: "Email already verified" });
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+
+      await db
+        .update(users)
+        .set({
+          emailVerificationCode: code,
+          emailVerificationExpiry: expiry,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, req.session.userId));
+
+      try {
+        const { sendVerificationEmail } = await import("./email");
+        await sendVerificationEmail(user.email, code, user.firstName || "User");
+      } catch (emailErr) {
+        console.log(`[Email Verification] Code for ${user.email}: ${code}`);
+      }
+
+      res.json({ message: "Verification code sent to your email" });
+    } catch (err) {
+      console.error("Send verification error:", err);
+      res.status(500).json({ message: "Failed to send verification code" });
+    }
+  });
+
+  app.post("/api/auth/verify-email", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const schema = z.object({ code: z.string().length(6) });
+      const input = schema.parse(req.body);
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.session.userId));
+
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      if (user.emailVerified) {
+        return res.json({ message: "Email already verified" });
+      }
+
+      if (!user.emailVerificationCode || !user.emailVerificationExpiry) {
+        return res.status(400).json({ message: "No verification code sent. Please request a new one." });
+      }
+
+      if (new Date() > user.emailVerificationExpiry) {
+        return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
+      }
+
+      if (user.emailVerificationCode !== input.code) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+
+      await db
+        .update(users)
+        .set({
+          emailVerified: true,
+          emailVerificationCode: null,
+          emailVerificationExpiry: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, req.session.userId));
+
+      const { password: _, ...safeUser } = { ...user, emailVerified: true, emailVerificationCode: null, emailVerificationExpiry: null };
+      res.json(safeUser);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid verification code format" });
+      }
+      console.error("Verify email error:", err);
+      res.status(500).json({ message: "Failed to verify email" });
     }
   });
 

@@ -585,6 +585,7 @@ export default function Dashboard() {
   const [editCompanyCity, setEditCompanyCity] = useState((user as any)?.companyCity || "");
   const [editCompanyState, setEditCompanyState] = useState((user as any)?.companyState || "");
   const [editIsRegistered, setEditIsRegistered] = useState((user as any)?.isRegisteredCompany || false);
+  const [editRegNo, setEditRegNo] = useState((user as any)?.companyRegNo || "");
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -827,6 +828,18 @@ export default function Dashboard() {
                     This company is officially registered (CAC)
                   </Label>
                 </div>
+                {editIsRegistered && (
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-regno">CAC Registration Number</Label>
+                    <Input
+                      id="edit-regno"
+                      placeholder="e.g. RC-123456"
+                      value={editRegNo}
+                      onChange={(e) => setEditRegNo(e.target.value)}
+                      data-testid="input-edit-regno"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
@@ -843,6 +856,7 @@ export default function Dashboard() {
                           companyCity: editCompanyCity.trim() || null,
                           companyState: editCompanyState || null,
                           isRegisteredCompany: editIsRegistered,
+                          companyRegNo: editIsRegistered ? (editRegNo.trim() || null) : null,
                         } as any,
                         { onSuccess: () => setIsEditingProfile(false) }
                       );
@@ -862,6 +876,7 @@ export default function Dashboard() {
                       setEditCompanyCity((user as any)?.companyCity || "");
                       setEditCompanyState((user as any)?.companyState || "");
                       setEditIsRegistered((user as any)?.isRegisteredCompany || false);
+                      setEditRegNo((user as any)?.companyRegNo || "");
                       setIsEditingProfile(false);
                     }}
                   >
@@ -903,7 +918,7 @@ export default function Dashboard() {
                     {(user as any)?.isRegisteredCompany && (
                       <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-md" data-testid="badge-registered">
                         <ShieldCheck className="w-3 h-3" />
-                        Registered
+                        Registered{(user as any)?.companyRegNo ? ` (${(user as any).companyRegNo})` : ""}
                       </span>
                     )}
                   </div>
@@ -940,6 +955,7 @@ export default function Dashboard() {
                     setEditCompanyCity((user as any)?.companyCity || "");
                     setEditCompanyState((user as any)?.companyState || "");
                     setEditIsRegistered((user as any)?.isRegisteredCompany || false);
+                    setEditRegNo((user as any)?.companyRegNo || "");
                     setIsEditingProfile(true);
                   }}
                 >

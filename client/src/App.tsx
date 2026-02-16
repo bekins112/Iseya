@@ -36,6 +36,7 @@ import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
 import Contact from "@/pages/Contact";
 import BrowseJobs from "@/pages/BrowseJobs";
+import VerifyEmail from "@/pages/VerifyEmail";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -44,9 +45,12 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) return <Redirect to="/login" />;
 
-  // Redirect to onboarding if role or age is missing
   if ((!user.role || !user.age) && window.location.pathname !== "/onboarding") {
     return <Redirect to="/onboarding" />;
+  }
+
+  if (!(user as any).emailVerified && window.location.pathname !== "/verify-email" && window.location.pathname !== "/onboarding") {
+    return <Redirect to="/verify-email" />;
   }
 
   return (
@@ -77,6 +81,8 @@ function Router() {
       <Route path="/faqs" component={FAQs} />
       <Route path="/contact" component={Contact} />
       <Route path="/browse-jobs" component={BrowseJobs} />
+      
+      <Route path="/verify-email" component={VerifyEmail} />
       
       <Route path="/onboarding">
         <AuthenticatedLayout>

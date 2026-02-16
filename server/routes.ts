@@ -108,10 +108,12 @@ export async function registerRoutes(
   });
 
   app.post(api.jobs.create.path, isAuthenticated, async (req, res) => {
-    // Check if user is employer or admin
     const user = await storage.getUser(req.session.userId!);
     if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
       return res.status(403).json({ message: "Only employers can post jobs" });
+    }
+    if (!user.emailVerified) {
+      return res.status(403).json({ message: "Please verify your email before posting jobs" });
     }
 
     try {
@@ -186,9 +188,11 @@ export async function registerRoutes(
   app.post(api.applications.create.path, isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
     
-    // Check age (16+)
     if (!user?.age || user.age < 16) {
        return res.status(403).json({ message: "You must be at least 16 years old to apply." });
+    }
+    if (!user.emailVerified) {
+      return res.status(403).json({ message: "Please verify your email before applying for jobs" });
     }
 
     try {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+
+function generateCaptcha() {
+  const a = Math.floor(Math.random() * 20) + 1;
+  const b = Math.floor(Math.random() * 20) + 1;
+  return { a, b, answer: a + b };
+}
 
 export default function Login() {
   const { login, isLoggingIn, loginError, isAuthenticated, user } = useAuth();
@@ -17,6 +23,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [captcha, setCaptcha] = useState(generateCaptcha);
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+
+  const refreshCaptcha = useCallback(() => {
+    setCaptcha(generateCaptcha());
+    setCaptchaAnswer("");
+  }, []);
 
   if (isAuthenticated && user) {
     if (user.role && user.age) {
@@ -30,6 +43,11 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (parseInt(captchaAnswer) !== captcha.answer) {
+      setError("Incorrect answer. Please solve the math problem.");
+      refreshCaptcha();
+      return;
+    }
     try {
       const loggedInUser = await login({ email, password });
       if (loggedInUser.role && loggedInUser.age) {
@@ -39,6 +57,7 @@ export default function Login() {
       }
     } catch (err: any) {
       setError(err.message || "Login failed");
+      refreshCaptcha();
     }
   };
 
@@ -124,6 +143,32 @@ export default function Login() {
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Verify you're human</Label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 bg-muted rounded-lg px-4 py-2.5 text-center font-mono text-lg font-bold select-none tracking-wider" data-testid="text-captcha-question">
+                      {captcha.a} + {captcha.b} = ?
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={refreshCaptcha}
+                      data-testid="button-refresh-captcha"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <Input
+                    type="number"
+                    placeholder="Enter the answer"
+                    value={captchaAnswer}
+                    onChange={(e) => setCaptchaAnswer(e.target.value)}
+                    required
+                    data-testid="input-captcha-answer"
+                  />
                 </div>
 
                 <Button
