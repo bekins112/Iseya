@@ -97,14 +97,29 @@ export async function registerRoutes(
       minSalary: req.query.minSalary ? Number(req.query.minSalary) : undefined,
       maxSalary: req.query.maxSalary ? Number(req.query.maxSalary) : undefined,
     };
-    const jobs = await storage.getJobs(filters);
-    res.json(jobs);
+    const jobsList = await storage.getJobs(filters);
+    const jobsWithEmployer = await Promise.all(
+      jobsList.map(async (job) => {
+        const employer = await storage.getUser(job.employerId);
+        return {
+          ...job,
+          employerName: employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer",
+          employerLogo: employer?.companyLogo || null,
+        };
+      })
+    );
+    res.json(jobsWithEmployer);
   });
 
   app.get(api.jobs.get.path, async (req, res) => {
     const job = await storage.getJob(Number(req.params.id));
     if (!job) return res.status(404).json({ message: "Job not found" });
-    res.json(job);
+    const employer = await storage.getUser(job.employerId);
+    res.json({
+      ...job,
+      employerName: employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer",
+      employerLogo: employer?.companyLogo || null,
+    });
   });
 
   app.post(api.jobs.create.path, isAuthenticated, async (req, res) => {

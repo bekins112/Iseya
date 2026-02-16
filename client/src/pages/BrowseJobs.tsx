@@ -342,7 +342,7 @@ export default function BrowseJobs() {
                         <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Building2 className="w-3 h-3" />
-                            Employer
+                            {(job as any).employerName || "Employer"}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />

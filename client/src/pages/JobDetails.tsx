@@ -217,6 +217,10 @@ export default function JobDetails() {
                   
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
+                      <Building2 className="w-4 h-4" />
+                      {(job as any).employerName || "Employer"}
+                    </span>
+                    <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
                       {job.location}
                     </span>
