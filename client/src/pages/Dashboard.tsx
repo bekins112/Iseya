@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle } from "lucide-react";
+import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle } from "lucide-react";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
 
@@ -464,6 +464,51 @@ export default function Dashboard() {
         />
       </motion.div>
 
+      {(() => {
+        const missingItems: string[] = [];
+        if (isApplicant) {
+          if (!user?.gender) missingItems.push("gender");
+          if (!user?.bio) missingItems.push("bio");
+          if (!user?.expectedSalaryMin && !user?.expectedSalaryMax) missingItems.push("expected salary");
+          if (!user?.cvUrl) missingItems.push("CV");
+          if (!user?.profileImageUrl) missingItems.push("profile picture");
+        }
+        if (isEmployer) {
+          if (!user?.companyName) missingItems.push("company name");
+          if (!user?.businessCategory) missingItems.push("business category");
+          if (!user?.companyLogo) missingItems.push("company logo");
+        }
+        if (missingItems.length === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <Card className="border-primary/30 bg-primary/5 shadow-md" data-testid="card-profile-prompt">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-4">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="rounded-full bg-primary/10 p-2 flex-shrink-0">
+                    <AlertCircle className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm" data-testid="text-profile-prompt-title">Complete your profile</p>
+                    <p className="text-xs text-muted-foreground" data-testid="text-profile-prompt-missing">
+                      Missing: {missingItems.join(", ")}. A complete profile helps you {isEmployer ? "attract better applicants" : "stand out to employers"}.
+                    </p>
+                  </div>
+                </div>
+                <a href="#profile-section">
+                  <Button size="sm" className="flex-shrink-0" data-testid="button-complete-profile">
+                    Update Profile
+                  </Button>
+                </a>
+              </CardContent>
+            </Card>
+          </motion.div>
+        );
+      })()}
+
       <motion.div 
         variants={container}
         initial="hidden"
@@ -526,6 +571,7 @@ export default function Dashboard() {
 
       {isEmployer && (
         <motion.div
+          id="profile-section"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
@@ -657,6 +703,7 @@ export default function Dashboard() {
 
       {isApplicant && (
         <motion.div
+          id="profile-section"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
