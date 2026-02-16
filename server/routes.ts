@@ -284,6 +284,19 @@ export async function registerRoutes(
     }
   });
 
+  // Cancel/withdraw application (applicant)
+  app.delete("/api/applications/:id", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const appId = Number(req.params.id);
+    const application = await storage.getApplication(appId);
+    if (!application) return res.status(404).json({ message: "Application not found" });
+    if (application.applicantId !== userId) return res.status(403).json({ message: "Not authorized" });
+    if (application.status === "accepted") return res.status(400).json({ message: "Cannot cancel an accepted application" });
+
+    await storage.deleteApplication(appId, userId);
+    res.status(204).send();
+  });
+
   // === ADMIN ROUTES ===
   
   // Middleware to check admin permissions

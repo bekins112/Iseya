@@ -394,6 +394,31 @@ export function useUploadProfilePicture() {
   });
 }
 
+export function useCancelApplication() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (applicationId: number) => {
+      const res = await fetch(`/api/applications/${applicationId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to cancel application");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.applications.listForApplicant.path] });
+      toast({ title: "Application Cancelled", description: "Your application has been withdrawn." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
 // === OFFER HOOKS ===
 export function useSendOffer() {
   const queryClient = useQueryClient();

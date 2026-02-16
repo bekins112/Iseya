@@ -159,6 +159,10 @@ export class DatabaseStorage implements IStorage {
     return app;
   }
 
+  async deleteApplication(id: number, applicantId: string): Promise<void> {
+    await db.delete(applications).where(and(eq(applications.id, id), eq(applications.applicantId, applicantId)));
+  }
+
   async updateApplicationStatus(id: number, status: string): Promise<Application> {
     const [app] = await db
       .update(applications)

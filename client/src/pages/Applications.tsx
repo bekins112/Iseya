@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMyApplications, useMyOffers, useRespondToOffer } from "@/hooks/use-casual";
+import { useMyApplications, useMyOffers, useRespondToOffer, useCancelApplication } from "@/hooks/use-casual";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,8 @@ import {
   Clock,
   Send,
   FileText,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -160,10 +162,65 @@ function OfferDetailsDialog({
   );
 }
 
+function CancelApplicationDialog({
+  app,
+  open,
+  onOpenChange,
+}: {
+  app: EnrichedApp | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const cancelApp = useCancelApplication();
+  if (!app) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+            Cancel Application
+          </DialogTitle>
+          <DialogDescription>
+            Are you sure you want to withdraw your application for <strong>{app.jobTitle}</strong>? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex items-center gap-2 pt-2">
+          <Button
+            variant="destructive"
+            className="flex-1 gap-2"
+            onClick={() => {
+              cancelApp.mutate(app.id, {
+                onSuccess: () => onOpenChange(false),
+              });
+            }}
+            disabled={cancelApp.isPending}
+            data-testid="button-confirm-cancel-application"
+          >
+            <Trash2 className="w-4 h-4" />
+            {cancelApp.isPending ? "Cancelling..." : "Yes, Cancel"}
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+            data-testid="button-keep-application"
+          >
+            Keep Application
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Applications() {
   const { data: applications, isLoading } = useMyApplications();
   const [selectedApp, setSelectedApp] = useState<EnrichedApp | null>(null);
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+  const [cancelApp, setCancelApp] = useState<EnrichedApp | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   const apps = (applications as EnrichedApp[] | undefined) || [];
 
@@ -189,7 +246,7 @@ export default function Applications() {
           <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
           <p className="text-muted-foreground">You haven't applied to any jobs yet.</p>
           <Link href="/jobs">
-            <Button variant="link" className="mt-2" data-testid="link-browse-jobs">Browse Jobs</Button>
+            <Button variant="ghost" className="mt-2" data-testid="link-browse-jobs">Browse Jobs</Button>
           </Link>
         </div>
       ) : (
@@ -278,12 +335,27 @@ export default function Applications() {
                           </div>
                         )}
 
-                        <div className="flex items-center gap-2 mt-3">
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
                           <Link href={`/jobs/${app.jobId}`}>
                             <Button variant="outline" size="sm" data-testid={`button-view-job-${app.id}`}>
                               View Job
                             </Button>
                           </Link>
+                          {app.status !== "accepted" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1 text-destructive"
+                              onClick={() => {
+                                setCancelApp(app);
+                                setCancelDialogOpen(true);
+                              }}
+                              data-testid={`button-cancel-application-${app.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Cancel
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -299,6 +371,12 @@ export default function Applications() {
         app={selectedApp}
         open={offerDialogOpen}
         onOpenChange={setOfferDialogOpen}
+      />
+
+      <CancelApplicationDialog
+        app={cancelApp}
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
       />
     </div>
   );
