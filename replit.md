@@ -94,6 +94,31 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
   - Get keys from: https://dashboard.paystack.com/#/settings/developers
 - Flutterwave can be added as an alternative payment option
 
+## Email Verification System
+
+### Current Implementation
+- New users must verify their email before posting jobs or applying
+- 6-digit verification code sent to user's email, expires in 15 minutes
+- Verification enforced both on frontend (redirect to `/verify-email`) and backend (403 on create job/application)
+- Existing users were bulk-verified during feature rollout
+
+### Email Service Configuration
+- **Email module**: `server/email.ts` uses Resend API
+- **REMINDER**: User dismissed Resend integration. To enable email sending:
+  - Set `RESEND_API_KEY` secret manually, OR
+  - Set up Resend integration via Replit connectors
+  - Without a key, verification codes are logged to server console as fallback
+- API routes: `POST /api/auth/send-verification`, `POST /api/auth/verify-email`
+
+### Login Security
+- Math-based CAPTCHA on login form (no external service required)
+- Users must solve a simple addition problem before logging in
+
+## Employer Company Profile Fields
+- `companyName`, `businessCategory`, `companyLogo` (original)
+- `companyAddress`, `companyCity`, `companyState` (Nigerian states)
+- `isRegisteredCompany` (boolean), `companyRegNo` (CAC registration number, shown when registered)
+
 ## Admin Dashboard System
 
 ### Admin Roles and Permissions
