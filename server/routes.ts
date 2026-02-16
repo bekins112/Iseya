@@ -112,10 +112,6 @@ export async function registerRoutes(
     if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
       return res.status(403).json({ message: "Only employers can post jobs" });
     }
-    if (!user.emailVerified) {
-      return res.status(403).json({ message: "Please verify your email before posting jobs" });
-    }
-
     try {
       const input = api.jobs.create.input.parse({
         ...req.body,
@@ -191,10 +187,6 @@ export async function registerRoutes(
     if (!user?.age || user.age < 16) {
        return res.status(403).json({ message: "You must be at least 16 years old to apply." });
     }
-    if (!user.emailVerified) {
-      return res.status(403).json({ message: "Please verify your email before applying for jobs" });
-    }
-
     try {
       const input = api.applications.create.input.parse({
         ...req.body,

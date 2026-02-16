@@ -107,17 +107,6 @@ export async function setupAuth(app: Express) {
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiry = new Date(Date.now() + 15 * 60 * 1000);
-      await db.update(users).set({ emailVerificationCode: code, emailVerificationExpiry: expiry }).where(eq(users.id, user.id));
-
-      try {
-        const { sendVerificationEmail } = await import("./email");
-        await sendVerificationEmail(input.email, code, input.firstName);
-      } catch (emailErr) {
-        console.log(`[Email Verification] Code for ${input.email}: ${code}`);
-      }
-
       res.status(201).json(safeUser);
     } catch (err: any) {
       if (err instanceof z.ZodError) {

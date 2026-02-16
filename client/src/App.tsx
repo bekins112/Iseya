@@ -49,10 +49,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     return <Redirect to="/onboarding" />;
   }
 
-  if (!(user as any).emailVerified && window.location.pathname !== "/verify-email" && window.location.pathname !== "/onboarding") {
-    return <Redirect to="/verify-email" />;
-  }
-
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Sidebar />

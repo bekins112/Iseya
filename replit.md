@@ -96,19 +96,14 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
 
 ## Email Verification System
 
-### Current Implementation
-- New users must verify their email before posting jobs or applying
-- 6-digit verification code sent to user's email, expires in 15 minutes
-- Verification enforced both on frontend (redirect to `/verify-email`) and backend (403 on create job/application)
-- Existing users were bulk-verified during feature rollout
-
-### Email Service Configuration
-- **Email module**: `server/email.ts` uses Resend API
-- **REMINDER**: User dismissed Resend integration. To enable email sending:
-  - Set `RESEND_API_KEY` secret manually, OR
-  - Set up Resend integration via Replit connectors
-  - Without a key, verification codes are logged to server console as fallback
-- API routes: `POST /api/auth/send-verification`, `POST /api/auth/verify-email`
+### Current Status: DISABLED
+- Email verification has been temporarily disabled per user request
+- All enforcement removed: no frontend redirect to `/verify-email`, no backend 403 checks
+- Registration no longer generates/sends verification codes
+- Schema fields (`emailVerified`, `emailVerificationCode`, `emailVerificationExpiry`) remain in database for future use
+- Verification API routes (`POST /api/auth/send-verification`, `POST /api/auth/verify-email`) still exist but are not enforced
+- **To re-enable**: Add email verification checks back in `client/src/App.tsx`, `server/routes.ts` (job create + application create), and registration flow in `server/auth.ts`
+- **Email module**: `server/email.ts` uses Resend API (requires `RESEND_API_KEY` secret)
 
 ### Login Security
 - Image-based CAPTCHA on login form using svg-captcha (server-side validated)
