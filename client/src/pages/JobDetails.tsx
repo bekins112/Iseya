@@ -68,6 +68,9 @@ export default function JobDetails() {
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
 
+  const isEmployer = user?.role === "employer";
+  const isApplicant = user?.role === "applicant";
+
   // Fetch similar jobs (same category, excluding current job)
   const { data: similarJobs } = useQuery<Job[]>({
     queryKey: [api.jobs.list.path, 'similar', job?.category],
@@ -80,6 +83,16 @@ export default function JobDetails() {
       return jobs.filter((j: Job) => j.id !== id && j.isActive).slice(0, 3);
     },
     enabled: !!job?.category,
+  });
+
+  const { data: myApplications } = useQuery({
+    queryKey: ["/api/my-applications", user?.id],
+    queryFn: async () => {
+      const res = await fetch("/api/my-applications", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!user && isApplicant,
   });
 
   const handleApplyClick = () => {
@@ -160,19 +173,7 @@ export default function JobDetails() {
     );
   }
 
-  const isEmployer = user?.role === "employer";
   const isMyJob = job.employerId === user?.id;
-  const isApplicant = user?.role === "applicant";
-
-  const { data: myApplications } = useQuery({
-    queryKey: ["/api/my-applications", user?.id],
-    queryFn: async () => {
-      const res = await fetch("/api/my-applications", { credentials: "include" });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: !!user && isApplicant,
-  });
   const existingApplication = (myApplications as any[])?.find((a: any) => a.jobId === job.id);
   const hasApplied = !!existingApplication;
 
