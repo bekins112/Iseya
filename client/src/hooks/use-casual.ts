@@ -158,7 +158,7 @@ export function useMyApplications() {
     queryFn: async () => {
       const res = await fetch(api.applications.listForApplicant.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch applications");
-      return api.applications.listForApplicant.responses[200].parse(await res.json());
+      return res.json();
     },
   });
 }
@@ -390,6 +390,79 @@ export function useUploadProfilePicture() {
     },
     onError: (error) => {
       toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+// === OFFER HOOKS ===
+export function useSendOffer() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: { applicationId: number; salary: number; compensation?: string; note?: string }) => {
+      const res = await fetch("/api/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to send offer");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: [api.applications.listForJob.path] });
+      toast({ title: "Offer Sent", description: "The applicant has been notified of your offer." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useMyOffers() {
+  return useQuery({
+    queryKey: ["/api/my-offers"],
+    queryFn: async () => {
+      const res = await fetch("/api/my-offers", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch offers");
+      return res.json();
+    },
+  });
+}
+
+export function useRespondToOffer() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ offerId, status }: { offerId: number; status: "accepted" | "declined" }) => {
+      const res = await fetch(`/api/offers/${offerId}/respond`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to respond");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-offers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-applications"] });
+      toast({
+        title: variables.status === "accepted" ? "Offer Accepted" : "Offer Declined",
+        description: variables.status === "accepted" ? "Congratulations! You accepted the offer." : "You have declined the offer.",
+      });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 }

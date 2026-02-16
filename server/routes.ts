@@ -236,7 +236,24 @@ export async function registerRoutes(
   app.get(api.applications.listForApplicant.path, isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     const apps = await storage.getApplicationsForApplicant(userId);
-    res.json(apps);
+    
+    const enriched = await Promise.all(apps.map(async (app) => {
+      const job = await storage.getJob(app.jobId);
+      const employer = job ? await storage.getUser(job.employerId) : null;
+      const offer = await storage.getOfferByApplication(app.id);
+      return {
+        ...app,
+        jobTitle: job?.title || "Unknown Job",
+        jobLocation: job?.location || "",
+        jobType: job?.jobType || "",
+        jobCategory: job?.category || "",
+        employerName: employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim(),
+        employerLogo: employer?.companyLogo || null,
+        offer: offer || null,
+      };
+    }));
+    
+    res.json(enriched);
   });
 
   app.get(api.applications.get.path, isAuthenticated, async (req, res) => {
@@ -707,6 +724,114 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     await storage.deleteJobHistory(Number(req.params.id), userId);
     res.status(204).send();
+  });
+
+  // === OFFERS ===
+
+  // Create offer (employer sends to applicant)
+  app.post("/api/offers", isAuthenticated, async (req, res) => {
+    const employerId = req.session.userId!;
+    const employer = await storage.getUser(employerId);
+    if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can send offers" });
+
+    try {
+      const offerSchema = z.object({
+        applicationId: z.number(),
+        salary: z.number().min(1, "Salary is required"),
+        compensation: z.string().optional(),
+        note: z.string().optional(),
+      });
+      const input = offerSchema.parse(req.body);
+
+      const application = await storage.getApplication(input.applicationId);
+      if (!application) return res.status(404).json({ message: "Application not found" });
+
+      const job = await storage.getJob(application.jobId);
+      if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+
+      const existingOffer = await storage.getOfferByApplication(input.applicationId);
+      if (existingOffer) return res.status(400).json({ message: "An offer has already been sent for this application" });
+
+      const offer = await storage.createOffer({
+        applicationId: input.applicationId,
+        jobId: application.jobId,
+        employerId,
+        applicantId: application.applicantId,
+        salary: input.salary,
+        compensation: input.compensation || null,
+        note: input.note || null,
+        status: "pending",
+      });
+
+      await storage.updateApplicationStatus(input.applicationId, "offered");
+
+      res.status(201).json(offer);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to send offer" });
+    }
+  });
+
+  // Get my offers (applicant)
+  app.get("/api/my-offers", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const offerList = await storage.getOffersForApplicant(userId);
+    
+    const enriched = await Promise.all(offerList.map(async (offer) => {
+      const job = await storage.getJob(offer.jobId);
+      const employer = await storage.getUser(offer.employerId);
+      return {
+        ...offer,
+        jobTitle: job?.title || "Unknown Job",
+        jobLocation: job?.location || "",
+        jobType: job?.jobType || "",
+        employerName: employer?.companyName || `${employer?.firstName} ${employer?.lastName}`,
+        employerLogo: employer?.companyLogo || null,
+      };
+    }));
+    
+    res.json(enriched);
+  });
+
+  // Get offer for a specific application (employer)
+  app.get("/api/offers/application/:applicationId", isAuthenticated, async (req, res) => {
+    const offer = await storage.getOfferByApplication(Number(req.params.applicationId));
+    res.json(offer || null);
+  });
+
+  // Respond to offer (applicant accepts/declines)
+  app.patch("/api/offers/:id/respond", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const offerId = Number(req.params.id);
+
+    const responseSchema = z.object({
+      status: z.enum(["accepted", "declined"]),
+    });
+
+    try {
+      const input = responseSchema.parse(req.body);
+      const offer = await storage.getOffer(offerId);
+      if (!offer) return res.status(404).json({ message: "Offer not found" });
+      if (offer.applicantId !== userId) return res.status(403).json({ message: "Not authorized" });
+      if (offer.status !== "pending") return res.status(400).json({ message: "Offer already responded to" });
+
+      const updated = await storage.updateOfferStatus(offerId, input.status);
+      
+      if (input.status === "accepted") {
+        await storage.updateApplicationStatus(offer.applicationId, "accepted");
+      } else {
+        await storage.updateApplicationStatus(offer.applicationId, "pending");
+      }
+
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to respond to offer" });
+    }
   });
 
   // === SUBSCRIPTIONS ===

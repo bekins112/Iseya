@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile } from "@/hooks/use-casual";
+import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer } from "@/hooks/use-casual";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   ArrowLeft, 
@@ -215,14 +218,127 @@ function ApplicantProfileDialog({ applicantId, open, onOpenChange }: { applicant
   );
 }
 
+function SendOfferDialog({ 
+  application, 
+  open, 
+  onOpenChange 
+}: { 
+  application: EnrichedApplication | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) {
+  const sendOffer = useSendOffer();
+  const [salary, setSalary] = useState("");
+  const [compensation, setCompensation] = useState("");
+  const [note, setNote] = useState("");
+
+  const handleSend = () => {
+    if (!application || !salary) return;
+    sendOffer.mutate({
+      applicationId: application.id,
+      salary: Number(salary),
+      compensation: compensation || undefined,
+      note: note || undefined,
+    }, {
+      onSuccess: () => {
+        setSalary("");
+        setCompensation("");
+        setNote("");
+        onOpenChange(false);
+      },
+    });
+  };
+
+  const applicantName = application?.applicantName || "Applicant";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Send className="w-5 h-5 text-primary" />
+            Send Offer
+          </DialogTitle>
+          <DialogDescription>
+            Send a job offer to {applicantName} with salary and compensation details.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="offer-salary">Monthly Salary (NGN) *</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">&#8358;</span>
+              <Input
+                id="offer-salary"
+                type="number"
+                placeholder="e.g. 50000"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                className="pl-8"
+                data-testid="input-offer-salary"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="offer-compensation">Compensation / Benefits</Label>
+            <Input
+              id="offer-compensation"
+              placeholder="e.g. Transport allowance, lunch provided"
+              value={compensation}
+              onChange={(e) => setCompensation(e.target.value)}
+              data-testid="input-offer-compensation"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="offer-note">Note to Applicant</Label>
+            <Textarea
+              id="offer-note"
+              placeholder="Any additional message for the applicant..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="resize-none"
+              rows={3}
+              data-testid="input-offer-note"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <Button
+              onClick={handleSend}
+              disabled={!salary || Number(salary) <= 0 || sendOffer.isPending}
+              className="flex-1 gap-2"
+              data-testid="button-confirm-send-offer"
+            >
+              <Send className="w-4 h-4" />
+              {sendOffer.isPending ? "Sending..." : "Send Offer"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              data-testid="button-cancel-offer"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ApplicantCard({ 
   application, 
   onUpdateStatus,
   onViewProfile,
+  onSendOffer,
 }: { 
   application: EnrichedApplication;
   onUpdateStatus: (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => void;
   onViewProfile: (applicantId: string) => void;
+  onSendOffer: (application: EnrichedApplication) => void;
 }) {
   const status = application.status || 'pending';
   const StatusIcon = statusConfig[status]?.icon || Clock;
@@ -309,7 +425,7 @@ function ApplicantCard({
                     variant="outline" 
                     size="sm" 
                     className="gap-1"
-                    onClick={() => onUpdateStatus(application.id, 'offered')}
+                    onClick={() => onSendOffer(application)}
                     data-testid={`button-offer-${application.id}`}
                   >
                     <Send className="w-4 h-4" />
@@ -400,6 +516,8 @@ export default function ManageApplicants() {
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [profileApplicantId, setProfileApplicantId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [offerApp, setOfferApp] = useState<EnrichedApplication | null>(null);
+  const [offerOpen, setOfferOpen] = useState(false);
 
   const handleUpdateStatus = (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => {
     updateStatus.mutate({ id, status });
@@ -408,6 +526,11 @@ export default function ManageApplicants() {
   const handleViewProfile = (applicantId: string) => {
     setProfileApplicantId(applicantId);
     setProfileOpen(true);
+  };
+
+  const handleSendOffer = (application: EnrichedApplication) => {
+    setOfferApp(application);
+    setOfferOpen(true);
   };
 
   const filteredApps = (applications as EnrichedApplication[] | undefined)?.filter(app => 
@@ -501,6 +624,7 @@ export default function ManageApplicants() {
                 application={app} 
                 onUpdateStatus={handleUpdateStatus}
                 onViewProfile={handleViewProfile}
+                onSendOffer={handleSendOffer}
               />
             ))
           )}
@@ -511,6 +635,12 @@ export default function ManageApplicants() {
         applicantId={profileApplicantId}
         open={profileOpen}
         onOpenChange={setProfileOpen}
+      />
+
+      <SendOfferDialog
+        application={offerApp}
+        open={offerOpen}
+        onOpenChange={setOfferOpen}
       />
     </div>
   );

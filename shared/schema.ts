@@ -78,6 +78,21 @@ export const reports = pgTable("reports", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Offers table - employers send offers to applicants
+export const offers = pgTable("offers", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  applicationId: integer("application_id").notNull().references(() => applications.id),
+  jobId: integer("job_id").notNull().references(() => jobs.id),
+  employerId: varchar("employer_id").notNull().references(() => users.id),
+  applicantId: varchar("applicant_id").notNull().references(() => users.id),
+  salary: integer("salary").notNull(),
+  compensation: text("compensation"),
+  note: text("note"),
+  status: varchar("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Admin permissions table for sub-admin access control
 export const adminPermissions = pgTable("admin_permissions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -97,6 +112,7 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, createdAt: true });
 export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, createdAt: true });
 export const insertJobHistorySchema = createInsertSchema(jobHistory).omit({ id: true, createdAt: true });
+export const insertOfferSchema = createInsertSchema(offers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, updatedAt: true });
 
@@ -193,6 +209,9 @@ export type InsertReport = z.infer<typeof insertReportSchema>;
 
 export type JobHistory = typeof jobHistory.$inferSelect;
 export type InsertJobHistory = z.infer<typeof insertJobHistorySchema>;
+
+export type Offer = typeof offers.$inferSelect;
+export type InsertOffer = z.infer<typeof insertOfferSchema>;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;

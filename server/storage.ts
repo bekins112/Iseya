@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -66,6 +66,14 @@ export interface IStorage {
   createJobHistory(entry: InsertJobHistory): Promise<JobHistory>;
   updateJobHistory(id: number, userId: string, updates: Partial<InsertJobHistory>): Promise<JobHistory>;
   deleteJobHistory(id: number, userId: string): Promise<void>;
+  
+  // Offer methods
+  createOffer(offer: InsertOffer): Promise<Offer>;
+  getOffer(id: number): Promise<Offer | undefined>;
+  getOfferByApplication(applicationId: number): Promise<Offer | undefined>;
+  getOffersForApplicant(applicantId: string): Promise<Offer[]>;
+  getOffersForEmployer(employerId: string): Promise<Offer[]>;
+  updateOfferStatus(id: number, status: string): Promise<Offer>;
   
   // Subscription methods
   getUsersBySubscription(status: string): Promise<User[]>;
@@ -388,6 +396,39 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJobHistory(id: number, userId: string): Promise<void> {
     await db.delete(jobHistory).where(and(eq(jobHistory.id, id), eq(jobHistory.userId, userId)));
+  }
+
+  // Offer methods
+  async createOffer(offer: InsertOffer): Promise<Offer> {
+    const [newOffer] = await db.insert(offers).values(offer).returning();
+    return newOffer;
+  }
+
+  async getOffer(id: number): Promise<Offer | undefined> {
+    const [offer] = await db.select().from(offers).where(eq(offers.id, id));
+    return offer;
+  }
+
+  async getOfferByApplication(applicationId: number): Promise<Offer | undefined> {
+    const [offer] = await db.select().from(offers).where(eq(offers.applicationId, applicationId));
+    return offer;
+  }
+
+  async getOffersForApplicant(applicantId: string): Promise<Offer[]> {
+    return await db.select().from(offers).where(eq(offers.applicantId, applicantId)).orderBy(desc(offers.createdAt));
+  }
+
+  async getOffersForEmployer(employerId: string): Promise<Offer[]> {
+    return await db.select().from(offers).where(eq(offers.employerId, employerId)).orderBy(desc(offers.createdAt));
+  }
+
+  async updateOfferStatus(id: number, status: string): Promise<Offer> {
+    const [updated] = await db
+      .update(offers)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(offers.id, id))
+      .returning();
+    return updated;
   }
 
   // Subscription methods
