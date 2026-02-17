@@ -1149,8 +1149,12 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid plan in payment metadata", verified: false });
       }
 
+      if (String(userId) !== String(req.session.userId)) {
+        return res.status(403).json({ message: "Payment does not belong to this user", verified: false });
+      }
+
       const expectedAmount = SUBSCRIPTION_PLANS[plan].amount / 100;
-      if (data.data.amount < expectedAmount || data.data.currency !== "NGN") {
+      if (data.data.amount !== expectedAmount || data.data.currency !== "NGN") {
         return res.status(400).json({ message: "Payment amount mismatch", verified: false });
       }
 
@@ -1187,12 +1191,15 @@ export async function registerRoutes(
     if (payload.event === "charge.completed" && payload.data?.status === "successful") {
       const { userId, plan } = payload.data.meta || {};
       if (userId && plan && SUBSCRIPTION_PLANS[plan] && plan !== "free") {
-        const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + 1);
-        await storage.updateUser(userId, {
-          subscriptionStatus: plan,
-          subscriptionEndDate: endDate,
-        });
+        const expectedAmount = SUBSCRIPTION_PLANS[plan].amount / 100;
+        if (payload.data.amount === expectedAmount && payload.data.currency === "NGN") {
+          const endDate = new Date();
+          endDate.setMonth(endDate.getMonth() + 1);
+          await storage.updateUser(userId, {
+            subscriptionStatus: plan,
+            subscriptionEndDate: endDate,
+          });
+        }
       }
     }
     res.sendStatus(200);
