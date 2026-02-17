@@ -1060,6 +1060,144 @@ export async function registerRoutes(
     res.sendStatus(200);
   });
 
+  // === FLUTTERWAVE SUBSCRIPTION PAYMENT ===
+  app.post("/api/subscription/flutterwave/initialize", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "employer") {
+      return res.status(403).json({ message: "Only employers can subscribe" });
+    }
+
+    const { plan } = req.body;
+    if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
+      return res.status(400).json({ message: "Invalid plan selected" });
+    }
+
+    const flwSecret = process.env.FLW_SECRET_KEY;
+    if (!flwSecret) {
+      return res.status(500).json({ message: "Flutterwave payment system is not configured" });
+    }
+
+    try {
+      const txRef = `iseya-${user.id}-${plan}-${Date.now()}`;
+      const response = await fetch("https://api.flutterwave.com/v3/payments", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${flwSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tx_ref: txRef,
+          amount: SUBSCRIPTION_PLANS[plan].amount / 100,
+          currency: "NGN",
+          redirect_url: `${req.protocol}://${req.get("host")}/subscription/verify?gateway=flutterwave`,
+          customer: {
+            email: user.email,
+            name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.email || "Customer"),
+          },
+          customizations: {
+            title: "Iṣéyá Subscription",
+            description: `${SUBSCRIPTION_PLANS[plan].name} Plan Subscription`,
+          },
+          meta: {
+            userId: user.id,
+            plan,
+            planName: SUBSCRIPTION_PLANS[plan].name,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status !== "success") {
+        return res.status(400).json({ message: data.message || "Failed to initialize payment" });
+      }
+
+      res.json({
+        payment_link: data.data.link,
+        tx_ref: txRef,
+      });
+    } catch (err) {
+      console.error("Flutterwave initialization error:", err);
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  app.get("/api/subscription/flutterwave/verify", isAuthenticated, async (req, res) => {
+    const { transaction_id } = req.query;
+    if (!transaction_id) {
+      return res.status(400).json({ message: "No transaction ID provided", verified: false });
+    }
+
+    const flwSecret = process.env.FLW_SECRET_KEY;
+    if (!flwSecret) {
+      return res.status(500).json({ message: "Flutterwave payment system is not configured" });
+    }
+
+    try {
+      const response = await fetch(`https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`, {
+        headers: {
+          Authorization: `Bearer ${flwSecret}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.status !== "success" || data.data.status !== "successful") {
+        return res.status(400).json({ message: "Payment verification failed", verified: false });
+      }
+
+      const { userId, plan } = data.data.meta || {};
+      if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
+        return res.status(400).json({ message: "Invalid plan in payment metadata", verified: false });
+      }
+
+      const expectedAmount = SUBSCRIPTION_PLANS[plan].amount / 100;
+      if (data.data.amount < expectedAmount || data.data.currency !== "NGN") {
+        return res.status(400).json({ message: "Payment amount mismatch", verified: false });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      await storage.updateUser(userId, {
+        subscriptionStatus: plan,
+        subscriptionEndDate: endDate,
+      });
+
+      res.json({ verified: true, plan, message: "Subscription activated successfully" });
+    } catch (err) {
+      console.error("Flutterwave verification error:", err);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  app.post("/api/subscription/flutterwave/webhook", async (req, res) => {
+    const secretHash = process.env.FLW_SECRET_HASH;
+    if (!secretHash) return res.sendStatus(200);
+
+    const signature = req.headers["verif-hash"];
+    if (!signature || signature !== secretHash) {
+      return res.sendStatus(401);
+    }
+
+    const payload = req.body;
+    if (payload.event === "charge.completed" && payload.data?.status === "successful") {
+      const { userId, plan } = payload.data.meta || {};
+      if (userId && plan && SUBSCRIPTION_PLANS[plan] && plan !== "free") {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+        await storage.updateUser(userId, {
+          subscriptionStatus: plan,
+          subscriptionEndDate: endDate,
+        });
+      }
+    }
+    res.sendStatus(200);
+  });
+
   app.get("/api/subscription/status", isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
     if (!user) return res.status(404).json({ message: "User not found" });

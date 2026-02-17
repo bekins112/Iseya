@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Crown, Zap, Briefcase, Users, Star, TrendingUp, Shield, X, Building2, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Check, Crown, Zap, Briefcase, Users, Star, TrendingUp, Shield, X, Building2, Loader2, CreditCard, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -111,6 +113,8 @@ export default function Subscription() {
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   const currentPlan = user?.subscriptionStatus || "free";
+  const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   const { data: subscriptionStatus } = useQuery<{
     currentPlan: string;
@@ -124,20 +128,36 @@ export default function Subscription() {
     enabled: !!user && user.role === "employer",
   });
 
-  const verifyReference = new URLSearchParams(searchString).get("reference");
+  const params = new URLSearchParams(searchString);
+  const verifyReference = params.get("reference");
+  const flwTransactionId = params.get("transaction_id");
+  const flwStatus = params.get("status");
+  const gateway = params.get("gateway");
+
+  const isFlutterwaveCallback = gateway === "flutterwave" && flwTransactionId;
+  const isPaystackCallback = verifyReference && !gateway;
 
   const { data: verifyResult, isLoading: isVerifying } = useQuery({
-    queryKey: ["/api/subscription/verify", verifyReference],
+    queryKey: ["/api/subscription/verify", verifyReference, flwTransactionId],
     queryFn: async () => {
+      if (isFlutterwaveCallback) {
+        if (flwStatus !== "successful") {
+          return { verified: false, message: "Payment was not successful" };
+        }
+        const res = await fetch(`/api/subscription/flutterwave/verify?transaction_id=${flwTransactionId}`, {
+          credentials: "include",
+        });
+        return res.json();
+      }
       const res = await fetch(`/api/subscription/verify?reference=${verifyReference}`, {
         credentials: "include",
       });
       return res.json();
     },
-    enabled: !!verifyReference && !!user,
+    enabled: !!(isPaystackCallback || isFlutterwaveCallback) && !!user,
   });
 
-  if (verifyReference && verifyResult?.verified) {
+  if ((isPaystackCallback || isFlutterwaveCallback) && verifyResult?.verified) {
     queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
     queryClient.invalidateQueries({ queryKey: ["/api/subscription/status"] });
     toast({
@@ -148,7 +168,7 @@ export default function Subscription() {
     return null;
   }
 
-  const initPayment = useMutation({
+  const initPaystack = useMutation({
     mutationFn: async (planId: string) => {
       const res = await apiRequest("POST", "/api/subscription/initialize", { plan: planId });
       return res.json();
@@ -167,6 +187,42 @@ export default function Subscription() {
     },
   });
 
+  const initFlutterwave = useMutation({
+    mutationFn: async (planId: string) => {
+      const res = await apiRequest("POST", "/api/subscription/flutterwave/initialize", { plan: planId });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.payment_link) {
+        window.location.href = data.payment_link;
+      }
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Payment Error",
+        description: err.message || "Could not initialize payment. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const isPaying = initPaystack.isPending || initFlutterwave.isPending;
+
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlanId(planId);
+    setGatewayDialogOpen(true);
+  };
+
+  const handleGatewayChoice = (gw: "paystack" | "flutterwave") => {
+    if (!selectedPlanId) return;
+    setGatewayDialogOpen(false);
+    if (gw === "paystack") {
+      initPaystack.mutate(selectedPlanId);
+    } else {
+      initFlutterwave.mutate(selectedPlanId);
+    }
+  };
+
   if (user && user.role !== "employer") {
     return (
       <div className="text-center py-20">
@@ -177,7 +233,7 @@ export default function Subscription() {
     );
   }
 
-  if (verifyReference && isVerifying) {
+  if ((isPaystackCallback || isFlutterwaveCallback) && isVerifying) {
     return (
       <div className="text-center py-20 space-y-4">
         <Loader2 className="w-12 h-12 mx-auto animate-spin text-primary" />
@@ -187,7 +243,7 @@ export default function Subscription() {
     );
   }
 
-  if (verifyReference && verifyResult && !verifyResult.verified) {
+  if ((isPaystackCallback || isFlutterwaveCallback) && verifyResult && !verifyResult.verified) {
     return (
       <div className="text-center py-20 space-y-4">
         <X className="w-12 h-12 mx-auto text-destructive" />
@@ -333,11 +389,11 @@ export default function Subscription() {
                   ) : action === "upgrade" ? (
                     <Button
                       className="w-full"
-                      onClick={() => initPayment.mutate(plan.id)}
-                      disabled={initPayment.isPending}
+                      onClick={() => handleSelectPlan(plan.id)}
+                      disabled={isPaying}
                       data-testid={`button-upgrade-${plan.id}`}
                     >
-                      {initPayment.isPending ? (
+                      {isPaying ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                           Processing...
@@ -362,11 +418,11 @@ export default function Subscription() {
                     <Button
                       className="w-full"
                       variant="outline"
-                      onClick={() => initPayment.mutate(plan.id)}
-                      disabled={initPayment.isPending}
+                      onClick={() => handleSelectPlan(plan.id)}
+                      disabled={isPaying}
                       data-testid={`button-select-${plan.id}`}
                     >
-                      {initPayment.isPending ? "Processing..." : `Switch to ${plan.name}`}
+                      {isPaying ? "Processing..." : `Switch to ${plan.name}`}
                     </Button>
                   )}
                 </CardFooter>
@@ -411,10 +467,51 @@ export default function Subscription() {
       <Card className="max-w-4xl mx-auto bg-muted/50">
         <CardContent className="py-6 text-center">
           <p className="text-sm text-muted-foreground">
-            Payments are securely processed by Paystack. All prices are in Nigerian Naira (₦). Subscriptions renew monthly.
+            Payments are securely processed by Paystack or Flutterwave. All prices are in Nigerian Naira (₦). Subscriptions renew monthly.
           </p>
         </CardContent>
       </Card>
+
+      <Dialog open={gatewayDialogOpen} onOpenChange={setGatewayDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choose Payment Method</DialogTitle>
+            <DialogDescription>
+              Select your preferred payment gateway to complete your subscription.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Button
+              variant="outline"
+              className="h-auto flex flex-col items-center gap-3 py-6"
+              onClick={() => handleGatewayChoice("paystack")}
+              disabled={isPaying}
+              data-testid="button-pay-paystack"
+            >
+              <CreditCard className="w-8 h-8 text-primary" />
+              <span className="font-semibold">Paystack</span>
+              <span className="text-xs text-muted-foreground">Cards, Bank, USSD</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-auto flex flex-col items-center gap-3 py-6"
+              onClick={() => handleGatewayChoice("flutterwave")}
+              disabled={isPaying}
+              data-testid="button-pay-flutterwave"
+            >
+              <Wallet className="w-8 h-8 text-primary" />
+              <span className="font-semibold">Flutterwave</span>
+              <span className="text-xs text-muted-foreground">Cards, Bank, Mobile</span>
+            </Button>
+          </div>
+          {isPaying && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Redirecting to payment...
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

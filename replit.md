@@ -93,15 +93,25 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
 - Basic (free): 1 job, Standard: 5 jobs, Premium: 10 jobs, Enterprise: unlimited
 - Counts only active jobs (deactivated jobs don't count against limit)
 
-### Paystack Payment Integration
+### Payment Gateways
+Users choose between Paystack and Flutterwave at checkout via a dialog.
+
+#### Paystack
 - Payment initialization: `POST /api/subscription/initialize` (requires auth)
 - Payment verification: `GET /api/subscription/verify?reference=xxx`
-- Webhook: `POST /api/subscription/webhook`
+- Webhook: `POST /api/subscription/webhook` (HMAC-SHA512 signature verification)
+- **Required Secrets**: `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY`
+
+#### Flutterwave
+- Payment initialization: `POST /api/subscription/flutterwave/initialize` (requires auth)
+- Payment verification: `GET /api/subscription/flutterwave/verify?transaction_id=xxx`
+- Webhook: `POST /api/subscription/flutterwave/webhook` (verif-hash header verification)
+- Callback redirect includes `?gateway=flutterwave` to distinguish from Paystack
+- Amounts sent in Naira (not kobo) - Flutterwave uses whole currency units
+- **Required Secrets**: `FLW_SECRET_KEY`, `FLW_PUBLIC_KEY`, `FLW_SECRET_HASH`
+
+#### Shared
 - Subscription status: `GET /api/subscription/status`
-- **Required Secrets**:
-  - `PAYSTACK_SECRET_KEY` - Starts with 'sk_test_' or 'sk_live_'
-  - `PAYSTACK_PUBLIC_KEY` - Starts with 'pk_test_' or 'pk_live_'
-  - Get keys from: https://dashboard.paystack.com/#/settings/developers
 
 ## Email Verification System
 
