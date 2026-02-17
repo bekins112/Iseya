@@ -93,6 +93,24 @@ export const offers = pgTable("offers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Interviews table - employers schedule interviews with applicants
+export const interviews = pgTable("interviews", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  applicationId: integer("application_id").notNull().references(() => applications.id),
+  jobId: integer("job_id").notNull().references(() => jobs.id),
+  employerId: varchar("employer_id").notNull().references(() => users.id),
+  applicantId: varchar("applicant_id").notNull().references(() => users.id),
+  interviewDate: varchar("interview_date").notNull(),
+  interviewTime: varchar("interview_time").notNull(),
+  interviewType: varchar("interview_type").notNull().default("in-person"),
+  location: varchar("location"),
+  meetingLink: varchar("meeting_link"),
+  notes: text("notes"),
+  status: varchar("status").notNull().default("scheduled"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Admin permissions table for sub-admin access control
 export const adminPermissions = pgTable("admin_permissions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -113,6 +131,7 @@ export const insertJobSchema = createInsertSchema(jobs).omit({ id: true, created
 export const insertApplicationSchema = createInsertSchema(applications).omit({ id: true, createdAt: true });
 export const insertJobHistorySchema = createInsertSchema(jobHistory).omit({ id: true, createdAt: true });
 export const insertOfferSchema = createInsertSchema(offers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInterviewSchema = createInsertSchema(interviews).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, updatedAt: true });
 
@@ -212,6 +231,9 @@ export type InsertJobHistory = z.infer<typeof insertJobHistorySchema>;
 
 export type Offer = typeof offers.$inferSelect;
 export type InsertOffer = z.infer<typeof insertOfferSchema>;
+
+export type Interview = typeof interviews.$inferSelect;
+export type InsertInterview = z.infer<typeof insertInterviewSchema>;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;

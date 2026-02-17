@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer } from "@/hooks/use-casual";
+import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview } from "@/hooks/use-casual";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -26,6 +27,12 @@ import {
   Building2,
   Banknote,
   UserCircle,
+  CalendarClock,
+  MapPin,
+  Video,
+  Phone,
+  Link2,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -156,8 +163,8 @@ function ApplicantProfileDialog({ applicantId, open, onOpenChange }: { applicant
                 CV / Resume
               </h4>
               {profile.cvUrl ? (
-                <a href={profile.cvUrl} target="_blank" rel="noopener noreferrer" download>
-                  <Button variant="outline" className="w-full gap-2" data-testid="button-download-cv">
+                <a href={`/api/download/cv/${profile.cvUrl.split('/').pop()}`} data-testid="button-download-cv">
+                  <Button variant="outline" className="w-full gap-2">
                     <Download className="w-4 h-4" />
                     Download CV
                   </Button>
@@ -329,16 +336,219 @@ function SendOfferDialog({
   );
 }
 
+function ScheduleInterviewDialog({ 
+  application, 
+  open, 
+  onOpenChange 
+}: { 
+  application: EnrichedApplication | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) {
+  const scheduleInterview = useScheduleInterview();
+  const [interviewDate, setInterviewDate] = useState("");
+  const [interviewTime, setInterviewTime] = useState("");
+  const [interviewType, setInterviewType] = useState("in-person");
+  const [location, setLocation] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const handleSchedule = () => {
+    if (!application || !interviewDate || !interviewTime) return;
+    scheduleInterview.mutate({
+      applicationId: application.id,
+      interviewDate,
+      interviewTime,
+      interviewType,
+      location: location || undefined,
+      meetingLink: meetingLink || undefined,
+      notes: notes || undefined,
+    }, {
+      onSuccess: () => {
+        setInterviewDate("");
+        setInterviewTime("");
+        setInterviewType("in-person");
+        setLocation("");
+        setMeetingLink("");
+        setNotes("");
+        onOpenChange(false);
+      },
+    });
+  };
+
+  const applicantName = application?.applicantName || "Applicant";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarClock className="w-5 h-5 text-primary" />
+            Schedule Interview
+          </DialogTitle>
+          <DialogDescription>
+            Arrange an interview with {applicantName} before making your final decision.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="interview-date">Date *</Label>
+              <Input
+                id="interview-date"
+                type="date"
+                value={interviewDate}
+                onChange={(e) => setInterviewDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+                data-testid="input-interview-date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="interview-time">Time *</Label>
+              <Input
+                id="interview-time"
+                type="time"
+                value={interviewTime}
+                onChange={(e) => setInterviewTime(e.target.value)}
+                data-testid="input-interview-time"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="interview-type">Interview Type *</Label>
+            <Select value={interviewType} onValueChange={setInterviewType}>
+              <SelectTrigger data-testid="select-interview-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="in-person">In-Person</SelectItem>
+                <SelectItem value="phone">Phone Call</SelectItem>
+                <SelectItem value="video">Video Call</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {interviewType === "in-person" && (
+            <div className="space-y-2">
+              <Label htmlFor="interview-location">Location</Label>
+              <Input
+                id="interview-location"
+                placeholder="e.g. 15 Marina Road, Lagos"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                data-testid="input-interview-location"
+              />
+            </div>
+          )}
+
+          {(interviewType === "video" || interviewType === "phone") && (
+            <div className="space-y-2">
+              <Label htmlFor="interview-link">{interviewType === "video" ? "Meeting Link" : "Phone Number"}</Label>
+              <Input
+                id="interview-link"
+                placeholder={interviewType === "video" ? "e.g. https://meet.google.com/..." : "e.g. +234 801 234 5678"}
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+                data-testid="input-interview-link"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="interview-notes">Notes for Applicant</Label>
+            <Textarea
+              id="interview-notes"
+              placeholder="e.g. Please bring your ID card and dress formally..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="resize-none"
+              rows={3}
+              data-testid="input-interview-notes"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <Button
+              onClick={handleSchedule}
+              disabled={!interviewDate || !interviewTime || scheduleInterview.isPending}
+              className="flex-1 gap-2"
+              data-testid="button-confirm-schedule-interview"
+            >
+              <CalendarClock className="w-4 h-4" />
+              {scheduleInterview.isPending ? "Scheduling..." : "Schedule Interview"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              data-testid="button-cancel-interview"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InterviewBadge({ applicationId, interviews }: { applicationId: number; interviews: any[] }) {
+  const interview = interviews?.find((i: any) => i.applicationId === applicationId && i.status === "scheduled");
+  if (!interview) return null;
+
+  const typeIcon = interview.interviewType === "video" ? Video : 
+                   interview.interviewType === "phone" ? Phone : MapPin;
+  const TypeIcon = typeIcon;
+
+  return (
+    <div className="mt-2 bg-primary/5 border border-primary/20 rounded-md p-3">
+      <div className="flex items-center gap-2 mb-1">
+        <CalendarClock className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium text-primary">Interview Scheduled</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          {interview.interviewDate}
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {interview.interviewTime}
+        </div>
+        <div className="flex items-center gap-1 col-span-2">
+          <TypeIcon className="w-3 h-3" />
+          {interview.interviewType === "in-person" ? "In-Person" : interview.interviewType === "phone" ? "Phone" : "Video"}
+          {interview.location && ` - ${interview.location}`}
+          {interview.meetingLink && ` - ${interview.meetingLink}`}
+        </div>
+        {interview.notes && (
+          <div className="col-span-2 flex items-start gap-1">
+            <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+            <span className="line-clamp-2">{interview.notes}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ApplicantCard({ 
   application, 
   onUpdateStatus,
   onViewProfile,
   onSendOffer,
+  onScheduleInterview,
+  onCancelInterview,
+  interviews,
 }: { 
   application: EnrichedApplication;
   onUpdateStatus: (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => void;
   onViewProfile: (applicantId: string) => void;
   onSendOffer: (application: EnrichedApplication) => void;
+  onScheduleInterview: (application: EnrichedApplication) => void;
+  onCancelInterview: (interviewId: number) => void;
+  interviews: any[];
 }) {
   const status = application.status || 'pending';
   const StatusIcon = statusConfig[status]?.icon || Clock;
@@ -395,6 +605,7 @@ function ApplicantCard({
                     <span className="line-clamp-2">{application.message}</span>
                   </p>
                 )}
+                <InterviewBadge applicationId={application.id} interviews={interviews} />
               </div>
             </div>
 
@@ -411,12 +622,41 @@ function ApplicantCard({
               </Button>
 
               {application.applicantCvUrl && (
-                <a href={application.applicantCvUrl} target="_blank" rel="noopener noreferrer" download>
-                  <Button variant="outline" size="sm" className="gap-1" data-testid={`button-download-cv-${application.id}`}>
+                <a href={`/api/download/cv/${application.applicantCvUrl.split('/').pop()}`} data-testid={`button-download-cv-${application.id}`}>
+                  <Button variant="outline" size="sm" className="gap-1">
                     <Download className="w-4 h-4" />
                     CV
                   </Button>
                 </a>
+              )}
+
+              {(status === 'pending' || status === 'offered') && !interviews?.find((i: any) => i.applicationId === application.id && i.status === "scheduled") && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={() => onScheduleInterview(application)}
+                  data-testid={`button-schedule-interview-${application.id}`}
+                >
+                  <CalendarClock className="w-4 h-4" />
+                  Schedule Interview
+                </Button>
+              )}
+
+              {(status === 'pending' || status === 'offered') && interviews?.find((i: any) => i.applicationId === application.id && i.status === "scheduled") && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1 text-destructive"
+                  onClick={() => {
+                    const interview = interviews.find((i: any) => i.applicationId === application.id && i.status === "scheduled");
+                    if (interview) onCancelInterview(interview.id);
+                  }}
+                  data-testid={`button-cancel-interview-${application.id}`}
+                >
+                  <X className="w-4 h-4" />
+                  Cancel Interview
+                </Button>
               )}
 
               {status === 'pending' && (
@@ -463,13 +703,19 @@ function ApplicantCard({
                   </DropdownMenuItem>
                   {application.applicantCvUrl && (
                     <DropdownMenuItem asChild>
-                      <a href={application.applicantCvUrl} target="_blank" rel="noopener noreferrer" download>
+                      <a href={`/api/download/cv/${application.applicantCvUrl.split('/').pop()}`}>
                         <Download className="w-4 h-4 mr-2" />
                         Download CV
                       </a>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
+                  {(status === 'pending' || status === 'offered') && !interviews?.find((i: any) => i.applicationId === application.id && i.status === "scheduled") && (
+                    <DropdownMenuItem onClick={() => onScheduleInterview(application)}>
+                      <CalendarClock className="w-4 h-4 mr-2" />
+                      Schedule Interview
+                    </DropdownMenuItem>
+                  )}
                   {status !== 'offered' && (
                     <DropdownMenuItem onClick={() => onUpdateStatus(application.id, 'offered')}>
                       <Send className="w-4 h-4 mr-2" />
@@ -512,12 +758,18 @@ export default function ManageApplicants() {
   const jobId = Number(params.id);
   const { data: job, isLoading: jobLoading } = useJob(jobId);
   const { data: applications, isLoading: appsLoading } = useJobApplications(jobId);
+  const { data: interviewsData } = useJobInterviews(jobId);
   const updateStatus = useUpdateApplicationStatus();
+  const updateInterview = useUpdateInterview();
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [profileApplicantId, setProfileApplicantId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [offerApp, setOfferApp] = useState<EnrichedApplication | null>(null);
   const [offerOpen, setOfferOpen] = useState(false);
+  const [interviewApp, setInterviewApp] = useState<EnrichedApplication | null>(null);
+  const [interviewOpen, setInterviewOpen] = useState(false);
+
+  const interviews = interviewsData || [];
 
   const handleUpdateStatus = (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => {
     updateStatus.mutate({ id, status });
@@ -531,6 +783,15 @@ export default function ManageApplicants() {
   const handleSendOffer = (application: EnrichedApplication) => {
     setOfferApp(application);
     setOfferOpen(true);
+  };
+
+  const handleScheduleInterview = (application: EnrichedApplication) => {
+    setInterviewApp(application);
+    setInterviewOpen(true);
+  };
+
+  const handleCancelInterview = (interviewId: number) => {
+    updateInterview.mutate({ id: interviewId, status: "cancelled" });
   };
 
   const filteredApps = (applications as EnrichedApplication[] | undefined)?.filter(app => 
@@ -625,6 +886,9 @@ export default function ManageApplicants() {
                 onUpdateStatus={handleUpdateStatus}
                 onViewProfile={handleViewProfile}
                 onSendOffer={handleSendOffer}
+                onScheduleInterview={handleScheduleInterview}
+                onCancelInterview={handleCancelInterview}
+                interviews={interviews}
               />
             ))
           )}
@@ -641,6 +905,12 @@ export default function ManageApplicants() {
         application={offerApp}
         open={offerOpen}
         onOpenChange={setOfferOpen}
+      />
+
+      <ScheduleInterviewDialog
+        application={interviewApp}
+        open={interviewOpen}
+        onOpenChange={setInterviewOpen}
       />
     </div>
   );

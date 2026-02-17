@@ -498,6 +498,100 @@ export function useRespondToOffer() {
   });
 }
 
+// === INTERVIEW HOOKS ===
+export function useScheduleInterview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: { applicationId: number; interviewDate: string; interviewTime: string; interviewType: string; location?: string; meetingLink?: string; notes?: string }) => {
+      const res = await fetch("/api/interviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to schedule interview");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: [api.applications.listForJob.path] });
+      toast({ title: "Interview Scheduled", description: "The applicant has been notified of the interview." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useJobInterviews(jobId: number) {
+  return useQuery({
+    queryKey: ["/api/jobs", jobId, "interviews"],
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/interviews`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch interviews");
+      return res.json();
+    },
+    enabled: !!jobId,
+  });
+}
+
+export function useMyInterviews() {
+  return useQuery({
+    queryKey: ["/api/my-interviews"],
+    queryFn: async () => {
+      const res = await fetch("/api/my-interviews", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch interviews");
+      return res.json();
+    },
+  });
+}
+
+export function useUpdateInterview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: number; interviewDate?: string; interviewTime?: string; interviewType?: string; location?: string | null; meetingLink?: string | null; notes?: string | null; status?: string }) => {
+      const res = await fetch(`/api/interviews/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update interview");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-interviews"] });
+      toast({ title: "Interview Updated", description: "The interview has been updated." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useInterviewForApplication(applicationId: number | null) {
+  return useQuery({
+    queryKey: ["/api/interviews/application", applicationId],
+    queryFn: async () => {
+      const res = await fetch(`/api/interviews/application/${applicationId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch interview");
+      return res.json();
+    },
+    enabled: !!applicationId,
+  });
+}
+
 export function useUploadCompanyLogo() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

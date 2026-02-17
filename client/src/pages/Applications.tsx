@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMyApplications, useMyOffers, useRespondToOffer, useCancelApplication } from "@/hooks/use-casual";
+import { useMyApplications, useMyOffers, useRespondToOffer, useCancelApplication, useMyInterviews } from "@/hooks/use-casual";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,11 @@ import {
   FileText,
   Trash2,
   AlertTriangle,
+  CalendarClock,
+  Calendar,
+  Video,
+  Phone,
+  Link2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -217,12 +222,14 @@ function CancelApplicationDialog({
 
 export default function Applications() {
   const { data: applications, isLoading } = useMyApplications();
+  const { data: interviewsData } = useMyInterviews();
   const [selectedApp, setSelectedApp] = useState<EnrichedApp | null>(null);
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const [cancelApp, setCancelApp] = useState<EnrichedApp | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   const apps = (applications as EnrichedApp[] | undefined) || [];
+  const myInterviews = (interviewsData || []) as any[];
 
   const statusIcon = (status: string) => {
     switch (status) {
@@ -334,6 +341,56 @@ export default function Applications() {
                             </div>
                           </div>
                         )}
+
+                        {(() => {
+                          const interview = myInterviews.find((i: any) => i.applicationId === app.id && i.status === "scheduled");
+                          if (!interview) return null;
+                          return (
+                            <div className="mt-3 p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50" data-testid={`interview-info-${app.id}`}>
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <CalendarClock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <span className="font-semibold text-sm text-blue-800 dark:text-blue-300">Interview Scheduled</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {interview.interviewDate ? new Date(interview.interviewDate).toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric" }) : "TBD"}
+                                </div>
+                                {interview.interviewTime && (
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {interview.interviewTime}
+                                  </div>
+                                )}
+                                {interview.interviewType === "video" && interview.meetingLink && (
+                                  <div className="col-span-2">
+                                    <a href={interview.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">
+                                      <Video className="w-3 h-3" />
+                                      Join Video Call
+                                    </a>
+                                  </div>
+                                )}
+                                {interview.interviewType === "phone" && (
+                                  <div className="flex items-center gap-1 col-span-2">
+                                    <Phone className="w-3 h-3" />
+                                    Phone Interview
+                                  </div>
+                                )}
+                                {interview.interviewType === "in-person" && interview.location && (
+                                  <div className="flex items-center gap-1 col-span-2">
+                                    <MapPin className="w-3 h-3" />
+                                    {interview.location}
+                                  </div>
+                                )}
+                              </div>
+                              {interview.notes && (
+                                <p className="text-xs text-muted-foreground mt-1.5 italic">
+                                  {interview.notes}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
                           <Link href={`/jobs/${app.jobId}`}>

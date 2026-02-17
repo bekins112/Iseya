@@ -638,6 +638,14 @@ export async function registerRoutes(
   
   app.use("/uploads", (await import("express")).default.static("uploads"));
 
+  app.get("/api/download/cv/:filename", isAuthenticated, async (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(process.cwd(), "uploads", "cv", filename);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ message: "File not found" });
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.sendFile(filePath);
+  });
+
   app.post("/api/upload/cv", isAuthenticated, uploadCV.single("cv"), async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
     const userId = req.session.userId!;
@@ -877,6 +885,137 @@ export async function registerRoutes(
       }
       res.status(500).json({ message: "Failed to respond to offer" });
     }
+  });
+
+  // === INTERVIEWS ===
+
+  // Schedule interview (employer)
+  app.post("/api/interviews", isAuthenticated, async (req, res) => {
+    const employerId = req.session.userId!;
+    const employer = await storage.getUser(employerId);
+    if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can schedule interviews" });
+
+    try {
+      const interviewSchema = z.object({
+        applicationId: z.number(),
+        interviewDate: z.string().min(1, "Interview date is required"),
+        interviewTime: z.string().min(1, "Interview time is required"),
+        interviewType: z.enum(["in-person", "phone", "video"]),
+        location: z.string().optional(),
+        meetingLink: z.string().optional(),
+        notes: z.string().optional(),
+      });
+      const input = interviewSchema.parse(req.body);
+
+      const application = await storage.getApplication(input.applicationId);
+      if (!application) return res.status(404).json({ message: "Application not found" });
+
+      const job = await storage.getJob(application.jobId);
+      if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+
+      if (application.status !== "pending" && application.status !== "offered") {
+        return res.status(400).json({ message: "Can only schedule interviews for pending or offered applicants" });
+      }
+
+      const existingInterview = await storage.getInterviewByApplication(input.applicationId);
+      if (existingInterview) return res.status(400).json({ message: "An interview is already scheduled for this application" });
+
+      const interview = await storage.createInterview({
+        applicationId: input.applicationId,
+        jobId: application.jobId,
+        employerId,
+        applicantId: application.applicantId,
+        interviewDate: input.interviewDate,
+        interviewTime: input.interviewTime,
+        interviewType: input.interviewType,
+        location: input.location || null,
+        meetingLink: input.meetingLink || null,
+        notes: input.notes || null,
+        status: "scheduled",
+      });
+
+      res.status(201).json(interview);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to schedule interview" });
+    }
+  });
+
+  // Get interviews for a job (employer)
+  app.get("/api/jobs/:jobId/interviews", isAuthenticated, async (req, res) => {
+    const employerId = req.session.userId!;
+    const jobId = Number(req.params.jobId);
+    const job = await storage.getJob(jobId);
+    if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+
+    const interviewList = await storage.getInterviewsForJob(jobId);
+    const enriched = await Promise.all(interviewList.map(async (interview) => {
+      const applicant = await storage.getUser(interview.applicantId);
+      return {
+        ...interview,
+        applicantName: applicant ? `${applicant.firstName} ${applicant.lastName}` : "Unknown",
+        applicantEmail: applicant?.email || null,
+      };
+    }));
+    res.json(enriched);
+  });
+
+  // Get my interviews (applicant)
+  app.get("/api/my-interviews", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const interviewList = await storage.getInterviewsForApplicant(userId);
+    
+    const enriched = await Promise.all(interviewList.map(async (interview) => {
+      const job = await storage.getJob(interview.jobId);
+      const employer = await storage.getUser(interview.employerId);
+      return {
+        ...interview,
+        jobTitle: job?.title || "Unknown Job",
+        jobLocation: job?.location || "",
+        employerName: employer?.companyName || `${employer?.firstName} ${employer?.lastName}`,
+      };
+    }));
+    
+    res.json(enriched);
+  });
+
+  // Update interview (employer - reschedule or cancel)
+  app.patch("/api/interviews/:id", isAuthenticated, async (req, res) => {
+    const employerId = req.session.userId!;
+    const interviewId = Number(req.params.id);
+
+    try {
+      const updateSchema = z.object({
+        interviewDate: z.string().optional(),
+        interviewTime: z.string().optional(),
+        interviewType: z.enum(["in-person", "phone", "video"]).optional(),
+        location: z.string().nullable().optional(),
+        meetingLink: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        status: z.enum(["scheduled", "completed", "cancelled"]).optional(),
+      });
+      const input = updateSchema.parse(req.body);
+
+      const interview = await storage.getInterview(interviewId);
+      if (!interview) return res.status(404).json({ message: "Interview not found" });
+      if (interview.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+
+      const updated = await storage.updateInterview(interviewId, input);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to update interview" });
+    }
+  });
+
+  // Get interview for a specific application
+  app.get("/api/interviews/application/:applicationId", isAuthenticated, async (req, res) => {
+    const interview = await storage.getInterviewByApplication(Number(req.params.applicationId));
+    res.json(interview || null);
   });
 
   // === SUBSCRIPTIONS ===

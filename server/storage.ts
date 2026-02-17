@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -75,6 +75,14 @@ export interface IStorage {
   getOffersForEmployer(employerId: string): Promise<Offer[]>;
   updateOfferStatus(id: number, status: string): Promise<Offer>;
   
+  // Interview methods
+  createInterview(interview: InsertInterview): Promise<Interview>;
+  getInterview(id: number): Promise<Interview | undefined>;
+  getInterviewByApplication(applicationId: number): Promise<Interview | undefined>;
+  getInterviewsForJob(jobId: number): Promise<Interview[]>;
+  getInterviewsForApplicant(applicantId: string): Promise<Interview[]>;
+  updateInterview(id: number, updates: Partial<Interview>): Promise<Interview>;
+
   // Subscription methods
   getUsersBySubscription(status: string): Promise<User[]>;
 }
@@ -431,6 +439,41 @@ export class DatabaseStorage implements IStorage {
       .update(offers)
       .set({ status, updatedAt: new Date() })
       .where(eq(offers.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Interview methods
+  async createInterview(interview: InsertInterview): Promise<Interview> {
+    const [newInterview] = await db.insert(interviews).values(interview).returning();
+    return newInterview;
+  }
+
+  async getInterview(id: number): Promise<Interview | undefined> {
+    const [interview] = await db.select().from(interviews).where(eq(interviews.id, id));
+    return interview;
+  }
+
+  async getInterviewByApplication(applicationId: number): Promise<Interview | undefined> {
+    const [interview] = await db.select().from(interviews).where(
+      and(eq(interviews.applicationId, applicationId), eq(interviews.status, "scheduled"))
+    );
+    return interview;
+  }
+
+  async getInterviewsForJob(jobId: number): Promise<Interview[]> {
+    return await db.select().from(interviews).where(eq(interviews.jobId, jobId)).orderBy(desc(interviews.createdAt));
+  }
+
+  async getInterviewsForApplicant(applicantId: string): Promise<Interview[]> {
+    return await db.select().from(interviews).where(eq(interviews.applicantId, applicantId)).orderBy(desc(interviews.createdAt));
+  }
+
+  async updateInterview(id: number, updates: Partial<Interview>): Promise<Interview> {
+    const [updated] = await db
+      .update(interviews)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(interviews.id, id))
       .returning();
     return updated;
   }
