@@ -480,27 +480,35 @@ export default function Landing() {
               </AnimatePresence>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="relative rounded-md overflow-hidden bg-black aspect-video flex items-center justify-center group sticky top-24"
-              data-testid="video-container"
-            >
-              <img
-                src={workersImage}
-                alt="How Iseya works"
-                className="absolute inset-0 w-full h-full object-cover opacity-40"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
-              <div className="relative z-10 text-center">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/90 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-primary/30 cursor-pointer">
-                  <Play className="w-7 h-7 md:w-9 md:h-9 text-primary-foreground ml-1" />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={howItWorksTab + "-video"}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25 }}
+                className="relative rounded-md overflow-hidden bg-black aspect-video flex items-center justify-center group sticky top-24"
+                data-testid={`video-container-${howItWorksTab}`}
+              >
+                <img
+                  src={workersImage}
+                  alt={howItWorksTab === "seeker" ? "How to find jobs on Iseya" : "How to hire on Iseya"}
+                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+                <div className="relative z-10 text-center">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/90 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-primary/30 cursor-pointer">
+                    <Play className="w-7 h-7 md:w-9 md:h-9 text-primary-foreground ml-1" />
+                  </div>
+                  <p className="text-white font-semibold text-lg">
+                    {howItWorksTab === "seeker" ? "How to Find Jobs" : "How to Hire Workers"}
+                  </p>
+                  <p className="text-white/60 text-sm mt-1">
+                    {howItWorksTab === "seeker" ? "See how easy it is to get hired — 2 min video" : "Learn how to post jobs & hire fast — 2 min video"}
+                  </p>
                 </div>
-                <p className="text-white font-semibold text-lg">Watch How It Works</p>
-                <p className="text-white/60 text-sm mt-1">See Iseya in action — 2 min video</p>
-              </div>
-            </motion.div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </section>
