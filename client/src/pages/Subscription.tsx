@@ -41,14 +41,14 @@ const plans = [
     period: "per month",
     description: "Start hiring talent",
     features: [
-      "Post up to 3 jobs",
+      "Post up to 5 jobs",
       "View applicant profiles",
       "Basic applicant filtering",
       "Email support",
       "Standard job visibility",
     ],
     limitations: [
-      "Limited to 3 job postings",
+      "Limited to 5 job postings",
       "No priority listing",
       "No verified badge",
     ],

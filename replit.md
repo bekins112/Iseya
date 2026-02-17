@@ -84,13 +84,13 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
 - Subscription page at `/subscription` for employers to view/upgrade plans
 - Payment verification page at `/subscription/verify` (Paystack callback)
 - **Basic (Free)**: ₦0 - Post 1 job, browse platform
-- **Standard**: ₦9,999/month - Post up to 3 jobs
+- **Standard**: ₦9,999/month - Post up to 5 jobs
 - **Premium**: ₦24,999/month - Post up to 10 jobs, priority listing, verified badge
 - **Enterprise**: ₦44,999/month - Unlimited job postings, top priority, dedicated support
 
 ### Job Posting Limits
 - Enforced server-side in job creation route
-- Basic (free): 1 job, Standard: 3 jobs, Premium: 10 jobs, Enterprise: unlimited
+- Basic (free): 1 job, Standard: 5 jobs, Premium: 10 jobs, Enterprise: unlimited
 - Counts only active jobs (deactivated jobs don't count against limit)
 
 ### Paystack Payment Integration
