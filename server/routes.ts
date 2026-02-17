@@ -127,6 +127,27 @@ export async function registerRoutes(
     if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
       return res.status(403).json({ message: "Only employers can post jobs" });
     }
+
+    if (user.role === 'employer') {
+      const planLimits: Record<string, number> = { free: 0, standard: 3, premium: 10, enterprise: -1 };
+      const currentPlan = user.subscriptionStatus || "free";
+      const limit = planLimits[currentPlan] ?? 0;
+
+      if (limit !== -1) {
+        const employerJobs = await storage.getJobsByEmployer(user.id);
+        const activeJobCount = employerJobs.filter(j => j.isActive).length;
+        if (activeJobCount >= limit) {
+          const planName = currentPlan === "free" ? "Basic (Free)" : currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
+          return res.status(403).json({
+            message: limit === 0
+              ? `Your Basic (Free) plan does not include job postings. Please upgrade to Standard or higher to post jobs.`
+              : `You've reached the ${limit} active job limit for your ${planName} plan. Upgrade your plan to post more jobs.`,
+            code: "JOB_LIMIT_REACHED"
+          });
+        }
+      }
+    }
+
     try {
       const input = api.jobs.create.input.parse({
         ...req.body,
@@ -892,6 +913,169 @@ export async function registerRoutes(
       }
       res.status(400).json({ message: "Failed to update subscription" });
     }
+  });
+
+  // === PAYSTACK SUBSCRIPTION PAYMENT ===
+  const SUBSCRIPTION_PLANS: Record<string, { name: string; amount: number; jobLimit: number }> = {
+    free: { name: "Basic", amount: 0, jobLimit: 0 },
+    standard: { name: "Standard", amount: 999900, jobLimit: 3 },
+    premium: { name: "Premium", amount: 2499900, jobLimit: 10 },
+    enterprise: { name: "Enterprise", amount: 4499900, jobLimit: -1 },
+  };
+
+  app.get("/api/subscription/plans", (_req, res) => {
+    const plans = Object.entries(SUBSCRIPTION_PLANS).map(([id, plan]) => ({
+      id,
+      ...plan,
+      amountFormatted: `₦${(plan.amount / 100).toLocaleString()}`,
+    }));
+    res.json(plans);
+  });
+
+  app.post("/api/subscription/initialize", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "employer") {
+      return res.status(403).json({ message: "Only employers can subscribe" });
+    }
+
+    const { plan } = req.body;
+    if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
+      return res.status(400).json({ message: "Invalid plan selected" });
+    }
+
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) {
+      return res.status(500).json({ message: "Payment system is not configured" });
+    }
+
+    try {
+      const response = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${paystackSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user.email,
+          amount: SUBSCRIPTION_PLANS[plan].amount,
+          currency: "NGN",
+          callback_url: `${req.protocol}://${req.get("host")}/subscription/verify`,
+          metadata: {
+            userId: user.id,
+            plan,
+            planName: SUBSCRIPTION_PLANS[plan].name,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.status) {
+        return res.status(400).json({ message: data.message || "Failed to initialize payment" });
+      }
+
+      res.json({
+        authorization_url: data.data.authorization_url,
+        access_code: data.data.access_code,
+        reference: data.data.reference,
+      });
+    } catch (err) {
+      console.error("Paystack initialization error:", err);
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  app.get("/api/subscription/verify", isAuthenticated, async (req, res) => {
+    const { reference } = req.query;
+    if (!reference) {
+      return res.status(400).json({ message: "No payment reference provided" });
+    }
+
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) {
+      return res.status(500).json({ message: "Payment system is not configured" });
+    }
+
+    try {
+      const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: {
+          Authorization: `Bearer ${paystackSecret}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!data.status || data.data.status !== "success") {
+        return res.status(400).json({ message: "Payment verification failed", verified: false });
+      }
+
+      const { userId, plan } = data.data.metadata;
+      if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
+        return res.status(400).json({ message: "Invalid plan in payment metadata", verified: false });
+      }
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      await storage.updateUser(userId, {
+        subscriptionStatus: plan,
+        subscriptionEndDate: endDate,
+        paystackCustomerId: data.data.customer?.customer_code || null,
+      });
+
+      res.json({ verified: true, plan, message: "Subscription activated successfully" });
+    } catch (err) {
+      console.error("Paystack verification error:", err);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  app.post("/api/subscription/webhook", async (req, res) => {
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) return res.sendStatus(200);
+
+    const crypto = await import("crypto");
+    const hash = crypto.createHmac("sha512", paystackSecret)
+      .update(JSON.stringify(req.body))
+      .digest("hex");
+    const signature = req.headers["x-paystack-signature"];
+    if (hash !== signature) {
+      return res.sendStatus(401);
+    }
+
+    const event = req.body;
+    if (event.event === "charge.success") {
+      const { userId, plan } = event.data.metadata || {};
+      if (userId && plan && SUBSCRIPTION_PLANS[plan]) {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+        await storage.updateUser(userId, {
+          subscriptionStatus: plan,
+          subscriptionEndDate: endDate,
+        });
+      }
+    }
+    res.sendStatus(200);
+  });
+
+  app.get("/api/subscription/status", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const plan = SUBSCRIPTION_PLANS[user.subscriptionStatus || "free"] || SUBSCRIPTION_PLANS.free;
+    const employerJobs = await storage.getJobsByEmployer(user.id);
+    const activeJobCount = employerJobs.filter(j => j.isActive).length;
+
+    res.json({
+      currentPlan: user.subscriptionStatus || "free",
+      planName: plan.name,
+      jobLimit: plan.jobLimit,
+      activeJobCount,
+      canPostJob: plan.jobLimit === -1 || activeJobCount < plan.jobLimit,
+      subscriptionEndDate: user.subscriptionEndDate,
+    });
   });
 
   return httpServer;

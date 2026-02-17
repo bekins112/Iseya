@@ -80,19 +80,28 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
 ## Subscription System
 
 ### Current Implementation
-- Subscription status tracked in `users.subscriptionStatus` field ('free' or 'premium')
+- Subscription status tracked in `users.subscriptionStatus` field ('free', 'standard', 'premium', 'enterprise')
 - Subscription page at `/subscription` for employers to view/upgrade plans
-- Free tier: Limited to 3 job postings, basic features
-- Premium tier: ₦5,000/month - Unlimited jobs, priority listing, verified badge
+- Payment verification page at `/subscription/verify` (Paystack callback)
+- **Basic (Free)**: ₦0 - No job postings, browse platform only
+- **Standard**: ₦9,999/month - Post up to 3 jobs
+- **Premium**: ₦24,999/month - Post up to 10 jobs, priority listing, verified badge
+- **Enterprise**: ₦44,999/month - Unlimited job postings, top priority, dedicated support
 
-### Payment Integration (TODO)
-- **Paystack preferred** for Nigerian payment processing
-- Currently subscription upgrades are demonstration only (updates database status without payment)
-- **REMINDER**: Add Paystack API keys to enable real payments:
+### Job Posting Limits
+- Enforced server-side in job creation route
+- Basic (free): 0 jobs, Standard: 3 jobs, Premium: 10 jobs, Enterprise: unlimited
+- Counts only active jobs (deactivated jobs don't count against limit)
+
+### Paystack Payment Integration
+- Payment initialization: `POST /api/subscription/initialize` (requires auth)
+- Payment verification: `GET /api/subscription/verify?reference=xxx`
+- Webhook: `POST /api/subscription/webhook`
+- Subscription status: `GET /api/subscription/status`
+- **Required Secrets**:
   - `PAYSTACK_SECRET_KEY` - Starts with 'sk_test_' or 'sk_live_'
   - `PAYSTACK_PUBLIC_KEY` - Starts with 'pk_test_' or 'pk_live_'
   - Get keys from: https://dashboard.paystack.com/#/settings/developers
-- Flutterwave can be added as an alternative payment option
 
 ## Email Verification System
 

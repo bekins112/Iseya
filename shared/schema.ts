@@ -183,7 +183,7 @@ export const adminUpdateReportSchema = z.object({
 
 // Schema for admin subscription updates
 export const adminUpdateSubscriptionSchema = z.object({
-  subscriptionStatus: z.enum(["free", "premium"]).optional(),
+  subscriptionStatus: z.enum(["free", "standard", "premium", "enterprise"]).optional(),
   subscriptionEndDate: z.string().optional(),
 });
 

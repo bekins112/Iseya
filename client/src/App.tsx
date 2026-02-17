@@ -129,6 +129,12 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
+      <Route path="/subscription/verify">
+        <AuthenticatedLayout>
+          <Subscription />
+        </AuthenticatedLayout>
+      </Route>
+
       <Route path="/subscription">
         <AuthenticatedLayout>
           <Subscription />

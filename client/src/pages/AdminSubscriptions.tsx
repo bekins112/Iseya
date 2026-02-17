@@ -24,7 +24,7 @@ export default function AdminSubscriptions() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ 
-    subscriptionStatus: "free" as "free" | "premium", 
+    subscriptionStatus: "free" as "free" | "standard" | "premium" | "enterprise", 
     subscriptionEndDate: "" 
   });
 
@@ -59,13 +59,13 @@ export default function AdminSubscriptions() {
     return matchesSearch;
   });
 
-  const premiumCount = employers.filter(e => e.subscriptionStatus === "premium").length;
-  const freeCount = employers.filter(e => e.subscriptionStatus !== "premium").length;
+  const paidCount = employers.filter(e => e.subscriptionStatus && e.subscriptionStatus !== "free").length;
+  const freeCount = employers.filter(e => !e.subscriptionStatus || e.subscriptionStatus === "free").length;
 
   const openEditDialog = (employer: User) => {
     setEditingUser(employer);
     setEditForm({ 
-      subscriptionStatus: (employer.subscriptionStatus as "free" | "premium") || "free",
+      subscriptionStatus: (employer.subscriptionStatus as "free" | "standard" | "premium" | "enterprise") || "free",
       subscriptionEndDate: employer.subscriptionEndDate 
         ? format(new Date(employer.subscriptionEndDate), "yyyy-MM-dd") 
         : ""
@@ -104,9 +104,9 @@ export default function AdminSubscriptions() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Crown className="w-4 h-4 text-amber-600" />
-              <span className="text-sm text-muted-foreground">Premium</span>
+              <span className="text-sm text-muted-foreground">Paid Plans</span>
             </div>
-            <p className="text-2xl font-bold">{premiumCount}</p>
+            <p className="text-2xl font-bold">{paidCount}</p>
           </CardContent>
         </Card>
         <Card>
@@ -139,8 +139,10 @@ export default function AdminSubscriptions() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Subscriptions</SelectItem>
-                <SelectItem value="free">Free Tier</SelectItem>
+                <SelectItem value="free">Basic (Free)</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
                 <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="enterprise">Enterprise</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -182,13 +184,22 @@ export default function AdminSubscriptions() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      {employer.subscriptionStatus === "premium" ? (
+                      {employer.subscriptionStatus === "enterprise" ? (
+                        <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                          <Crown className="w-3 h-3 mr-1" />
+                          Enterprise
+                        </Badge>
+                      ) : employer.subscriptionStatus === "premium" ? (
                         <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                           <Crown className="w-3 h-3 mr-1" />
                           Premium
                         </Badge>
+                      ) : employer.subscriptionStatus === "standard" ? (
+                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Standard
+                        </Badge>
                       ) : (
-                        <Badge variant="secondary">Free</Badge>
+                        <Badge variant="secondary">Basic</Badge>
                       )}
                       {employer.subscriptionEndDate && (
                         <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -207,23 +218,14 @@ export default function AdminSubscriptions() {
                         <DropdownMenuItem onClick={() => openEditDialog(employer)}>
                           Edit Subscription
                         </DropdownMenuItem>
-                        {employer.subscriptionStatus !== "premium" ? (
-                          <DropdownMenuItem 
-                            onClick={() => updateSubscriptionMutation.mutate({ 
-                              userId: employer.id, 
-                              updates: { subscriptionStatus: "premium" } 
-                            })}
-                          >
-                            Upgrade to Premium
-                          </DropdownMenuItem>
-                        ) : (
+                        {employer.subscriptionStatus !== "free" && (
                           <DropdownMenuItem
                             onClick={() => updateSubscriptionMutation.mutate({ 
                               userId: employer.id, 
                               updates: { subscriptionStatus: "free" } 
                             })}
                           >
-                            Downgrade to Free
+                            Reset to Basic (Free)
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -246,18 +248,20 @@ export default function AdminSubscriptions() {
               <Label>Subscription Status</Label>
               <Select 
                 value={editForm.subscriptionStatus} 
-                onValueChange={(v: "free" | "premium") => setEditForm({ ...editForm, subscriptionStatus: v })}
+                onValueChange={(v: "free" | "standard" | "premium" | "enterprise") => setEditForm({ ...editForm, subscriptionStatus: v })}
               >
                 <SelectTrigger data-testid="select-edit-subscription">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
+                  <SelectItem value="free">Basic (Free)</SelectItem>
+                  <SelectItem value="standard">Standard (₦9,999/mo)</SelectItem>
+                  <SelectItem value="premium">Premium (₦24,999/mo)</SelectItem>
+                  <SelectItem value="enterprise">Enterprise (₦44,999/mo)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            {editForm.subscriptionStatus === "premium" && (
+            {editForm.subscriptionStatus !== "free" && (
               <div className="space-y-2">
                 <Label>Subscription End Date</Label>
                 <Input
