@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, Play } from "lucide-react";
+import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, Play, ClipboardList, Users, BadgeCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -35,6 +35,7 @@ export default function Landing() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [howItWorksTab, setHowItWorksTab] = useState<"seeker" | "employer">("seeker");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -375,56 +376,108 @@ export default function Landing() {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Get started in just a few simple steps — whether you're looking for work or hiring.</p>
           </motion.div>
 
+          <div className="flex items-center justify-center gap-2 mb-12">
+            <Button
+              variant={howItWorksTab === "seeker" ? "default" : "outline"}
+              onClick={() => setHowItWorksTab("seeker")}
+              className="font-semibold gap-2"
+              data-testid="button-how-seeker"
+            >
+              <Search className="w-4 h-4" />
+              Job Seeker
+            </Button>
+            <Button
+              variant={howItWorksTab === "employer" ? "default" : "outline"}
+              onClick={() => setHowItWorksTab("employer")}
+              className="font-semibold gap-2"
+              data-testid="button-how-employer"
+            >
+              <Building2 className="w-4 h-4" />
+              Employer
+            </Button>
+          </div>
+
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div className="space-y-0 relative">
               <div className="absolute left-6 top-8 bottom-8 w-px bg-border hidden sm:block" />
-              {[
-                {
-                  step: 1,
-                  icon: <UserPlus className="w-5 h-5" />,
-                  title: "Create Your Account",
-                  desc: "Sign up for free in under a minute. Choose your role — job seeker or employer.",
-                },
-                {
-                  step: 2,
-                  icon: <FileSearch className="w-5 h-5" />,
-                  title: "Browse or Post Jobs",
-                  desc: "Applicants browse jobs by category and location. Employers post jobs with details and requirements.",
-                },
-                {
-                  step: 3,
-                  icon: <Send className="w-5 h-5" />,
-                  title: "Apply or Review",
-                  desc: "Applicants send applications with a single tap. Employers review profiles and shortlist candidates.",
-                },
-                {
-                  step: 4,
-                  icon: <Handshake className="w-5 h-5" />,
-                  title: "Get Hired or Hire",
-                  desc: "Connect directly, agree on terms, and start working. It's that simple.",
-                },
-              ].map((item, i) => (
+              <AnimatePresence mode="wait">
                 <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15 }}
-                  className="flex gap-5 py-5 relative"
-                  data-testid={`step-${item.step}`}
+                  key={howItWorksTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
                 >
-                  <div className="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 font-bold text-lg shadow-md">
-                    {item.step}
-                  </div>
-                  <div className="pt-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-primary">{item.icon}</span>
-                      <h3 className="text-lg font-bold">{item.title}</h3>
+                  {(howItWorksTab === "seeker" ? [
+                    {
+                      step: 1,
+                      icon: <UserPlus className="w-5 h-5" />,
+                      title: "Create Your Free Account",
+                      desc: "Sign up in under a minute. Set your role as a job seeker, add your age and location.",
+                    },
+                    {
+                      step: 2,
+                      icon: <FileSearch className="w-5 h-5" />,
+                      title: "Browse Available Jobs",
+                      desc: "Search jobs by category, location, and type. Filter for part-time, full-time, or temporary work near you.",
+                    },
+                    {
+                      step: 3,
+                      icon: <Send className="w-5 h-5" />,
+                      title: "Apply with One Tap",
+                      desc: "Found a job you like? Send your application instantly. No CV required — just your skills and a short message.",
+                    },
+                    {
+                      step: 4,
+                      icon: <Handshake className="w-5 h-5" />,
+                      title: "Get Hired & Start Working",
+                      desc: "Employers review your profile and accept your application. Agree on terms and start earning.",
+                    },
+                  ] : [
+                    {
+                      step: 1,
+                      icon: <UserPlus className="w-5 h-5" />,
+                      title: "Register Your Business",
+                      desc: "Create an employer account with your company details, business category, and location.",
+                    },
+                    {
+                      step: 2,
+                      icon: <ClipboardList className="w-5 h-5" />,
+                      title: "Post a Job Listing",
+                      desc: "Describe the role, set salary range, location, and requirements. Your job goes live instantly.",
+                    },
+                    {
+                      step: 3,
+                      icon: <Users className="w-5 h-5" />,
+                      title: "Review Applicants",
+                      desc: "Browse applications as they come in. View profiles, experience, and contact details of interested candidates.",
+                    },
+                    {
+                      step: 4,
+                      icon: <BadgeCheck className="w-5 h-5" />,
+                      title: "Hire the Best Fit",
+                      desc: "Accept the right candidate, offer them the role, and get your team filled quickly and reliably.",
+                    },
+                  ]).map((item, i) => (
+                    <div
+                      key={i}
+                      className="flex gap-5 py-5 relative"
+                      data-testid={`step-${howItWorksTab}-${item.step}`}
+                    >
+                      <div className="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 font-bold text-lg shadow-md">
+                        {item.step}
+                      </div>
+                      <div className="pt-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-primary">{item.icon}</span>
+                          <h3 className="text-lg font-bold">{item.title}</h3>
+                        </div>
+                        <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
-                  </div>
+                  ))}
                 </motion.div>
-              ))}
+              </AnimatePresence>
             </div>
 
             <motion.div
