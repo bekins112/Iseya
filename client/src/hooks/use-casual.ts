@@ -82,11 +82,16 @@ export function useCreateJob() {
       });
 
       if (!res.ok) {
+        const err = await res.json();
+        if (res.status === 403 && err.code === "JOB_LIMIT_REACHED") {
+          const e = new Error(err.message || "Job limit reached");
+          (e as any).code = "JOB_LIMIT_REACHED";
+          throw e;
+        }
         if (res.status === 400) {
-           const err = await res.json();
            throw new Error(err.message || "Validation failed");
         }
-        throw new Error("Failed to create job");
+        throw new Error(err.message || "Failed to create job");
       }
       return api.jobs.create.responses[201].parse(await res.json());
     },
@@ -94,7 +99,8 @@ export function useCreateJob() {
       queryClient.invalidateQueries({ queryKey: [api.jobs.list.path] });
       toast({ title: "Job Posted", description: "Your job listing is now live." });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      if (error.code === "JOB_LIMIT_REACHED") return;
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   });

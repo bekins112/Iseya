@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateJob } from "@/hooks/use-casual";
 import { insertJobSchema } from "@shared/schema";
 import { z } from "zod";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
+import { AlertTriangle, ArrowUpCircle } from "lucide-react";
 
 const categories = [
   "Waitress / Waiter",
@@ -44,6 +46,7 @@ export default function PostJob() {
   const { user } = useAuth();
   const createJob = useCreateJob();
   const [, setLocation] = useLocation();
+  const [limitMessage, setLimitMessage] = useState<string | null>(null);
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(postJobSchema),
@@ -63,6 +66,7 @@ export default function PostJob() {
   });
 
   const onSubmit = (data: JobFormValues) => {
+    setLimitMessage(null);
     createJob.mutate({
         ...data,
         ageMin: data.ageMin || null,
@@ -70,13 +74,40 @@ export default function PostJob() {
         employerId: user!.id,
         isActive: true,
     }, {
-      onSuccess: () => setLocation("/dashboard")
+      onSuccess: () => setLocation("/dashboard"),
+      onError: (error: any) => {
+        if (error.code === "JOB_LIMIT_REACHED") {
+          setLimitMessage(error.message);
+        }
+      }
     });
   };
 
   return (
     <div className="max-w-2xl mx-auto">
       <PageHeader title="Post a New Job" description="Find the perfect candidate for your needs." />
+
+      {limitMessage && (
+        <Card className="mb-6 border-destructive/50 bg-destructive/5">
+          <CardContent className="py-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-destructive" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-base mb-1">Job Posting Limit Reached</h3>
+                <p className="text-sm text-muted-foreground">{limitMessage}</p>
+              </div>
+              <Link href="/subscription">
+                <Button data-testid="button-upgrade-plan">
+                  <ArrowUpCircle className="w-4 h-4 mr-2" />
+                  Upgrade Plan
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="pt-6">
