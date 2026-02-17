@@ -31,11 +31,154 @@ const bannerSlides = [
   },
 ];
 
+const testimonials = [
+  {
+    name: "Adewale Ogundimu",
+    role: "Delivery Rider, Lagos",
+    quote: "I found three delivery gigs within my first week on Iseya. The platform is so easy to use, and I love that I can pick jobs that fit my schedule.",
+    rating: 5,
+  },
+  {
+    name: "Chidinma Eze",
+    role: "Restaurant Owner, Abuja",
+    quote: "As a business owner, finding reliable part-time staff used to be a headache. With Iseya, I post a job and get qualified applicants within hours. It has saved me so much time.",
+    rating: 5,
+  },
+  {
+    name: "Tunde Bakare",
+    role: "Event Staff, Port Harcourt",
+    quote: "Iseya connected me with event companies I never knew existed in my area. I now work weekends at events and earn extra income to support my family.",
+    rating: 4,
+  },
+  {
+    name: "Funke Adeyemi",
+    role: "Hotel Manager, Lagos",
+    quote: "We hire temporary housekeeping staff through Iseya regularly. The workers are vetted and reliable. Our go-to platform for casual hires.",
+    rating: 5,
+  },
+  {
+    name: "Ibrahim Musa",
+    role: "Cleaner, Kano",
+    quote: "No CV needed, just my skills. I registered, applied, and got my first cleaning job the same day. Iseya is a game changer for people like me.",
+    rating: 5,
+  },
+  {
+    name: "Blessing Okafor",
+    role: "Catering Business, Enugu",
+    quote: "I use Iseya to find waiters and kitchen assistants whenever I have a big catering order. The subscription plan is affordable and worth every naira.",
+    rating: 4,
+  },
+];
+
+function TestimonialsCarousel({ testimonialIndex, setTestimonialIndex }: { testimonialIndex: number; setTestimonialIndex: (v: number | ((p: number) => number)) => void }) {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTestimonialIndex((prev: number) => (prev + 1) % testimonials.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [setTestimonialIndex]);
+
+  return (
+    <section className="py-24 bg-muted/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">What Our Members Say</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Real stories from workers and employers who found success on Iseya.</p>
+        </motion.div>
+
+        <div className="relative">
+          <div className="overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={testimonialIndex}
+                initial={{ opacity: 0, x: 80 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -80 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="grid md:grid-cols-2 gap-8"
+              >
+                {[0, 1].map((offset) => {
+                  const idx = (testimonialIndex + offset) % testimonials.length;
+                  const testimonial = testimonials[idx];
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-card p-8 rounded-md border shadow-sm relative"
+                      data-testid={`card-testimonial-${idx}`}
+                    >
+                      <Quote className="w-8 h-8 text-primary/20 absolute top-6 right-6" />
+                      <div className="flex gap-1 mb-4">
+                        {Array.from({ length: 5 }).map((_, s) => (
+                          <Star
+                            key={s}
+                            className={`w-4 h-4 ${s < testimonial.rating ? "text-primary fill-primary" : "text-muted-foreground/30"}`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-muted-foreground leading-relaxed mb-6">"{testimonial.quote}"</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                          {testimonial.name.split(" ").map(n => n[0]).join("")}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm" data-testid={`text-testimonial-name-${idx}`}>{testimonial.name}</div>
+                          <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <button
+            onClick={() => setTestimonialIndex((prev: number) => (prev - 1 + testimonials.length) % testimonials.length)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 p-2 rounded-full bg-card border shadow-sm text-foreground transition-colors"
+            aria-label="Previous testimonial"
+            data-testid="button-testimonial-prev"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setTestimonialIndex((prev: number) => (prev + 1) % testimonials.length)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 p-2 rounded-full bg-card border shadow-sm text-foreground transition-colors"
+            aria-label="Next testimonial"
+            data-testid="button-testimonial-next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 mt-8">
+          {testimonials.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setTestimonialIndex(i)}
+              className={`w-2.5 h-2.5 rounded-full transition-all ${
+                testimonialIndex === i ? "bg-primary w-6" : "bg-muted-foreground/30"
+              }`}
+              aria-label={`Go to testimonial ${i + 1}`}
+              data-testid={`button-testimonial-dot-${i}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Landing() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [howItWorksTab, setHowItWorksTab] = useState<"seeker" | "employer">("seeker");
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -513,90 +656,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-24 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">What Our Members Say</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Real stories from workers and employers who found success on Iseya.</p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Adewale Ogundimu",
-                role: "Delivery Rider, Lagos",
-                quote: "I found three delivery gigs within my first week on Iseya. The platform is so easy to use, and I love that I can pick jobs that fit my schedule.",
-                rating: 5,
-              },
-              {
-                name: "Chidinma Eze",
-                role: "Restaurant Owner, Abuja",
-                quote: "As a business owner, finding reliable part-time staff used to be a headache. With Iseya, I post a job and get qualified applicants within hours. It has saved me so much time.",
-                rating: 5,
-              },
-              {
-                name: "Tunde Bakare",
-                role: "Event Staff, Port Harcourt",
-                quote: "Iseya connected me with event companies I never knew existed in my area. I now work weekends at events and earn extra income to support my family.",
-                rating: 4,
-              },
-              {
-                name: "Funke Adeyemi",
-                role: "Hotel Manager, Lagos",
-                quote: "We hire temporary housekeeping staff through Iseya regularly. The workers are vetted and reliable. Our go-to platform for casual hires.",
-                rating: 5,
-              },
-              {
-                name: "Ibrahim Musa",
-                role: "Cleaner, Kano",
-                quote: "No CV needed, just my skills. I registered, applied, and got my first cleaning job the same day. Iseya is a game changer for people like me.",
-                rating: 5,
-              },
-              {
-                name: "Blessing Okafor",
-                role: "Catering Business, Enugu",
-                quote: "I use Iseya to find waiters and kitchen assistants whenever I have a big catering order. The subscription plan is affordable and worth every naira.",
-                rating: 4,
-              },
-            ].map((testimonial, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-card p-8 rounded-md border shadow-sm relative"
-                data-testid={`card-testimonial-${i}`}
-              >
-                <Quote className="w-8 h-8 text-primary/20 absolute top-6 right-6" />
-                <div className="flex gap-1 mb-4">
-                  {Array.from({ length: 5 }).map((_, s) => (
-                    <Star
-                      key={s}
-                      className={`w-4 h-4 ${s < testimonial.rating ? "text-primary fill-primary" : "text-muted-foreground/30"}`}
-                    />
-                  ))}
-                </div>
-                <p className="text-muted-foreground leading-relaxed mb-6">"{testimonial.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                    {testimonial.name.split(" ").map(n => n[0]).join("")}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-sm" data-testid={`text-testimonial-name-${i}`}>{testimonial.name}</div>
-                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <TestimonialsCarousel testimonialIndex={testimonialIndex} setTestimonialIndex={setTestimonialIndex} />
 
       <section className="py-20 bg-primary/5">
         <div className="max-w-4xl mx-auto px-4 text-center">
