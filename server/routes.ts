@@ -129,7 +129,7 @@ export async function registerRoutes(
     }
 
     if (user.role === 'employer') {
-      const planLimits: Record<string, number> = { free: 0, standard: 3, premium: 10, enterprise: -1 };
+      const planLimits: Record<string, number> = { free: 1, standard: 3, premium: 10, enterprise: -1 };
       const currentPlan = user.subscriptionStatus || "free";
       const limit = planLimits[currentPlan] ?? 0;
 
@@ -917,7 +917,7 @@ export async function registerRoutes(
 
   // === PAYSTACK SUBSCRIPTION PAYMENT ===
   const SUBSCRIPTION_PLANS: Record<string, { name: string; amount: number; jobLimit: number }> = {
-    free: { name: "Basic", amount: 0, jobLimit: 0 },
+    free: { name: "Basic", amount: 0, jobLimit: 1 },
     standard: { name: "Standard", amount: 999900, jobLimit: 3 },
     premium: { name: "Premium", amount: 2499900, jobLimit: 10 },
     enterprise: { name: "Enterprise", amount: 4499900, jobLimit: -1 },

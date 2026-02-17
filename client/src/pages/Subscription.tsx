@@ -19,12 +19,13 @@ const plans = [
     period: "forever",
     description: "Explore the platform",
     features: [
+      "Post 1 job",
       "Create employer profile",
       "Browse applicant listings",
       "Basic support",
     ],
     limitations: [
-      "Cannot post jobs",
+      "Limited to 1 job posting",
       "No priority listing",
       "No verified badge",
     ],
@@ -241,8 +242,6 @@ export default function Subscription() {
                   <p className="text-sm text-muted-foreground mt-1">
                     {subscriptionStatus.jobLimit === -1
                       ? "Unlimited job postings"
-                      : subscriptionStatus.jobLimit === 0
-                      ? "No job postings included"
                       : `${subscriptionStatus.activeJobCount}/${subscriptionStatus.jobLimit} jobs posted`}
                   </p>
                 )}
