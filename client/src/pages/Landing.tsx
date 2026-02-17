@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, Play } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -357,6 +357,180 @@ export default function Landing() {
                 </div>
                 <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
                 <p className="text-muted-foreground text-lg leading-relaxed">{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 border-y">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">How It Works</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Get started in just a few simple steps — whether you're looking for work or hiring.</p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            <div className="space-y-0 relative">
+              <div className="absolute left-6 top-8 bottom-8 w-px bg-border hidden sm:block" />
+              {[
+                {
+                  step: 1,
+                  icon: <UserPlus className="w-5 h-5" />,
+                  title: "Create Your Account",
+                  desc: "Sign up for free in under a minute. Choose your role — job seeker or employer.",
+                },
+                {
+                  step: 2,
+                  icon: <FileSearch className="w-5 h-5" />,
+                  title: "Browse or Post Jobs",
+                  desc: "Applicants browse jobs by category and location. Employers post jobs with details and requirements.",
+                },
+                {
+                  step: 3,
+                  icon: <Send className="w-5 h-5" />,
+                  title: "Apply or Review",
+                  desc: "Applicants send applications with a single tap. Employers review profiles and shortlist candidates.",
+                },
+                {
+                  step: 4,
+                  icon: <Handshake className="w-5 h-5" />,
+                  title: "Get Hired or Hire",
+                  desc: "Connect directly, agree on terms, and start working. It's that simple.",
+                },
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15 }}
+                  className="flex gap-5 py-5 relative"
+                  data-testid={`step-${item.step}`}
+                >
+                  <div className="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 font-bold text-lg shadow-md">
+                    {item.step}
+                  </div>
+                  <div className="pt-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-primary">{item.icon}</span>
+                      <h3 className="text-lg font-bold">{item.title}</h3>
+                    </div>
+                    <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative rounded-md overflow-hidden bg-black aspect-video flex items-center justify-center group sticky top-24"
+              data-testid="video-container"
+            >
+              <img
+                src={workersImage}
+                alt="How Iseya works"
+                className="absolute inset-0 w-full h-full object-cover opacity-40"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
+              <div className="relative z-10 text-center">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/90 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-primary/30 cursor-pointer">
+                  <Play className="w-7 h-7 md:w-9 md:h-9 text-primary-foreground ml-1" />
+                </div>
+                <p className="text-white font-semibold text-lg">Watch How It Works</p>
+                <p className="text-white/60 text-sm mt-1">See Iseya in action — 2 min video</p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">What Our Members Say</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Real stories from workers and employers who found success on Iseya.</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Adewale Ogundimu",
+                role: "Delivery Rider, Lagos",
+                quote: "I found three delivery gigs within my first week on Iseya. The platform is so easy to use, and I love that I can pick jobs that fit my schedule.",
+                rating: 5,
+              },
+              {
+                name: "Chidinma Eze",
+                role: "Restaurant Owner, Abuja",
+                quote: "As a business owner, finding reliable part-time staff used to be a headache. With Iseya, I post a job and get qualified applicants within hours. It has saved me so much time.",
+                rating: 5,
+              },
+              {
+                name: "Tunde Bakare",
+                role: "Event Staff, Port Harcourt",
+                quote: "Iseya connected me with event companies I never knew existed in my area. I now work weekends at events and earn extra income to support my family.",
+                rating: 4,
+              },
+              {
+                name: "Funke Adeyemi",
+                role: "Hotel Manager, Lagos",
+                quote: "We hire temporary housekeeping staff through Iseya regularly. The workers are vetted and reliable. Our go-to platform for casual hires.",
+                rating: 5,
+              },
+              {
+                name: "Ibrahim Musa",
+                role: "Cleaner, Kano",
+                quote: "No CV needed, just my skills. I registered, applied, and got my first cleaning job the same day. Iseya is a game changer for people like me.",
+                rating: 5,
+              },
+              {
+                name: "Blessing Okafor",
+                role: "Catering Business, Enugu",
+                quote: "I use Iseya to find waiters and kitchen assistants whenever I have a big catering order. The subscription plan is affordable and worth every naira.",
+                rating: 4,
+              },
+            ].map((testimonial, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-card p-8 rounded-md border shadow-sm relative"
+                data-testid={`card-testimonial-${i}`}
+              >
+                <Quote className="w-8 h-8 text-primary/20 absolute top-6 right-6" />
+                <div className="flex gap-1 mb-4">
+                  {Array.from({ length: 5 }).map((_, s) => (
+                    <Star
+                      key={s}
+                      className={`w-4 h-4 ${s < testimonial.rating ? "text-primary fill-primary" : "text-muted-foreground/30"}`}
+                    />
+                  ))}
+                </div>
+                <p className="text-muted-foreground leading-relaxed mb-6">"{testimonial.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                    {testimonial.name.split(" ").map(n => n[0]).join("")}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm" data-testid={`text-testimonial-name-${i}`}>{testimonial.name}</div>
+                    <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
