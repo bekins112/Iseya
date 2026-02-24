@@ -640,7 +640,13 @@ export async function registerRoutes(
 
   app.get("/api/download/cv/:filename", isAuthenticated, async (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(process.cwd(), "uploads", "cv", filename);
+    if (!/^[a-zA-Z0-9_\-]+\.\w+$/.test(filename)) {
+      return res.status(400).json({ message: "Invalid filename" });
+    }
+    const filePath = path.resolve(process.cwd(), "uploads", "cv", filename);
+    if (!filePath.startsWith(path.resolve(process.cwd(), "uploads", "cv"))) {
+      return res.status(403).json({ message: "Access denied" });
+    }
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: "File not found" });
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.sendFile(filePath);
