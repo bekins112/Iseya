@@ -108,6 +108,12 @@ export async function setupAuth(app: Express) {
       const { password: _, ...safeUser } = user;
 
       res.status(201).json(safeUser);
+
+      if (user.email) {
+        const { sendWelcomeEmail } = await import("./email");
+        const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
+        sendWelcomeEmail(user.email, userName, user.role || "applicant").catch(() => {});
+      }
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });

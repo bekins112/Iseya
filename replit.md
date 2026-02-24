@@ -113,16 +113,34 @@ Users choose between Paystack and Flutterwave at checkout via a dialog.
 #### Shared
 - Subscription status: `GET /api/subscription/status`
 
-## Email Verification System
+## Email System (Mailjet)
 
-### Current Status: DISABLED
+### Transactional Email via Mailjet
+- **Module**: `server/email.ts` — all email functions use Mailjet API v3.1 via `node-mailjet`
+- **Required Secrets**: `MJ_APIKEY_PUBLIC`, `MJ_APIKEY_PRIVATE`, `MJ_SENDER_EMAIL`
+- All emails use branded HTML templates with yellow-gold Iṣéyá header
+- Emails are fire-and-forget (`.catch(() => {})`) — failures are logged but don't block user actions
+
+### Email Types Sent
+| Event | Recipients | Function |
+|-------|-----------|----------|
+| Registration | New user | `sendWelcomeEmail` |
+| Application submitted | Applicant + Employer | `sendApplicationReceivedEmail` + `sendNewApplicationNotifyEmployer` |
+| Application status changed | Applicant | `sendApplicationStatusEmail` (shortlisted/rejected/accepted/offered) |
+| Offer sent | Applicant | `sendOfferEmail` |
+| Offer accepted/declined | Employer | `sendOfferResponseEmail` |
+| Interview scheduled | Applicant | `sendInterviewScheduledEmail` |
+| Subscription activated | Employer | `sendSubscriptionEmail` (Paystack + Flutterwave) |
+| Verification approved | Applicant | `sendVerificationApprovedEmail` |
+| Verification rejected | Applicant | `sendVerificationRejectedEmail` |
+| Email verification code | User | `sendVerificationEmail` (currently disabled) |
+| Password reset | User | `sendPasswordResetEmail` (available, not yet wired) |
+
+### Email Verification (DISABLED)
 - Email verification has been temporarily disabled per user request
 - All enforcement removed: no frontend redirect to `/verify-email`, no backend 403 checks
-- Registration no longer generates/sends verification codes
 - Schema fields (`emailVerified`, `emailVerificationCode`, `emailVerificationExpiry`) remain in database for future use
-- Verification API routes (`POST /api/auth/send-verification`, `POST /api/auth/verify-email`) still exist but are not enforced
-- **To re-enable**: Add email verification checks back in `client/src/App.tsx`, `server/routes.ts` (job create + application create), and registration flow in `server/auth.ts`
-- **Email module**: `server/email.ts` uses Resend API (requires `RESEND_API_KEY` secret)
+- Verification API routes still exist but are not enforced
 
 ### Login Security
 - Image-based CAPTCHA on login form using svg-captcha (server-side validated)

@@ -8,6 +8,18 @@ import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermiss
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import {
+  sendWelcomeEmail,
+  sendApplicationReceivedEmail,
+  sendNewApplicationNotifyEmployer,
+  sendApplicationStatusEmail,
+  sendOfferEmail,
+  sendOfferResponseEmail,
+  sendInterviewScheduledEmail,
+  sendSubscriptionEmail,
+  sendVerificationApprovedEmail,
+  sendVerificationRejectedEmail,
+} from "./email";
 
 for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo"]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -253,6 +265,17 @@ export async function registerRoutes(
       });
       const app = await storage.createApplication(input);
       res.status(201).json(app);
+
+      const jobForEmail = await storage.getJob(req.body.jobId);
+      if (jobForEmail && user.email) {
+        const employer = await storage.getUser(jobForEmail.employerId);
+        const applicantName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Applicant";
+        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
+        sendApplicationReceivedEmail(user.email!, applicantName, jobForEmail.title, companyName).catch(() => {});
+        if (employer?.email) {
+          sendNewApplicationNotifyEmployer(employer.email, companyName, applicantName, jobForEmail.title).catch(() => {});
+        }
+      }
     } catch (err) {
        if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -343,6 +366,14 @@ export async function registerRoutes(
       const input = api.applications.updateStatus.input.parse(req.body);
       const updatedApp = await storage.updateApplicationStatus(appId, input.status);
       res.json(updatedApp);
+
+      const applicant = await storage.getUser(application.applicantId);
+      if (applicant?.email && job) {
+        const employer = await storage.getUser(job.employerId);
+        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
+        const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
+        sendApplicationStatusEmail(applicant.email, applicantName, job.title, input.status, companyName).catch(() => {});
+      }
     } catch (err) {
       res.status(400).json({ message: "Invalid input" });
     }
@@ -873,6 +904,13 @@ export async function registerRoutes(
       await storage.updateApplicationStatus(input.applicationId, "offered");
 
       res.status(201).json(offer);
+
+      const applicant = await storage.getUser(application.applicantId);
+      if (applicant?.email && job) {
+        const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
+        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
+        sendOfferEmail(applicant.email, applicantName, job.title, companyName, input.salary, input.note).catch(() => {});
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
@@ -934,6 +972,15 @@ export async function registerRoutes(
       }
 
       res.json(updated);
+
+      const employer = await storage.getUser(offer.employerId);
+      const applicant = await storage.getUser(offer.applicantId);
+      const job = await storage.getJob(offer.jobId);
+      if (employer?.email && applicant && job) {
+        const employerName = employer.companyName || `${employer.firstName || ""} ${employer.lastName || ""}`.trim() || "Employer";
+        const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
+        sendOfferResponseEmail(employer.email, employerName, applicantName, job.title, input.status).catch(() => {});
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
@@ -990,6 +1037,18 @@ export async function registerRoutes(
       });
 
       res.status(201).json(interview);
+
+      const applicant = await storage.getUser(application.applicantId);
+      const employer = await storage.getUser(employerId);
+      if (applicant?.email && job) {
+        const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
+        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
+        sendInterviewScheduledEmail(
+          applicant.email, applicantName, job.title, companyName,
+          input.interviewDate, input.interviewTime, input.interviewType,
+          input.location, input.meetingLink, input.notes
+        ).catch(() => {});
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
@@ -1222,6 +1281,11 @@ export async function registerRoutes(
       });
 
       res.json({ verified: true, plan, message: "Subscription activated successfully" });
+
+      if (user.email) {
+        const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
+        sendSubscriptionEmail(user.email, userName, plan).catch(() => {});
+      }
     } catch (err) {
       console.error("Paystack verification error:", err);
       res.status(500).json({ message: "Failed to verify payment" });
@@ -1368,6 +1432,11 @@ export async function registerRoutes(
       });
 
       res.json({ verified: true, plan, message: "Subscription activated successfully" });
+
+      if (user.email) {
+        const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
+        sendSubscriptionEmail(user.email, userName, plan).catch(() => {});
+      }
     } catch (err) {
       console.error("Flutterwave verification error:", err);
       res.status(500).json({ message: "Failed to verify payment" });
@@ -1693,6 +1762,16 @@ export async function registerRoutes(
     }
 
     res.json(updated);
+
+    const verifiedUser = await storage.getUser(request.userId);
+    if (verifiedUser?.email) {
+      const userName = `${verifiedUser.firstName || ""} ${verifiedUser.lastName || ""}`.trim() || "User";
+      if (status === "approved") {
+        sendVerificationApprovedEmail(verifiedUser.email, userName).catch(() => {});
+      } else {
+        sendVerificationRejectedEmail(verifiedUser.email, userName, adminNotes).catch(() => {});
+      }
+    }
   });
 
   return httpServer;
