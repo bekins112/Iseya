@@ -70,6 +70,25 @@ const uploadLogo = multer({
   },
 });
 
+const verificationDocStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/verification"),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.session.userId}_${file.fieldname}_${Date.now()}${ext}`);
+  },
+});
+
+const uploadVerificationDocs = multer({
+  storage: verificationDocStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".webp", ".pdf"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only image files (JPG, PNG, WEBP) and PDF are allowed"));
+  },
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -1366,6 +1385,273 @@ export async function registerRoutes(
       canPostJob: plan.jobLimit === -1 || activeJobCount < plan.jobLimit,
       subscriptionEndDate: user.subscriptionEndDate,
     });
+  });
+
+  // === APPLICANT VERIFICATION SYSTEM ===
+  const VERIFICATION_FEE = 999900; // ₦9,999 in kobo for Paystack
+  const VERIFICATION_FEE_NAIRA = 9999; // ₦9,999 for Flutterwave
+
+  // Ensure uploads/verification directory exists
+  if (!fs.existsSync(path.join(process.cwd(), "uploads", "verification"))) {
+    fs.mkdirSync(path.join(process.cwd(), "uploads", "verification"), { recursive: true });
+  }
+
+  // Get verification status for current user
+  app.get("/api/verification/status", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const request = await storage.getVerificationRequestByUser(user.id);
+    res.json({
+      isVerified: user.isVerified || false,
+      request: request || null,
+    });
+  });
+
+  // Submit verification request with ID documents
+  app.post("/api/verification/submit", isAuthenticated, uploadVerificationDocs.fields([
+    { name: "idDocument", maxCount: 1 },
+    { name: "selfie", maxCount: 1 },
+  ]), async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role !== "applicant") return res.status(403).json({ message: "Only applicants can request verification" });
+    if (user.isVerified) return res.status(400).json({ message: "You are already verified" });
+
+    const existing = await storage.getVerificationRequestByUser(user.id);
+    if (existing && (existing.status === "pending" || existing.status === "under_review")) {
+      return res.status(400).json({ message: "You already have a pending verification request" });
+    }
+
+    const { idType, idNumber } = req.body;
+    if (!idType || !idNumber) {
+      return res.status(400).json({ message: "ID type and ID number are required" });
+    }
+
+    const validIdTypes = ["nin", "voters_card", "drivers_license", "international_passport"];
+    if (!validIdTypes.includes(idType)) {
+      return res.status(400).json({ message: "Invalid ID type" });
+    }
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const idDocumentUrl = files?.idDocument?.[0] ? `/uploads/verification/${files.idDocument[0].filename}` : null;
+    const selfieUrl = files?.selfie?.[0] ? `/uploads/verification/${files.selfie[0].filename}` : null;
+
+    const request = await storage.createVerificationRequest({
+      userId: user.id,
+      idType,
+      idNumber,
+      idDocumentUrl,
+      selfieUrl,
+      status: "pending",
+    });
+
+    res.json(request);
+  });
+
+  // Initialize verification payment via Paystack
+  app.post("/api/verification/pay/paystack", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "applicant") return res.status(403).json({ message: "Only applicants can pay for verification" });
+    if (user.isVerified) return res.status(400).json({ message: "You are already verified" });
+
+    const existing = await storage.getVerificationRequestByUser(user.id);
+    if (!existing || existing.status !== "pending") {
+      return res.status(400).json({ message: "Please submit your verification documents first" });
+    }
+
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) return res.status(500).json({ message: "Payment system is not configured" });
+
+    try {
+      const response = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${paystackSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user.email,
+          amount: VERIFICATION_FEE,
+          currency: "NGN",
+          callback_url: `${req.protocol}://${req.get("host")}/verification/verify`,
+          metadata: {
+            userId: user.id,
+            type: "verification",
+            requestId: existing.id,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.status) return res.status(400).json({ message: data.message || "Failed to initialize payment" });
+
+      res.json({ authorization_url: data.data.authorization_url, reference: data.data.reference });
+    } catch (err) {
+      console.error("Verification Paystack init error:", err);
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  // Verify verification payment via Paystack
+  app.get("/api/verification/verify/paystack", isAuthenticated, async (req, res) => {
+    const reference = req.query.reference as string;
+    if (!reference) return res.status(400).json({ message: "No reference provided", verified: false });
+
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) return res.status(500).json({ message: "Payment system not configured" });
+
+    try {
+      const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: { Authorization: `Bearer ${paystackSecret}` },
+      });
+      const data = await response.json();
+
+      if (!data.status || data.data.status !== "success") {
+        return res.status(400).json({ message: "Payment verification failed", verified: false });
+      }
+
+      const { userId, type, requestId } = data.data.metadata || {};
+      if (type !== "verification" || !requestId) {
+        return res.status(400).json({ message: "Invalid payment metadata", verified: false });
+      }
+
+      await storage.updateVerificationRequest(Number(requestId), { status: "under_review" });
+      res.json({ verified: true, message: "Payment received! Your verification is now under review." });
+    } catch (err) {
+      console.error("Verification Paystack verify error:", err);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  // Initialize verification payment via Flutterwave
+  app.post("/api/verification/pay/flutterwave", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "applicant") return res.status(403).json({ message: "Only applicants can pay for verification" });
+    if (user.isVerified) return res.status(400).json({ message: "You are already verified" });
+
+    const existing = await storage.getVerificationRequestByUser(user.id);
+    if (!existing || existing.status !== "pending") {
+      return res.status(400).json({ message: "Please submit your verification documents first" });
+    }
+
+    const flwSecret = process.env.FLW_SECRET_KEY;
+    if (!flwSecret) return res.status(500).json({ message: "Flutterwave payment system is not configured" });
+
+    try {
+      const txRef = `iseya-verify-${user.id}-${Date.now()}`;
+      const response = await fetch("https://api.flutterwave.com/v3/payments", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${flwSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tx_ref: txRef,
+          amount: VERIFICATION_FEE_NAIRA,
+          currency: "NGN",
+          redirect_url: `${req.protocol}://${req.get("host")}/verification/verify?gateway=flutterwave`,
+          customer: {
+            email: user.email,
+            name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.email || "Customer"),
+          },
+          customizations: {
+            title: "Iṣéyá Verification",
+            description: "Applicant Identity Verification Fee",
+          },
+          meta: {
+            userId: user.id,
+            type: "verification",
+            requestId: existing.id,
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status !== "success") return res.status(400).json({ message: data.message || "Failed to initialize payment" });
+
+      res.json({ authorization_url: data.data.link, tx_ref: txRef });
+    } catch (err) {
+      console.error("Verification Flutterwave init error:", err);
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  // Verify verification payment via Flutterwave
+  app.get("/api/verification/verify/flutterwave", isAuthenticated, async (req, res) => {
+    const transactionId = req.query.transaction_id as string;
+    if (!transactionId) return res.status(400).json({ message: "No transaction ID provided", verified: false });
+
+    const flwSecret = process.env.FLW_SECRET_KEY;
+    if (!flwSecret) return res.status(500).json({ message: "Flutterwave payment system not configured" });
+
+    try {
+      const response = await fetch(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
+        headers: { Authorization: `Bearer ${flwSecret}` },
+      });
+      const data = await response.json();
+
+      if (data.status !== "success" || data.data.status !== "successful") {
+        return res.status(400).json({ message: "Payment verification failed", verified: false });
+      }
+
+      const { userId, type, requestId } = data.data.meta || {};
+      if (type !== "verification" || !requestId) {
+        return res.status(400).json({ message: "Invalid payment metadata", verified: false });
+      }
+
+      await storage.updateVerificationRequest(Number(requestId), { status: "under_review" });
+      res.json({ verified: true, message: "Payment received! Your verification is now under review." });
+    } catch (err) {
+      console.error("Verification Flutterwave verify error:", err);
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  // Admin: Get all verification requests
+  app.get("/api/admin/verification-requests", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+      return res.status(403).json({ message: "You don't have permission to manage verifications" });
+    }
+    const status = req.query.status as string | undefined;
+    const requests = await storage.getAllVerificationRequests(status ? { status } : undefined);
+    const enriched = await Promise.all(requests.map(async (r) => {
+      const user = await storage.getUser(r.userId);
+      return {
+        ...r,
+        userName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "Unknown",
+        userEmail: user?.email || "Unknown",
+        userProfileImage: user?.profileImageUrl || null,
+      };
+    }));
+    res.json(enriched);
+  });
+
+  // Admin: Review verification request (approve/reject)
+  app.patch("/api/admin/verification-requests/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+      return res.status(403).json({ message: "You don't have permission to manage verifications" });
+    }
+
+    const { status, adminNotes } = req.body;
+    if (!status || !["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ message: "Status must be 'approved' or 'rejected'" });
+    }
+
+    const request = await storage.getVerificationRequest(Number(req.params.id));
+    if (!request) return res.status(404).json({ message: "Verification request not found" });
+
+    const updated = await storage.updateVerificationRequest(request.id, {
+      status,
+      adminNotes: adminNotes || null,
+      reviewedBy: req.session.userId!,
+      reviewedAt: new Date(),
+    });
+
+    if (status === "approved") {
+      await storage.updateUser(request.userId, { isVerified: true });
+    }
+
+    res.json(updated);
   });
 
   return httpServer;
