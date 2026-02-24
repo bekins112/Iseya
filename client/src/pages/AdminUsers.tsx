@@ -25,7 +25,16 @@ export default function AdminUsers() {
   const [editForm, setEditForm] = useState({ role: "", isVerified: false });
 
   const { data: users = [], isLoading } = useQuery<User[]>({
-    queryKey: ["/api/admin/users", { role: roleFilter !== "all" ? roleFilter : undefined, search: search || undefined }],
+    queryKey: ["/api/admin/users", roleFilter, search],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (roleFilter !== "all") params.set("role", roleFilter);
+      if (search) params.set("search", search);
+      const url = `/api/admin/users${params.toString() ? `?${params}` : ""}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
   });
 
   const updateUserMutation = useMutation({

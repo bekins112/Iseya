@@ -588,7 +588,9 @@ export async function registerRoutes(
 
   // Admin: Get single ticket
   app.get("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req: any, res) => {
-    const ticket = await storage.getTicket(Number(req.params.id));
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ticket ID" });
+    const ticket = await storage.getTicket(id);
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
     res.json(ticket);
   });

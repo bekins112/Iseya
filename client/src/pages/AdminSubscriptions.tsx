@@ -29,7 +29,15 @@ export default function AdminSubscriptions() {
   });
 
   const { data: employers = [], isLoading } = useQuery<User[]>({
-    queryKey: ["/api/admin/subscriptions", { status: statusFilter !== "all" ? statusFilter : undefined }],
+    queryKey: ["/api/admin/subscriptions", statusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      const url = `/api/admin/subscriptions${params.toString() ? `?${params}` : ""}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch subscriptions");
+      return res.json();
+    },
   });
 
   const updateSubscriptionMutation = useMutation({
