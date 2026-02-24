@@ -131,7 +131,9 @@ export async function registerRoutes(
   });
 
   app.get(api.jobs.get.path, async (req, res) => {
-    const job = await storage.getJob(Number(req.params.id));
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid job ID" });
+    const job = await storage.getJob(id);
     if (!job) return res.status(404).json({ message: "Job not found" });
     const employer = await storage.getUser(job.employerId);
     res.json({
@@ -187,6 +189,7 @@ export async function registerRoutes(
 
   app.delete(api.jobs.delete.path, isAuthenticated, async (req, res) => {
     const jobId = Number(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     const job = await storage.getJob(jobId);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
@@ -204,6 +207,7 @@ export async function registerRoutes(
 
   app.patch(api.jobs.update.path, isAuthenticated, async (req, res) => {
     const jobId = Number(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     const job = await storage.getJob(jobId);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
@@ -262,6 +266,7 @@ export async function registerRoutes(
 
   app.get(api.applications.listForJob.path, isAuthenticated, async (req, res) => {
     const jobId = Number(req.params.jobId);
+    if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     const job = await storage.getJob(jobId);
     const userId = req.session.userId!;
 
@@ -315,6 +320,7 @@ export async function registerRoutes(
 
   app.get(api.applications.get.path, isAuthenticated, async (req, res) => {
     const appId = Number(req.params.id);
+    if (isNaN(appId)) return res.status(400).json({ message: "Invalid application ID" });
     const application = await storage.getApplication(appId);
     if (!application) return res.status(404).json({ message: "Application not found" });
     res.json(application);
@@ -322,6 +328,7 @@ export async function registerRoutes(
 
   app.patch(api.applications.updateStatus.path, isAuthenticated, async (req, res) => {
     const appId = Number(req.params.id);
+    if (isNaN(appId)) return res.status(400).json({ message: "Invalid application ID" });
     const application = await storage.getApplication(appId);
     if (!application) return res.status(404).json({ message: "Application not found" });
 
@@ -345,6 +352,7 @@ export async function registerRoutes(
   app.delete("/api/applications/:id", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     const appId = Number(req.params.id);
+    if (isNaN(appId)) return res.status(400).json({ message: "Invalid application ID" });
     const application = await storage.getApplication(appId);
     if (!application) return res.status(404).json({ message: "Application not found" });
     if (application.applicantId !== userId) return res.status(403).json({ message: "Not authorized" });
@@ -421,9 +429,11 @@ export async function registerRoutes(
     if (req.adminPermissions && !req.adminPermissions.canManageJobs) {
       return res.status(403).json({ message: "You don't have permission to manage jobs" });
     }
+    const jobId = Number(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     try {
       const input = adminUpdateJobSchema.parse(req.body);
-      const job = await storage.updateJob(Number(req.params.id), input);
+      const job = await storage.updateJob(jobId, input);
       res.json(job);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -437,8 +447,10 @@ export async function registerRoutes(
     if (req.adminPermissions && !req.adminPermissions.canManageJobs) {
       return res.status(403).json({ message: "You don't have permission to delete jobs" });
     }
+    const jobId = Number(req.params.id);
+    if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     try {
-      await storage.deleteJob(Number(req.params.id));
+      await storage.deleteJob(jobId);
       res.status(204).send();
     } catch (err) {
       res.status(400).json({ message: "Failed to delete job" });
@@ -597,9 +609,11 @@ export async function registerRoutes(
 
   // Admin: Update ticket
   app.patch("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) return res.status(400).json({ message: "Invalid ticket ID" });
     try {
       const input = adminUpdateTicketSchema.parse(req.body);
-      const ticket = await storage.updateTicket(Number(req.params.id), input);
+      const ticket = await storage.updateTicket(ticketId, input);
       res.json(ticket);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -642,16 +656,20 @@ export async function registerRoutes(
 
   // Admin: Get single report
   app.get("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
-    const report = await storage.getReport(Number(req.params.id));
+    const reportId = Number(req.params.id);
+    if (isNaN(reportId)) return res.status(400).json({ message: "Invalid report ID" });
+    const report = await storage.getReport(reportId);
     if (!report) return res.status(404).json({ message: "Report not found" });
     res.json(report);
   });
 
   // Admin: Update report
   app.patch("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    const reportId = Number(req.params.id);
+    if (isNaN(reportId)) return res.status(400).json({ message: "Invalid report ID" });
     try {
       const input = adminUpdateReportSchema.parse(req.body);
-      const report = await storage.updateReport(Number(req.params.id), input);
+      const report = await storage.updateReport(reportId, input);
       res.json(report);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -785,6 +803,7 @@ export async function registerRoutes(
   app.patch("/api/job-history/:id", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid job history ID" });
     try {
       const updateSchema = z.object({
         jobTitle: z.string().min(1).optional(),
@@ -808,7 +827,9 @@ export async function registerRoutes(
 
   app.delete("/api/job-history/:id", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
-    await storage.deleteJobHistory(Number(req.params.id), userId);
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid job history ID" });
+    await storage.deleteJobHistory(id, userId);
     res.status(204).send();
   });
 
@@ -891,6 +912,7 @@ export async function registerRoutes(
   app.patch("/api/offers/:id/respond", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     const offerId = Number(req.params.id);
+    if (isNaN(offerId)) return res.status(400).json({ message: "Invalid offer ID" });
 
     const responseSchema = z.object({
       status: z.enum(["accepted", "declined"]),
@@ -980,6 +1002,7 @@ export async function registerRoutes(
   app.get("/api/jobs/:jobId/interviews", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
     const jobId = Number(req.params.jobId);
+    if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     const job = await storage.getJob(jobId);
     if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
 
@@ -1018,6 +1041,7 @@ export async function registerRoutes(
   app.patch("/api/interviews/:id", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
     const interviewId = Number(req.params.id);
+    if (isNaN(interviewId)) return res.status(400).json({ message: "Invalid interview ID" });
 
     try {
       const updateSchema = z.object({
@@ -1652,7 +1676,9 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Status must be 'approved' or 'rejected'" });
     }
 
-    const request = await storage.getVerificationRequest(Number(req.params.id));
+    const requestId = Number(req.params.id);
+    if (isNaN(requestId)) return res.status(400).json({ message: "Invalid verification request ID" });
+    const request = await storage.getVerificationRequest(requestId);
     if (!request) return res.status(404).json({ message: "Verification request not found" });
 
     const updated = await storage.updateVerificationRequest(request.id, {
