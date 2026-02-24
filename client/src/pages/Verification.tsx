@@ -259,7 +259,7 @@ export default function Verification() {
             <CardDescription>
               {isPending 
                 ? "Your documents have been submitted. Pay ₦9,999 to complete verification."
-                : "Submit your government-issued ID for verification. One-time fee of ₦9,999."
+                : "Upload your government-issued ID card and a selfie holding the ID to prove your identity. One-time fee of ₦9,999."
               }
             </CardDescription>
           </CardHeader>
@@ -292,7 +292,10 @@ export default function Verification() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ID Document Photo</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      ID Card Photo <span className="text-red-500">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">Upload a clear, well-lit photo of your government-issued ID card (front side)</p>
                     <input
                       ref={idDocRef}
                       type="file"
@@ -302,26 +305,31 @@ export default function Verification() {
                     />
                     <Button
                       variant="outline"
-                      className="w-full h-20 flex flex-col gap-1"
+                      className="w-full h-24 flex flex-col gap-1"
                       onClick={() => idDocRef.current?.click()}
                       data-testid="button-upload-id-doc"
                     >
                       {idDocument ? (
                         <>
-                          <FileText className="w-5 h-5 text-green-600" />
-                          <span className="text-xs truncate max-w-full">{idDocument.name}</span>
+                          <FileText className="w-6 h-6 text-green-600" />
+                          <span className="text-xs truncate max-w-full font-medium">{idDocument.name}</span>
+                          <span className="text-[10px] text-green-600">Uploaded</span>
                         </>
                       ) : (
                         <>
-                          <Upload className="w-5 h-5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Upload ID Photo</span>
+                          <Upload className="w-6 h-6 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground font-medium">Upload ID Card Photo</span>
+                          <span className="text-[10px] text-muted-foreground">JPG, PNG, WebP, or PDF</span>
                         </>
                       )}
                     </Button>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Selfie Photo</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                      Verification Selfie <span className="text-red-500">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">Take a selfie holding your ID card next to your face to confirm your identity</p>
                     <input
                       ref={selfieRef}
                       type="file"
@@ -331,19 +339,21 @@ export default function Verification() {
                     />
                     <Button
                       variant="outline"
-                      className="w-full h-20 flex flex-col gap-1"
+                      className="w-full h-24 flex flex-col gap-1"
                       onClick={() => selfieRef.current?.click()}
                       data-testid="button-upload-selfie"
                     >
                       {selfie ? (
                         <>
-                          <Camera className="w-5 h-5 text-green-600" />
-                          <span className="text-xs truncate max-w-full">{selfie.name}</span>
+                          <Camera className="w-6 h-6 text-green-600" />
+                          <span className="text-xs truncate max-w-full font-medium">{selfie.name}</span>
+                          <span className="text-[10px] text-green-600">Uploaded</span>
                         </>
                       ) : (
                         <>
-                          <Camera className="w-5 h-5 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Upload Selfie</span>
+                          <Camera className="w-6 h-6 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground font-medium">Upload Selfie with ID</span>
+                          <span className="text-[10px] text-muted-foreground">JPG, PNG, or WebP</span>
                         </>
                       )}
                     </Button>
@@ -353,7 +363,7 @@ export default function Verification() {
                 <Button
                   className="w-full gap-2"
                   onClick={() => submitMutation.mutate()}
-                  disabled={!idType || !idNumber || submitMutation.isPending}
+                  disabled={!idType || !idNumber || !idDocument || !selfie || submitMutation.isPending}
                   data-testid="button-submit-verification"
                 >
                   {submitMutation.isPending ? (

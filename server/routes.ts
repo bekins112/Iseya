@@ -1442,6 +1442,13 @@ export async function registerRoutes(
     const idDocumentUrl = files?.idDocument?.[0] ? `/uploads/verification/${files.idDocument[0].filename}` : null;
     const selfieUrl = files?.selfie?.[0] ? `/uploads/verification/${files.selfie[0].filename}` : null;
 
+    if (!idDocumentUrl) {
+      return res.status(400).json({ message: "ID document photo is required. Please upload a clear photo of your government-issued ID card." });
+    }
+    if (!selfieUrl) {
+      return res.status(400).json({ message: "Selfie photo is required. Please upload a clear selfie holding your ID card to verify your identity." });
+    }
+
     const request = await storage.createVerificationRequest({
       userId: user.id,
       idType,
