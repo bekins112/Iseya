@@ -111,6 +111,22 @@ export const interviews = pgTable("interviews", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Verification requests table for applicant identity verification
+export const verificationRequests = pgTable("verification_requests", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  idType: varchar("id_type").notNull(), // 'nin', 'voters_card', 'drivers_license', 'international_passport'
+  idNumber: varchar("id_number").notNull(),
+  idDocumentUrl: varchar("id_document_url"),
+  selfieUrl: varchar("selfie_url"),
+  status: varchar("status").notNull().default("pending"), // 'pending', 'under_review', 'approved', 'rejected'
+  adminNotes: text("admin_notes"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Admin permissions table for sub-admin access control
 export const adminPermissions = pgTable("admin_permissions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -132,6 +148,7 @@ export const insertApplicationSchema = createInsertSchema(applications).omit({ i
 export const insertJobHistorySchema = createInsertSchema(jobHistory).omit({ id: true, createdAt: true });
 export const insertOfferSchema = createInsertSchema(offers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertInterviewSchema = createInsertSchema(interviews).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertVerificationRequestSchema = createInsertSchema(verificationRequests).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTicketSchema = createInsertSchema(tickets).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true, updatedAt: true });
 
@@ -234,6 +251,9 @@ export type InsertOffer = z.infer<typeof insertOfferSchema>;
 
 export type Interview = typeof interviews.$inferSelect;
 export type InsertInterview = z.infer<typeof insertInterviewSchema>;
+
+export type VerificationRequest = typeof verificationRequests.$inferSelect;
+export type InsertVerificationRequest = z.infer<typeof insertVerificationRequestSchema>;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;

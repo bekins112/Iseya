@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -82,6 +82,13 @@ export interface IStorage {
   getInterviewsForJob(jobId: number): Promise<Interview[]>;
   getInterviewsForApplicant(applicantId: string): Promise<Interview[]>;
   updateInterview(id: number, updates: Partial<Interview>): Promise<Interview>;
+
+  // Verification request methods
+  createVerificationRequest(request: InsertVerificationRequest): Promise<VerificationRequest>;
+  getVerificationRequest(id: number): Promise<VerificationRequest | undefined>;
+  getVerificationRequestByUser(userId: string): Promise<VerificationRequest | undefined>;
+  getAllVerificationRequests(filters?: { status?: string }): Promise<VerificationRequest[]>;
+  updateVerificationRequest(id: number, updates: Partial<VerificationRequest>): Promise<VerificationRequest>;
 
   // Subscription methods
   getUsersBySubscription(status: string): Promise<User[]>;
@@ -474,6 +481,42 @@ export class DatabaseStorage implements IStorage {
       .update(interviews)
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(interviews.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Verification request methods
+  async createVerificationRequest(request: InsertVerificationRequest): Promise<VerificationRequest> {
+    const [newRequest] = await db.insert(verificationRequests).values(request).returning();
+    return newRequest;
+  }
+
+  async getVerificationRequest(id: number): Promise<VerificationRequest | undefined> {
+    const [request] = await db.select().from(verificationRequests).where(eq(verificationRequests.id, id));
+    return request;
+  }
+
+  async getVerificationRequestByUser(userId: string): Promise<VerificationRequest | undefined> {
+    const [request] = await db.select().from(verificationRequests)
+      .where(eq(verificationRequests.userId, userId))
+      .orderBy(desc(verificationRequests.createdAt))
+      .limit(1);
+    return request;
+  }
+
+  async getAllVerificationRequests(filters?: { status?: string }): Promise<VerificationRequest[]> {
+    const conditions = [];
+    if (filters?.status) conditions.push(eq(verificationRequests.status, filters.status));
+    return await db.select().from(verificationRequests)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(desc(verificationRequests.createdAt));
+  }
+
+  async updateVerificationRequest(id: number, updates: Partial<VerificationRequest>): Promise<VerificationRequest> {
+    const [updated] = await db
+      .update(verificationRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(verificationRequests.id, id))
       .returning();
     return updated;
   }
