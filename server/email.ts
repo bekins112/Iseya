@@ -1,13 +1,14 @@
 import Mailjet from "node-mailjet";
 
-const mailjet = new Mailjet({
-  apiKey: process.env.MJ_APIKEY_PUBLIC || "",
-  apiSecret: process.env.MJ_APIKEY_PRIVATE || "",
-});
-
-const senderEmail = process.env.MJ_SENDER_EMAIL || "noreply@iseya.com";
 const senderName = "Iṣéyá";
 const brandColor = "#d4a017";
+
+function getMailjetClient() {
+  return new Mailjet({
+    apiKey: process.env.MJ_APIKEY_PUBLIC || "",
+    apiSecret: process.env.MJ_APIKEY_PRIVATE || "",
+  });
+}
 
 function emailWrapper(content: string): string {
   return `
@@ -28,13 +29,18 @@ function emailWrapper(content: string): string {
 }
 
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
-  if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
+  const apiKey = process.env.MJ_APIKEY_PUBLIC;
+  const apiSecret = process.env.MJ_APIKEY_PRIVATE;
+  const senderEmail = process.env.MJ_SENDER_EMAIL || "noreply@iseya.com";
+
+  if (!apiKey || !apiSecret) {
     console.warn("Mailjet not configured — skipping email to", to);
     return false;
   }
 
   try {
-    await mailjet.post("send", { version: "v3.1" }).request({
+    const client = getMailjetClient();
+    const result = await client.post("send", { version: "v3.1" }).request({
       Messages: [
         {
           From: { Email: senderEmail, Name: senderName },
@@ -47,7 +53,7 @@ async function sendEmail(to: string, toName: string, subject: string, htmlBody: 
     console.log(`Email sent to ${to}: ${subject}`);
     return true;
   } catch (err: any) {
-    console.error("Mailjet send error:", err?.statusCode || err?.message || err);
+    console.error("Mailjet send error:", err?.statusCode, err?.response?.body || err?.message || err);
     return false;
   }
 }
