@@ -15,7 +15,8 @@ import {
   Settings,
   BarChart3,
   Ticket,
-  Flag
+  Flag,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -38,6 +39,7 @@ export function Sidebar() {
       { href: "/admin/tickets", label: "Support Tickets", icon: Ticket },
       { href: "/admin/reports", label: "Reports", icon: Flag },
       { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },
+      { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck },
     ] : isEmployer ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
       { href: "/post-job", label: "Post a Job", icon: PlusCircle },
@@ -45,6 +47,7 @@ export function Sidebar() {
     ] : [
       { href: "/jobs", label: "Find Jobs", icon: Briefcase },
       { href: "/my-applications", label: "Applications", icon: FolderOpen },
+      { href: "/verification", label: "Get Verified", icon: ShieldCheck },
     ]),
     { href: "/profile", label: "Profile", icon: User },
   ];

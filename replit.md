@@ -158,6 +158,7 @@ Each sub-admin can be granted any combination of these permissions:
 - `/admin/tickets` - Support ticket management with assignment, priority, and status workflow
 - `/admin/reports` - User and job reports review with action tracking
 - `/admin/sub-admins` - Sub-admin creation and permission management
+- `/admin/verifications` - Applicant identity verification request management
 
 ### Admin API Routes (all require admin role)
 - `GET /api/admin/stats` - Platform statistics
@@ -172,6 +173,38 @@ Each sub-admin can be granted any combination of these permissions:
 - `PATCH /api/admin/admins/:userId/permissions` - Update sub-admin permissions
 - `DELETE /api/admin/admins/:userId` - Remove admin privileges
 - `GET /api/admin/my-permissions` - Get current admin's permissions
+
+## Applicant Verification System
+
+### Overview
+Applicants can get verified by submitting government-issued ID and paying a one-time fee of ₦9,999. Verified applicants receive a verified badge, priority in application listings, background check from the team, and are more attractive to employers.
+
+### Verification Flow
+1. Applicant navigates to `/verification` (via sidebar "Get Verified" link)
+2. Submits government ID (NIN, Voter's Card, Driver's License, or International Passport) with ID number, document photo, and selfie
+3. Pays ₦9,999 via Paystack or Flutterwave
+4. Request moves to "under_review" status
+5. Admin reviews documents at `/admin/verifications` and approves/rejects
+6. On approval, user's `isVerified` field is set to `true`
+
+### Verification Benefits
+- Verified badge displayed on profile and application cards
+- Applications sorted with verified applicants first
+- Background check performed by admin team
+- Higher employer confidence for pre-offer interviews
+
+### API Routes
+- `GET /api/verification/status` - Get current user's verification status
+- `POST /api/verification/submit` - Submit verification documents (multipart form)
+- `POST /api/verification/pay/paystack` - Initialize Paystack payment for verification
+- `GET /api/verification/verify/paystack` - Verify Paystack payment
+- `POST /api/verification/pay/flutterwave` - Initialize Flutterwave payment for verification
+- `GET /api/verification/verify/flutterwave` - Verify Flutterwave payment
+- `GET /api/admin/verification-requests` - Admin: list all verification requests
+- `PATCH /api/admin/verification-requests/:id` - Admin: approve/reject verification
+
+### Database Table
+- `verification_requests` - Tracks verification requests with ID type, number, document URLs, status (pending/under_review/approved/rejected), admin notes, and review info
 
 ### Setting Up the First Admin
 To make yourself an admin, update your user role in the database:

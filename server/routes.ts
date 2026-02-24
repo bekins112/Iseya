@@ -279,8 +279,14 @@ export async function registerRoutes(
         applicantCvUrl: applicant?.cvUrl || null,
         applicantGender: applicant?.gender || null,
         applicantAge: applicant?.age || null,
+        applicantIsVerified: applicant?.isVerified || false,
       };
     }));
+    enriched.sort((a, b) => {
+      if (a.applicantIsVerified && !b.applicantIsVerified) return -1;
+      if (!a.applicantIsVerified && b.applicantIsVerified) return 1;
+      return 0;
+    });
     res.json(enriched);
   });
 

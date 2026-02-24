@@ -32,6 +32,8 @@ import AdminSubscriptions from "@/pages/AdminSubscriptions";
 import AdminStatistics from "@/pages/AdminStatistics";
 import AdminTickets from "@/pages/AdminTickets";
 import AdminReports from "@/pages/AdminReports";
+import AdminVerifications from "@/pages/AdminVerifications";
+import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
 import Contact from "@/pages/Contact";
@@ -122,6 +124,18 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
+      <Route path="/verification/verify">
+        <AuthenticatedLayout>
+          <Verification />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/verification">
+        <AuthenticatedLayout>
+          <Verification />
+        </AuthenticatedLayout>
+      </Route>
+
       {/* Employer applicant management */}
       <Route path="/jobs/:id/applications">
         <AuthenticatedLayout>
@@ -197,6 +211,12 @@ function Router() {
       <Route path="/admin/reports">
         <AuthenticatedLayout>
           <AdminReports />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/verifications">
+        <AuthenticatedLayout>
+          <AdminVerifications />
         </AuthenticatedLayout>
       </Route>
 

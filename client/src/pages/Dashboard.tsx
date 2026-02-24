@@ -4,6 +4,7 @@ import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobH
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -212,8 +213,18 @@ function ApplicantProfile() {
                 <h3 className="text-lg font-bold" data-testid="text-applicant-name">
                   {user?.firstName} {user?.lastName}
                 </h3>
-                {user?.isVerified && (
-                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                {user?.isVerified ? (
+                  <Badge variant="outline" className="text-xs text-green-600 border-green-500 bg-green-50 dark:bg-green-950/30">
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    Verified
+                  </Badge>
+                ) : (
+                  <Link href="/verification">
+                    <Badge variant="outline" className="text-xs text-primary border-primary/50 cursor-pointer hover:bg-primary/10 transition">
+                      <ShieldCheck className="w-3 h-3 mr-1" />
+                      Get Verified
+                    </Badge>
+                  </Link>
                 )}
               </div>
               <div className="flex items-center gap-1 mt-1">

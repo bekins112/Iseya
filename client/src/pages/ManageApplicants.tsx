@@ -33,6 +33,7 @@ import {
   Phone,
   Link2,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -59,6 +60,7 @@ type EnrichedApplication = Application & {
   applicantCvUrl?: string | null;
   applicantGender?: string | null;
   applicantAge?: number | null;
+  applicantIsVerified?: boolean;
 };
 
 type StatusFilter = 'all' | 'pending' | 'offered' | 'accepted' | 'rejected';
@@ -575,6 +577,12 @@ function ApplicantCard({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-bold" data-testid={`text-applicant-name-${application.id}`}>{name}</h3>
+                  {application.applicantIsVerified && (
+                    <Badge variant="outline" className="text-xs text-green-600 border-green-500 bg-green-50 dark:bg-green-950/30">
+                      <ShieldCheck className="w-3 h-3 mr-1" />
+                      Verified
+                    </Badge>
+                  )}
                   <Badge 
                     variant="secondary" 
                     className={`${statusConfig[status]?.color} text-white`}
