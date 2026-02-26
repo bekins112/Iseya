@@ -190,6 +190,9 @@ export default function About() {
             <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-foreground">
               Disclaimer
             </Link>
+            <Link href="/copyright" className="text-sm text-muted-foreground hover:text-foreground">
+              Copyright
+            </Link>
           </div>
         </div>
       </footer>

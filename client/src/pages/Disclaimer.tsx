@@ -183,6 +183,9 @@ export default function Disclaimer() {
             <Link href="/disclaimer" className="text-sm text-primary font-medium">
               Disclaimer
             </Link>
+            <Link href="/copyright" className="text-sm text-muted-foreground hover:text-foreground">
+              Copyright
+            </Link>
           </div>
         </div>
       </footer>
