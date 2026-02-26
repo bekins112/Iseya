@@ -26,6 +26,9 @@ export function getSession() {
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
+    errorLog: (err: Error) => {
+      console.error("[session-store] Error:", err.message);
+    },
   });
   return session({
     secret: process.env.SESSION_SECRET!,
