@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowLeft, Users, Target, Heart, Shield, Briefcase, CheckCircle2 } from "lucide-react";
+import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
 export default function About() {
@@ -170,11 +171,19 @@ export default function About() {
 
       <footer className="border-t py-8 px-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-            <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
+              <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <a href="https://instagram.com/iseya_ng" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Instagram"><SiInstagram className="w-3.5 h-3.5" /></a>
+              <a href="https://linkedin.com/company/iseya" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="LinkedIn"><SiLinkedin className="w-3.5 h-3.5" /></a>
+              <a href="https://x.com/iseya_ng" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="X (Twitter)"><SiX className="w-3.5 h-3.5" /></a>
+              <a href="https://facebook.com/iseyang" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Facebook"><SiFacebook className="w-3.5 h-3.5" /></a>
+            </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 flex-wrap">
             <Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground">
               Browse Jobs
             </Link>

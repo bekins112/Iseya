@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, ClipboardList, Users, BadgeCheck } from "lucide-react";
+import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -784,8 +785,24 @@ export default function Landing() {
             </div>
           </div>
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">2026 Iseya. All rights reserved.</p>
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <p className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</p>
+              <div className="flex items-center gap-3" data-testid="social-links-footer">
+                <a href="https://instagram.com/iseya_ng" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-instagram" aria-label="Instagram">
+                  <SiInstagram className="w-4 h-4" />
+                </a>
+                <a href="https://linkedin.com/company/iseya" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-linkedin" aria-label="LinkedIn">
+                  <SiLinkedin className="w-4 h-4" />
+                </a>
+                <a href="https://x.com/iseya_ng" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-twitter" aria-label="X (Twitter)">
+                  <SiX className="w-4 h-4" />
+                </a>
+                <a href="https://facebook.com/iseyang" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-facebook" aria-label="Facebook">
+                  <SiFacebook className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+            <div className="flex items-center gap-6 flex-wrap justify-center">
               <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
               <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQs</Link>
               <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
