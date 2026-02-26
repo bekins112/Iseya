@@ -148,6 +148,28 @@ Users choose between Paystack and Flutterwave at checkout via a dialog.
 - CAPTCHA stored in session and validated on the server during login (not bypassable)
 - Fresh CAPTCHA loaded on page load and after each failed attempt
 
+## Access Control & Gating
+
+### Applicant Verification Gating
+- Non-verified applicants CAN apply for jobs and view their applications
+- Non-verified applicants CANNOT cancel/withdraw applications or respond to offers
+- Applications page shows amber verification banner for unverified users with "Get Verified" CTA
+- Action buttons (Cancel, Respond to Offer) are hidden/disabled for unverified applicants
+- Backend enforces verification check on `DELETE /api/applications/:id` and `PATCH /api/offers/:id/respond`
+
+### Employer Subscription Gating
+- Free-tier employers CAN post their first job and view their job listings
+- Free-tier employers CANNOT manage jobs (edit/toggle active), view applicant lists, update application status, or send offers
+- ManageJobs page shows amber subscription banner for free-tier employers with "Upgrade Plan" CTA
+- ManageApplicants page shows full-page subscription required screen when 403 is returned
+- Backend enforces subscription check on `GET /api/jobs/:jobId/applications`, `PATCH /api/jobs/:id`, `PATCH /api/applications/:id/status`
+
+### Applicant Contact Info Masking
+- Employers CANNOT see email/phone of non-verified applicants
+- Backend returns `null` for email and phone in applicant enrichment and profile endpoint when applicant is not verified
+- Profile dialog shows "Contact info hidden — applicant not verified" message
+- Applicant cards only show email when available (already handled by conditional rendering)
+
 ## Employer Company Profile Fields
 - `companyName`, `businessCategory`, `companyLogo` (original)
 - `companyAddress`, `companyCity`, `companyState` (Nigerian states)

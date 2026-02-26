@@ -56,6 +56,7 @@ import {
 type EnrichedApplication = Application & {
   applicantName?: string;
   applicantEmail?: string | null;
+  applicantPhone?: string | null;
   applicantProfileImageUrl?: string | null;
   applicantCvUrl?: string | null;
   applicantGender?: string | null;
@@ -107,10 +108,23 @@ function ApplicantProfileDialog({ applicantId, open, onOpenChange }: { applicant
                 <h3 className="font-bold text-lg" data-testid="text-profile-name">
                   {profile.firstName} {profile.lastName}
                 </h3>
-                <p className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-profile-email">
-                  <Mail className="w-3 h-3" />
-                  {profile.email}
-                </p>
+                {profile.email ? (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1" data-testid="text-profile-email">
+                    <Mail className="w-3 h-3" />
+                    {profile.email}
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5" data-testid="text-contact-hidden">
+                    <ShieldCheck className="w-3 h-3" />
+                    Contact info hidden — applicant not verified
+                  </p>
+                )}
+                {profile.phone && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5" data-testid="text-profile-phone">
+                    <Phone className="w-3 h-3" />
+                    {profile.phone}
+                  </p>
+                )}
                 {profile.isVerified && (
                   <Badge variant="outline" className="mt-1 text-green-600 border-green-500">
                     <CheckCircle2 className="w-3 h-3 mr-1" />
@@ -765,7 +779,7 @@ export default function ManageApplicants() {
   const params = useParams();
   const jobId = Number(params.id);
   const { data: job, isLoading: jobLoading } = useJob(jobId);
-  const { data: applications, isLoading: appsLoading } = useJobApplications(jobId);
+  const { data: applications, isLoading: appsLoading, error: appsError } = useJobApplications(jobId);
   const { data: interviewsData } = useJobInterviews(jobId);
   const updateStatus = useUpdateApplicationStatus();
   const updateInterview = useUpdateInterview();
@@ -823,6 +837,35 @@ export default function ManageApplicants() {
             <div key={i} className="h-24 bg-muted/40 rounded-xl animate-pulse" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if ((appsError as any)?.code === "SUBSCRIPTION_REQUIRED") {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Link href="/manage-jobs">
+            <Button variant="ghost" size="icon" data-testid="button-back-to-jobs-sub">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <PageHeader title="Subscription Required" description="Upgrade to manage applicants" />
+        </div>
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700" data-testid="banner-subscription-required">
+          <CardContent className="p-6 text-center">
+            <Briefcase className="w-12 h-12 mx-auto mb-4 text-amber-600 dark:text-amber-400" />
+            <h3 className="font-bold text-lg mb-2">Upgrade Your Plan</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              You need an active subscription to view and manage job applicants. Upgrade now to access all applicant profiles, send offers, and schedule interviews.
+            </p>
+            <Link href="/subscription">
+              <Button className="gap-2" data-testid="button-upgrade-subscription">
+                Upgrade Plan
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }

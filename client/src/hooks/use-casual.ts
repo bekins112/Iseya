@@ -175,10 +175,19 @@ export function useJobApplications(jobId: number) {
     queryFn: async () => {
       const url = buildUrl(api.applications.listForJob.path, { jobId });
       const res = await fetch(url, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch applications");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const err = new Error(data.message || "Failed to fetch applications");
+        (err as any).code = data.code;
+        throw err;
+      }
       return api.applications.listForJob.responses[200].parse(await res.json());
     },
     enabled: !!jobId,
+    retry: (failureCount, error: any) => {
+      if (error?.code === "SUBSCRIPTION_REQUIRED") return false;
+      return failureCount < 3;
+    },
   });
 }
 

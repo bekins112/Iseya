@@ -213,6 +213,10 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    if (user?.role === 'employer' && user.subscriptionStatus === "free") {
+      return res.status(403).json({ message: "Please upgrade your subscription to manage jobs.", code: "SUBSCRIPTION_REQUIRED" });
+    }
+
     await storage.deleteJob(jobId);
     res.status(204).send();
   });
@@ -228,6 +232,10 @@ export async function registerRoutes(
 
     if (job.employerId !== userId && user?.role !== 'admin') {
       return res.status(403).json({ message: "Forbidden" });
+    }
+
+    if (user?.role === 'employer' && user.subscriptionStatus === "free") {
+      return res.status(403).json({ message: "Please upgrade your subscription to manage jobs.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
     try {
@@ -296,18 +304,25 @@ export async function registerRoutes(
     if (!job) return res.status(404).json({ message: "Job not found" });
     if (job.employerId !== userId) return res.status(403).json({ message: "Forbidden" });
 
+    const employer = await storage.getUser(userId);
+    if (employer && employer.subscriptionStatus === "free") {
+      return res.status(403).json({ message: "Please upgrade your subscription to manage job applicants.", code: "SUBSCRIPTION_REQUIRED" });
+    }
+
     const apps = await storage.getApplicationsForJob(jobId);
     const enriched = await Promise.all(apps.map(async (app) => {
       const applicant = await storage.getUser(app.applicantId);
+      const isApplicantVerified = applicant?.isVerified || false;
       return {
         ...app,
         applicantName: applicant ? `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim() : 'Unknown',
-        applicantEmail: applicant?.email || null,
+        applicantEmail: isApplicantVerified ? (applicant?.email || null) : null,
+        applicantPhone: isApplicantVerified ? (applicant?.phone || null) : null,
         applicantProfileImageUrl: applicant?.profileImageUrl || null,
         applicantCvUrl: applicant?.cvUrl || null,
         applicantGender: applicant?.gender || null,
         applicantAge: applicant?.age || null,
-        applicantIsVerified: applicant?.isVerified || false,
+        applicantIsVerified: isApplicantVerified,
       };
     }));
     enriched.sort((a, b) => {
@@ -362,6 +377,11 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    const employerUser = await storage.getUser(userId);
+    if (employerUser && employerUser.subscriptionStatus === "free") {
+      return res.status(403).json({ message: "Please upgrade your subscription to manage applicants.", code: "SUBSCRIPTION_REQUIRED" });
+    }
+
     try {
       const input = api.applications.updateStatus.input.parse(req.body);
       const updatedApp = await storage.updateApplicationStatus(appId, input.status);
@@ -379,11 +399,17 @@ export async function registerRoutes(
     }
   });
 
-  // Cancel/withdraw application (applicant)
+  // Cancel/withdraw application (applicant - requires verification)
   app.delete("/api/applications/:id", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     const appId = Number(req.params.id);
     if (isNaN(appId)) return res.status(400).json({ message: "Invalid application ID" });
+
+    const currentUser = await storage.getUser(userId);
+    if (currentUser && currentUser.role === "applicant" && !currentUser.isVerified) {
+      return res.status(403).json({ message: "Please get verified to manage your applications.", code: "VERIFICATION_REQUIRED" });
+    }
+
     const application = await storage.getApplication(appId);
     if (!application) return res.status(404).json({ message: "Application not found" });
     if (application.applicantId !== userId) return res.status(403).json({ message: "Not authorized" });
@@ -786,12 +812,14 @@ export async function registerRoutes(
     }
 
     const history = await storage.getJobHistoryByUser(applicantId);
+    const isApplicantVerified = applicant.isVerified || false;
 
     res.json({
       id: applicant.id,
       firstName: applicant.firstName,
       lastName: applicant.lastName,
-      email: applicant.email,
+      email: isApplicantVerified ? applicant.email : null,
+      phone: isApplicantVerified ? applicant.phone : null,
       profileImageUrl: applicant.profileImageUrl,
       gender: applicant.gender,
       age: applicant.age,
@@ -800,7 +828,7 @@ export async function registerRoutes(
       cvUrl: applicant.cvUrl,
       expectedSalaryMin: applicant.expectedSalaryMin,
       expectedSalaryMax: applicant.expectedSalaryMax,
-      isVerified: applicant.isVerified,
+      isVerified: isApplicantVerified,
       createdAt: applicant.createdAt,
       jobHistory: history,
     });
@@ -871,6 +899,7 @@ export async function registerRoutes(
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
     if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can send offers" });
+    if (employer.subscriptionStatus === "free") return res.status(403).json({ message: "Please upgrade your subscription to send offers.", code: "SUBSCRIPTION_REQUIRED" });
 
     try {
       const offerSchema = z.object({
@@ -952,6 +981,11 @@ export async function registerRoutes(
     const offerId = Number(req.params.id);
     if (isNaN(offerId)) return res.status(400).json({ message: "Invalid offer ID" });
 
+    const currentUser = await storage.getUser(userId);
+    if (currentUser && currentUser.role === "applicant" && !currentUser.isVerified) {
+      return res.status(403).json({ message: "Please get verified to respond to job offers.", code: "VERIFICATION_REQUIRED" });
+    }
+
     const responseSchema = z.object({
       status: z.enum(["accepted", "declined"]),
     });
@@ -996,6 +1030,7 @@ export async function registerRoutes(
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
     if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can schedule interviews" });
+    if (employer.subscriptionStatus === "free") return res.status(403).json({ message: "Please upgrade your subscription to schedule interviews.", code: "SUBSCRIPTION_REQUIRED" });
 
     try {
       const interviewSchema = z.object({

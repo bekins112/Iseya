@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMyApplications, useMyOffers, useRespondToOffer, useCancelApplication, useMyInterviews } from "@/hooks/use-casual";
+import { useAuth } from "@/hooks/use-auth";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import {
   Video,
   Phone,
   Link2,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -221,6 +224,7 @@ function CancelApplicationDialog({
 }
 
 export default function Applications() {
+  const { user } = useAuth();
   const { data: applications, isLoading } = useMyApplications();
   const { data: interviewsData } = useMyInterviews();
   const [selectedApp, setSelectedApp] = useState<EnrichedApp | null>(null);
@@ -230,6 +234,7 @@ export default function Applications() {
 
   const apps = (applications as EnrichedApp[] | undefined) || [];
   const myInterviews = (interviewsData || []) as any[];
+  const isVerified = user?.isVerified || false;
 
   const statusIcon = (status: string) => {
     switch (status) {
@@ -243,6 +248,26 @@ export default function Applications() {
   return (
     <div className="space-y-6">
       <PageHeader title="My Applications" description="Track the status of your job applications." />
+
+      {!isVerified && (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700" data-testid="banner-verification-required">
+          <CardContent className="p-4 flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-amber-800 dark:text-amber-300">Verification Required</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                You need to get verified to manage your applications (cancel, respond to offers). You can still view your applications and apply for jobs.
+              </p>
+              <Link href="/verification">
+                <Button size="sm" className="mt-2 gap-1" data-testid="button-get-verified">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Get Verified
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? (
         <div className="space-y-4">
@@ -334,9 +359,10 @@ export default function Applications() {
                                   setSelectedApp(app);
                                   setOfferDialogOpen(true);
                                 }}
+                                disabled={app.offer.status === "pending" && !isVerified}
                                 data-testid={`button-view-offer-${app.id}`}
                               >
-                                {app.offer.status === "pending" ? "Respond" : "View Details"}
+                                {app.offer.status === "pending" ? (isVerified ? "Respond" : "Verify to Respond") : "View Details"}
                               </Button>
                             </div>
                           </div>
@@ -398,7 +424,7 @@ export default function Applications() {
                               View Job
                             </Button>
                           </Link>
-                          {app.status !== "accepted" && (
+                          {app.status !== "accepted" && isVerified && (
                             <Button
                               variant="ghost"
                               size="sm"

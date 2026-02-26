@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useEmployerJobs, useUpdateJob, useDeleteJob, useJobApplications } from "@/hooks/use-casual";
+import { useAuth } from "@/hooks/use-auth";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,8 @@ import {
   Eye, 
   EyeOff,
   MoreVertical,
-  Clock
+  Clock,
+  CreditCard,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -37,10 +39,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-function JobRow({ job, onToggleActive, onDelete }: { 
+function JobRow({ job, onToggleActive, onDelete, isFreeUser }: { 
   job: Job; 
   onToggleActive: (job: Job) => void;
   onDelete: (job: Job) => void;
+  isFreeUser: boolean;
 }) {
   const { data: applications } = useJobApplications(job.id);
   const applicantCount = applications?.length || 0;
@@ -94,12 +97,14 @@ function JobRow({ job, onToggleActive, onDelete }: {
               </Link>
 
               <div className="flex items-center gap-2">
-                <Link href={`/jobs/${job.id}/applications`}>
-                  <Button variant="outline" size="sm" className="gap-1" data-testid={`button-view-applicants-${job.id}`}>
-                    <Users className="w-4 h-4" />
-                    View
-                  </Button>
-                </Link>
+                {!isFreeUser && (
+                  <Link href={`/jobs/${job.id}/applications`}>
+                    <Button variant="outline" size="sm" className="gap-1" data-testid={`button-view-applicants-${job.id}`}>
+                      <Users className="w-4 h-4" />
+                      View
+                    </Button>
+                  </Link>
+                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -114,26 +119,30 @@ function JobRow({ job, onToggleActive, onDelete }: {
                         View Details
                       </DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem onClick={() => onToggleActive(job)} className="cursor-pointer">
-                      {job.isActive ? (
-                        <>
-                          <EyeOff className="w-4 h-4 mr-2" />
-                          Deactivate
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Activate
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onDelete(job)} 
-                      className="cursor-pointer text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
+                    {!isFreeUser && (
+                      <>
+                        <DropdownMenuItem onClick={() => onToggleActive(job)} className="cursor-pointer">
+                          {job.isActive ? (
+                            <>
+                              <EyeOff className="w-4 h-4 mr-2" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Activate
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => onDelete(job)} 
+                          className="cursor-pointer text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -146,10 +155,12 @@ function JobRow({ job, onToggleActive, onDelete }: {
 }
 
 export default function ManageJobs() {
+  const { user } = useAuth();
   const { data: jobs, isLoading } = useEmployerJobs();
   const updateJob = useUpdateJob();
   const deleteJob = useDeleteJob();
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
+  const isFreeUser = user?.subscriptionStatus === "free";
 
   const handleToggleActive = (job: Job) => {
     updateJob.mutate({ id: job.id, isActive: !job.isActive });
@@ -178,6 +189,26 @@ export default function ManageJobs() {
           </Link>
         }
       />
+
+      {isFreeUser && (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700" data-testid="banner-subscription-required">
+          <CardContent className="p-4 flex items-start gap-3">
+            <CreditCard className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-amber-800 dark:text-amber-300">Subscription Required</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                Upgrade your subscription to manage your jobs and view applicants. You can still post your first free job.
+              </p>
+              <Link href="/subscription">
+                <Button size="sm" className="mt-2 gap-1" data-testid="button-upgrade-subscription">
+                  <CreditCard className="w-3.5 h-3.5" />
+                  Upgrade Plan
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -249,6 +280,7 @@ export default function ManageJobs() {
                 job={job} 
                 onToggleActive={handleToggleActive}
                 onDelete={setDeleteTarget}
+                isFreeUser={isFreeUser}
               />
             ))}
           </div>
