@@ -784,6 +784,7 @@ export default function Landing() {
               <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
               <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQs</Link>
               <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
+              <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Disclaimer</Link>
             </div>
           </div>
         </div>

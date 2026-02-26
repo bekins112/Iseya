@@ -38,6 +38,7 @@ import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
 import Contact from "@/pages/Contact";
 import BrowseJobs from "@/pages/BrowseJobs";
+import Disclaimer from "@/pages/Disclaimer";
 import VerifyEmail from "@/pages/VerifyEmail";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/contact" component={Contact} />
+      <Route path="/disclaimer" component={Disclaimer} />
       <Route path="/browse-jobs" component={BrowseJobs} />
       
       <Route path="/verify-email" component={VerifyEmail} />
