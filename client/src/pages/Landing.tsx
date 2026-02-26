@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, Play, ClipboardList, Users, BadgeCheck } from "lucide-react";
+import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, ClipboardList, Users, BadgeCheck } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -507,152 +507,157 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-24 border-y">
+      <section className="py-24 border-y bg-gradient-to-b from-background via-primary/[0.03] to-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-12"
           >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">Simple & Fast</span>
             <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">How It Works</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Get started in just a few simple steps — whether you're looking for work or hiring.</p>
           </motion.div>
 
-          <div className="flex items-center justify-center gap-2 mb-12">
-            <Button
-              variant={howItWorksTab === "seeker" ? "default" : "outline"}
-              onClick={() => setHowItWorksTab("seeker")}
-              className="font-semibold gap-2"
-              data-testid="button-how-seeker"
-            >
-              <Search className="w-4 h-4" />
-              Job Seeker
-            </Button>
-            <Button
-              variant={howItWorksTab === "employer" ? "default" : "outline"}
-              onClick={() => setHowItWorksTab("employer")}
-              className="font-semibold gap-2"
-              data-testid="button-how-employer"
-            >
-              <Building2 className="w-4 h-4" />
-              Employer
-            </Button>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            <div className="space-y-0 relative">
-              <div className="absolute left-6 top-8 bottom-8 w-px bg-border hidden sm:block" />
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={howItWorksTab}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {(howItWorksTab === "seeker" ? [
-                    {
-                      step: 1,
-                      icon: <UserPlus className="w-5 h-5" />,
-                      title: "Create Your Free Account",
-                      desc: "Sign up in under a minute. Set your role as a job seeker, add your age and location.",
-                    },
-                    {
-                      step: 2,
-                      icon: <FileSearch className="w-5 h-5" />,
-                      title: "Browse Available Jobs",
-                      desc: "Search jobs by category, location, and type. Filter for part-time, full-time, or temporary work near you.",
-                    },
-                    {
-                      step: 3,
-                      icon: <Send className="w-5 h-5" />,
-                      title: "Apply with One Tap",
-                      desc: "Found a job you like? Send your application instantly. No CV required — just your skills and a short message.",
-                    },
-                    {
-                      step: 4,
-                      icon: <Handshake className="w-5 h-5" />,
-                      title: "Get Hired & Start Working",
-                      desc: "Employers review your profile and accept your application. Agree on terms and start earning.",
-                    },
-                  ] : [
-                    {
-                      step: 1,
-                      icon: <UserPlus className="w-5 h-5" />,
-                      title: "Register Your Business",
-                      desc: "Create an employer account with your company details, business category, and location.",
-                    },
-                    {
-                      step: 2,
-                      icon: <ClipboardList className="w-5 h-5" />,
-                      title: "Post a Job Listing",
-                      desc: "Describe the role, set salary range, location, and requirements. Your job goes live instantly.",
-                    },
-                    {
-                      step: 3,
-                      icon: <Users className="w-5 h-5" />,
-                      title: "Review Applicants",
-                      desc: "Browse applications as they come in. View profiles, experience, and contact details of interested candidates.",
-                    },
-                    {
-                      step: 4,
-                      icon: <BadgeCheck className="w-5 h-5" />,
-                      title: "Hire the Best Fit",
-                      desc: "Accept the right candidate, offer them the role, and get your team filled quickly and reliably.",
-                    },
-                  ]).map((item, i) => (
-                    <div
-                      key={i}
-                      className="flex gap-5 py-5 relative"
-                      data-testid={`step-${howItWorksTab}-${item.step}`}
-                    >
-                      <div className="relative z-10 w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 font-bold text-lg shadow-md">
-                        {item.step}
-                      </div>
-                      <div className="pt-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-primary">{item.icon}</span>
-                          <h3 className="text-lg font-bold">{item.title}</h3>
-                        </div>
-                        <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={howItWorksTab + "-video"}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.25 }}
-                className="relative rounded-md overflow-hidden bg-black aspect-video flex items-center justify-center group sticky top-24"
-                data-testid={`video-container-${howItWorksTab}`}
+          <div className="flex items-center justify-center mb-14">
+            <div className="inline-flex rounded-full bg-muted p-1">
+              <button
+                onClick={() => setHowItWorksTab("seeker")}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${howItWorksTab === "seeker" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+                data-testid="button-how-seeker"
               >
-                <img
-                  src={workersImage}
-                  alt={howItWorksTab === "seeker" ? "How to find jobs on Iseya" : "How to hire on Iseya"}
-                  className="absolute inset-0 w-full h-full object-cover opacity-40"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
-                <div className="relative z-10 text-center">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/90 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-primary/30 cursor-pointer">
-                    <Play className="w-7 h-7 md:w-9 md:h-9 text-primary-foreground ml-1" />
-                  </div>
-                  <p className="text-white font-semibold text-lg">
-                    {howItWorksTab === "seeker" ? "How to Find Jobs" : "How to Hire Workers"}
-                  </p>
-                  <p className="text-white/60 text-sm mt-1">
-                    {howItWorksTab === "seeker" ? "See how easy it is to get hired — 2 min video" : "Learn how to post jobs & hire fast — 2 min video"}
-                  </p>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                <Search className="w-4 h-4" />
+                I'm Looking for Work
+              </button>
+              <button
+                onClick={() => setHowItWorksTab("employer")}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${howItWorksTab === "employer" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+                data-testid="button-how-employer"
+              >
+                <Building2 className="w-4 h-4" />
+                I'm Hiring
+              </button>
+            </div>
           </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={howItWorksTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+                {(howItWorksTab === "seeker" ? [
+                  {
+                    step: 1,
+                    icon: <UserPlus className="w-6 h-6" />,
+                    title: "Create Your Account",
+                    desc: "Sign up for free in under a minute. Set your role as a job seeker, add your age, skills, and location.",
+                    color: "from-blue-500/20 to-blue-600/5",
+                    iconBg: "bg-blue-500/10 text-blue-600",
+                  },
+                  {
+                    step: 2,
+                    icon: <FileSearch className="w-6 h-6" />,
+                    title: "Browse Jobs Near You",
+                    desc: "Search by category, location, and type. Filter for part-time, full-time, or temporary work that fits your schedule.",
+                    color: "from-amber-500/20 to-amber-600/5",
+                    iconBg: "bg-amber-500/10 text-amber-600",
+                  },
+                  {
+                    step: 3,
+                    icon: <Send className="w-6 h-6" />,
+                    title: "Apply Instantly",
+                    desc: "Found a job you like? Apply with one tap. No CV needed — just your skills and a short message to the employer.",
+                    color: "from-green-500/20 to-green-600/5",
+                    iconBg: "bg-green-500/10 text-green-600",
+                  },
+                  {
+                    step: 4,
+                    icon: <Handshake className="w-6 h-6" />,
+                    title: "Get Hired & Earn",
+                    desc: "Employers review your profile and accept your application. Agree on terms, start working, and get paid.",
+                    color: "from-purple-500/20 to-purple-600/5",
+                    iconBg: "bg-purple-500/10 text-purple-600",
+                  },
+                ] : [
+                  {
+                    step: 1,
+                    icon: <UserPlus className="w-6 h-6" />,
+                    title: "Register Your Business",
+                    desc: "Create an employer account with your company name, business category, and location. It only takes a minute.",
+                    color: "from-blue-500/20 to-blue-600/5",
+                    iconBg: "bg-blue-500/10 text-blue-600",
+                  },
+                  {
+                    step: 2,
+                    icon: <ClipboardList className="w-6 h-6" />,
+                    title: "Post a Job",
+                    desc: "Describe the role, set salary range, location, and requirements. Your listing goes live instantly for job seekers to find.",
+                    color: "from-amber-500/20 to-amber-600/5",
+                    iconBg: "bg-amber-500/10 text-amber-600",
+                  },
+                  {
+                    step: 3,
+                    icon: <Users className="w-6 h-6" />,
+                    title: "Review Applicants",
+                    desc: "Browse applications as they arrive. View candidate profiles, experience, and verification status to find the right fit.",
+                    color: "from-green-500/20 to-green-600/5",
+                    iconBg: "bg-green-500/10 text-green-600",
+                  },
+                  {
+                    step: 4,
+                    icon: <BadgeCheck className="w-6 h-6" />,
+                    title: "Hire & Get Started",
+                    desc: "Accept the best candidate, send them an offer, and fill your position quickly and reliably. It's that simple.",
+                    color: "from-purple-500/20 to-purple-600/5",
+                    iconBg: "bg-purple-500/10 text-purple-600",
+                  },
+                ]).map((item) => (
+                  <motion.div
+                    key={item.step}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: item.step * 0.1 }}
+                    className="relative group"
+                    data-testid={`step-${howItWorksTab}-${item.step}`}
+                  >
+                    <div className={`rounded-2xl border bg-gradient-to-b ${item.color} p-6 h-full transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shadow-sm">
+                          {item.step}
+                        </div>
+                        <div className="h-px flex-1 bg-border/60" />
+                      </div>
+                      <div className={`w-12 h-12 rounded-xl ${item.iconBg} flex items-center justify-center mb-4`}>
+                        {item.icon}
+                      </div>
+                      <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link href={howItWorksTab === "seeker" ? "/register" : "/register"}>
+                  <Button size="lg" className="gap-2 px-8 shadow-md" data-testid="button-how-get-started">
+                    {howItWorksTab === "seeker" ? "Start Finding Jobs" : "Start Hiring Today"}
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link href="/browse-jobs">
+                  <Button size="lg" variant="ghost" className="gap-2 text-muted-foreground" data-testid="button-how-browse">
+                    <Search className="w-4 h-4" />
+                    Browse Jobs First
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </section>
 
