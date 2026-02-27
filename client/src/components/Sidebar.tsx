@@ -16,7 +16,8 @@ import {
   BarChart3,
   Ticket,
   Flag,
-  ShieldCheck
+  ShieldCheck,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
@@ -28,7 +29,12 @@ export function Sidebar() {
   const isEmployer = user?.role === "employer";
   const isAdmin = user?.role === "admin";
 
-  const links = [
+  const verificationExpiry = (user as any)?.verificationExpiry;
+  const verificationSubtitle = user?.isVerified && verificationExpiry
+    ? `Renews ${new Date(verificationExpiry).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}`
+    : undefined;
+
+  const links: { href: string; label: string; icon: any; subtitle?: string }[] = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     ...(isAdmin ? [
       { href: "/admin/dashboard", label: "Admin Panel", icon: Shield },
@@ -47,7 +53,7 @@ export function Sidebar() {
     ] : [
       { href: "/jobs", label: "Find Jobs", icon: Briefcase },
       { href: "/my-applications", label: "Applications", icon: FolderOpen },
-      { href: "/verification", label: "Get Verified", icon: ShieldCheck },
+      { href: "/verification", label: user?.isVerified ? "Verified ✓" : "Get Verified", icon: ShieldCheck, subtitle: verificationSubtitle },
     ]),
     { href: "/profile", label: "Profile", icon: User },
   ];
@@ -99,7 +105,15 @@ export function Sidebar() {
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}>
                 <Icon className="w-5 h-5" />
-                {link.label}
+                <div className="flex flex-col items-start">
+                  <span>{link.label}</span>
+                  {link.subtitle && (
+                    <span className="text-[10px] font-normal text-muted-foreground flex items-center gap-1">
+                      <Calendar className="w-2.5 h-2.5" />
+                      {link.subtitle}
+                    </span>
+                  )}
+                </div>
               </button>
             </Link>
           );
