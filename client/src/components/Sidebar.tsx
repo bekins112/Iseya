@@ -53,7 +53,7 @@ export function Sidebar() {
     ] : [
       { href: "/jobs", label: "Find Jobs", icon: Briefcase },
       { href: "/my-applications", label: "Applications", icon: FolderOpen },
-      { href: "/verification", label: user?.isVerified ? "Verified ✓" : "Get Verified", icon: ShieldCheck, subtitle: verificationSubtitle },
+      { href: "/verification", label: user?.isVerified ? "Verified" : "Get Verified", icon: ShieldCheck, subtitle: verificationSubtitle },
     ]),
     { href: "/profile", label: "Profile", icon: User },
   ];
