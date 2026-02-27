@@ -418,6 +418,26 @@ export default function Applications() {
                           );
                         })()}
 
+                        {!isVerified && app.status === "pending" && (
+                          <div className="mt-3 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800" data-testid={`banner-verify-pending-${app.id}`}>
+                            <div className="flex items-start gap-2">
+                              <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Your profile is not verified</p>
+                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                                  Employers cannot see your contact details or CV while unverified. Verified applicants are prioritised and more likely to get shortlisted. Get verified to boost your chances.
+                                </p>
+                                <Link href="/verification">
+                                  <Button size="sm" variant="outline" className="mt-1.5 h-7 text-xs gap-1 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/40" data-testid={`button-verify-now-${app.id}`}>
+                                    <ShieldCheck className="w-3 h-3" />
+                                    Get Verified Now
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
                           <Link href={`/jobs/${app.jobId}`}>
                             <Button variant="outline" size="sm" data-testid={`button-view-job-${app.id}`}>
