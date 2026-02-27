@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail, MapPin, ShieldCheck } from "lucide-react";
+import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail, MapPin, ShieldCheck, Home } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -631,13 +631,20 @@ export default function Dashboard() {
           title={`Welcome back, ${user?.firstName || "User"}!`} 
           description={isEmployer ? "Manage your job listings and applicants." : "Find your next casual opportunity today."}
           actions={
-            isEmployer && (
-              <Link href="/post-job">
-                <Button className="gap-2 rounded-xl shadow-lg shadow-primary/20" data-testid="button-post-job">
-                  <PlusCircle className="w-4 h-4" /> Post a Job
+            <div className="flex items-center gap-2">
+              <Link href="/">
+                <Button variant="outline" className="gap-2 rounded-xl" data-testid="button-home">
+                  <Home className="w-4 h-4" /> Home
                 </Button>
               </Link>
-            )
+              {isEmployer && (
+                <Link href="/post-job">
+                  <Button className="gap-2 rounded-xl shadow-lg shadow-primary/20" data-testid="button-post-job">
+                    <PlusCircle className="w-4 h-4" /> Post a Job
+                  </Button>
+                </Link>
+              )}
+            </div>
           }
         />
       </motion.div>
