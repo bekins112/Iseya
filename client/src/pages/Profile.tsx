@@ -24,6 +24,8 @@ const profileSchema = insertUserSchema.pick({
   bio: true,
   profileImageUrl: true,
   cvUrl: true,
+  email: true,
+  phone: true,
 }).extend({
   firstName: z.string().min(1, "First Name is required"),
   lastName: z.string().min(1, "Last Name is required"),
@@ -32,6 +34,8 @@ const profileSchema = insertUserSchema.pick({
   bio: z.string().optional(),
   profileImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   cvUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  email: z.string().email("Must be a valid email").optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -62,6 +66,8 @@ export default function Profile() {
       location: user?.location || "",
       bio: user?.bio || "",
       role: user?.role as "applicant" | "employer" || "applicant",
+      email: user?.email || "",
+      phone: user?.phone || "",
       profileImageUrl: user?.profileImageUrl || "",
       cvUrl: user?.cvUrl || "",
     }
@@ -238,6 +244,37 @@ export default function Profile() {
                       </FormItem>
                     )}
                   />
+
+                  {user?.role === 'employer' && (
+                    <div className="grid sm:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Email</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. info@company.com" {...field} value={field.value || ""} data-testid="input-company-email" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Phone</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. +234 801 234 5678" {...field} value={field.value || ""} data-testid="input-company-phone" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
 
                   <FormField
                     control={form.control}
