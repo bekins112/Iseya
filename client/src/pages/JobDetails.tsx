@@ -535,7 +535,7 @@ export default function JobDetails() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-            <span className="text-sm text-muted-foreground">© 2026 Renowned Technology Limited. All rights reserved.</span>
+            <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">

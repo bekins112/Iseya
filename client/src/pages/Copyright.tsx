@@ -124,7 +124,7 @@ export default function CopyrightPage() {
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-6 text-center">
               <p className="text-lg font-semibold mb-1">
-                © 2026 Renowned Technology Limited. All Rights Reserved.
+                © 2026 Iṣéyá. All Rights Reserved.
               </p>
               <p className="text-sm text-muted-foreground">
                 Unauthorised reproduction or distribution of any content on this platform is strictly prohibited.
@@ -179,7 +179,7 @@ export default function CopyrightPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-              <span className="text-sm text-muted-foreground">© 2026 Renowned Technology Limited. All rights reserved.</span>
+              <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-2">
               <a href="https://instagram.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Instagram"><SiInstagram className="w-3.5 h-3.5" /></a>

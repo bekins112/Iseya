@@ -167,7 +167,7 @@ export default function Disclaimer() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-              <span className="text-sm text-muted-foreground">© 2026 Renowned Technology Limited. All rights reserved.</span>
+              <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-2">
               <a href="https://instagram.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Instagram"><SiInstagram className="w-3.5 h-3.5" /></a>
