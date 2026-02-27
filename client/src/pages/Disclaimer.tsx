@@ -23,7 +23,7 @@ export default function Disclaimer() {
     {
       icon: <Info className="w-6 h-6" />,
       title: "General Information",
-      content: "The information provided on Iṣéyá (the \"Platform\") is for general informational purposes only. While we strive to keep all information accurate and up-to-date, we make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, or suitability of the information, products, services, or related graphics contained on the Platform."
+      content: "Iṣéyá is a product of Renowned Technology Limited. The information provided on Iṣéyá (the \"Platform\") is for general informational purposes only. While we strive to keep all information accurate and up-to-date, we make no representations or warranties of any kind, express or implied, about the completeness, accuracy, reliability, or suitability of the information, products, services, or related graphics contained on the Platform."
     },
     {
       icon: <Shield className="w-6 h-6" />,
@@ -38,7 +38,7 @@ export default function Disclaimer() {
     {
       icon: <AlertTriangle className="w-6 h-6" />,
       title: "Limitation of Liability",
-      content: "To the fullest extent permitted by Nigerian law, Iṣéyá, its owners, directors, employees, and agents shall not be liable for any direct, indirect, incidental, consequential, or punitive damages arising out of or relating to the use of, or inability to use, the Platform. This includes but is not limited to damages for loss of profits, goodwill, data, or other intangible losses, even if Iṣéyá has been advised of the possibility of such damages."
+      content: "To the fullest extent permitted by Nigerian law, Renowned Technology Limited (trading as Iṣéyá), its owners, directors, employees, and agents shall not be liable for any direct, indirect, incidental, consequential, or punitive damages arising out of or relating to the use of, or inability to use, the Platform. This includes but is not limited to damages for loss of profits, goodwill, data, or other intangible losses, even if Renowned Technology Limited has been advised of the possibility of such damages."
     },
     {
       icon: <FileText className="w-6 h-6" />,
@@ -58,7 +58,7 @@ export default function Disclaimer() {
     {
       icon: <FileText className="w-6 h-6" />,
       title: "Intellectual Property",
-      content: "All content, trademarks, logos, and intellectual property displayed on the Platform are the property of Iṣéyá or their respective owners. Users may not reproduce, distribute, modify, or create derivative works from any content on the Platform without prior written consent from the owner."
+      content: "All content, trademarks, logos, and intellectual property displayed on the Platform are the property of Renowned Technology Limited or their respective owners. Users may not reproduce, distribute, modify, or create derivative works from any content on the Platform without prior written consent from Renowned Technology Limited."
     },
     {
       icon: <Info className="w-6 h-6" />,
@@ -167,7 +167,7 @@ export default function Disclaimer() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-              <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
+              <span className="text-sm text-muted-foreground">© 2026 Renowned Technology Limited. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-2">
               <a href="https://instagram.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Instagram"><SiInstagram className="w-3.5 h-3.5" /></a>

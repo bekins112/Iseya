@@ -23,12 +23,12 @@ export default function CopyrightPage() {
     {
       icon: <CopyrightIcon className="w-6 h-6" />,
       title: "Copyright Ownership",
-      content: "All content on the Iṣéyá platform, including but not limited to text, graphics, logos, icons, images, audio clips, digital downloads, data compilations, and software, is the property of Iṣéyá or its content suppliers and is protected by Nigerian copyright laws and international copyright treaties. The compilation of all content on this platform is the exclusive property of Iṣéyá."
+      content: "Iṣéyá is a product of Renowned Technology Limited. All content on the Iṣéyá platform, including but not limited to text, graphics, logos, icons, images, audio clips, digital downloads, data compilations, and software, is the property of Renowned Technology Limited (trading as Iṣéyá) or its content suppliers and is protected by Nigerian copyright laws and international copyright treaties. The compilation of all content on this platform is the exclusive property of Renowned Technology Limited."
     },
     {
       icon: <Shield className="w-6 h-6" />,
       title: "Trademarks",
-      content: "The Iṣéyá name, logo, and all related names, logos, product and service names, designs, and slogans are trademarks of Iṣéyá. You must not use such marks without the prior written permission of Iṣéyá. All other names, logos, product and service names, designs, and slogans on this platform are the trademarks of their respective owners."
+      content: "The Iṣéyá name, logo, and all related names, logos, product and service names, designs, and slogans are trademarks of Renowned Technology Limited. You must not use such marks without the prior written permission of Renowned Technology Limited. All other names, logos, product and service names, designs, and slogans on this platform are the trademarks of their respective owners."
     },
     {
       icon: <FileText className="w-6 h-6" />,
@@ -124,7 +124,7 @@ export default function CopyrightPage() {
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-6 text-center">
               <p className="text-lg font-semibold mb-1">
-                © 2026 Iṣéyá. All Rights Reserved.
+                © 2026 Renowned Technology Limited. All Rights Reserved.
               </p>
               <p className="text-sm text-muted-foreground">
                 Unauthorised reproduction or distribution of any content on this platform is strictly prohibited.
@@ -179,7 +179,7 @@ export default function CopyrightPage() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-              <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
+              <span className="text-sm text-muted-foreground">© 2026 Renowned Technology Limited. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-2">
               <a href="https://instagram.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Instagram"><SiInstagram className="w-3.5 h-3.5" /></a>

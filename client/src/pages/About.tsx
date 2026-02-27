@@ -91,8 +91,9 @@ export default function About() {
                 <div>
                   <h2 className="text-3xl font-display font-bold mb-4">Our Mission</h2>
                   <p className="text-muted-foreground mb-4">
-                    Iṣéyá (meaning "work" in Yoruba) was founded with a simple mission: to bridge the gap between 
-                    casual workers seeking opportunities and employers looking for reliable help.
+                    Iṣéyá (meaning "work" in Yoruba) is a product of <strong>Renowned Technology Limited</strong>, 
+                    founded with a simple mission: to bridge the gap between casual workers seeking opportunities 
+                    and employers looking for reliable help.
                   </p>
                   <p className="text-muted-foreground mb-4">
                     In Nigeria, millions of hardworking individuals are ready and willing to work, but often lack 
@@ -174,7 +175,7 @@ export default function About() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-              <span className="text-sm text-muted-foreground">© 2026 Iṣéyá. All rights reserved.</span>
+              <span className="text-sm text-muted-foreground">© 2026 Renowned Technology Limited. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-2">
               <a href="https://instagram.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Instagram"><SiInstagram className="w-3.5 h-3.5" /></a>
