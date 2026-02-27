@@ -319,7 +319,7 @@ export async function registerRoutes(
         applicantEmail: isApplicantVerified ? (applicant?.email || null) : null,
         applicantPhone: isApplicantVerified ? (applicant?.phone || null) : null,
         applicantProfileImageUrl: applicant?.profileImageUrl || null,
-        applicantCvUrl: applicant?.cvUrl || null,
+        applicantCvUrl: isApplicantVerified ? (applicant?.cvUrl || null) : null,
         applicantGender: applicant?.gender || null,
         applicantAge: applicant?.age || null,
         applicantIsVerified: isApplicantVerified,
@@ -750,6 +750,15 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Access denied" });
     }
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: "File not found" });
+
+    const requestingUser = await storage.getUser(req.session.userId!);
+    if (requestingUser?.role === "employer") {
+      const cvOwner = await storage.getUserByCvFilename(filename);
+      if (cvOwner && !cvOwner.isVerified) {
+        return res.status(403).json({ message: "Cannot download CV of unverified applicants" });
+      }
+    }
+
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.sendFile(filePath);
   });
@@ -825,7 +834,7 @@ export async function registerRoutes(
       age: applicant.age,
       bio: applicant.bio,
       location: applicant.location,
-      cvUrl: applicant.cvUrl,
+      cvUrl: isApplicantVerified ? applicant.cvUrl : null,
       expectedSalaryMin: applicant.expectedSalaryMin,
       expectedSalaryMax: applicant.expectedSalaryMax,
       isVerified: isApplicantVerified,

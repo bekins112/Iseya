@@ -31,6 +31,7 @@ export interface IStorage {
   getJobsByEmployer(employerId: string): Promise<Job[]>;
   
   // Admin methods
+  getUserByCvFilename(filename: string): Promise<User | undefined>;
   getAllUsers(filters?: { role?: string; search?: string }): Promise<User[]>;
   getAllJobs(): Promise<Job[]>;
   getAllApplications(): Promise<Application[]>;
@@ -205,6 +206,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Admin methods
+  async getUserByCvFilename(filename: string): Promise<User | undefined> {
+    const pattern = `%${filename}`;
+    const result = await db.select().from(users).where(like(users.cvUrl, pattern)).limit(1);
+    return result[0];
+  }
+
   async getAllUsers(filters?: { role?: string; search?: string }): Promise<User[]> {
     const conditions: any[] = [];
     

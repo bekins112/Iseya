@@ -164,11 +164,12 @@ Users choose between Paystack and Flutterwave at checkout via a dialog.
 - ManageApplicants page shows full-page subscription required screen when 403 is returned
 - Backend enforces subscription check on `GET /api/jobs/:jobId/applications`, `PATCH /api/jobs/:id`, `PATCH /api/applications/:id/status`
 
-### Applicant Contact Info Masking
-- Employers CANNOT see email/phone of non-verified applicants
-- Backend returns `null` for email and phone in applicant enrichment and profile endpoint when applicant is not verified
+### Applicant Contact Info & CV Masking
+- Employers CANNOT see email/phone/CV of non-verified applicants
+- Backend returns `null` for email, phone, and cvUrl in applicant enrichment and profile endpoint when applicant is not verified
+- CV download endpoint (`GET /api/download/cv/:filename`) blocks employers from downloading CVs of unverified applicants
 - Profile dialog shows "Contact info hidden — applicant not verified" message
-- Applicant cards only show email when available (already handled by conditional rendering)
+- Applicant cards only show email and CV download when available (handled by conditional rendering)
 
 ## Employer Company Profile Fields
 - `companyName`, `businessCategory`, `companyLogo` (original)
