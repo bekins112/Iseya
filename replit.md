@@ -218,7 +218,7 @@ Each sub-admin can be granted any combination of these permissions:
 ## Applicant Verification System
 
 ### Overview
-Applicants can get verified by submitting government-issued ID and paying a one-time fee of ₦9,999. Verified applicants receive a verified badge, priority in application listings, background check from the team, and are more attractive to employers.
+Applicants can get verified by submitting government-issued ID and paying a monthly fee of ₦9,999. Verification is valid for 30 days from admin approval and must be renewed. Verified applicants receive a verified badge, priority in application listings, background check from the team, and are more attractive to employers.
 
 ### Verification Flow
 1. Applicant navigates to `/verification` (via sidebar "Get Verified" link)

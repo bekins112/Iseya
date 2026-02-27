@@ -24,6 +24,7 @@ import {
   Zap,
   Users,
   BadgeCheck,
+  Calendar,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -67,6 +68,7 @@ export default function Verification() {
 
   const { data: verificationStatus, isLoading } = useQuery<{
     isVerified: boolean;
+    verificationExpiry: string | null;
     request: {
       id: number;
       status: string;
@@ -167,13 +169,15 @@ export default function Verification() {
     queryClient.invalidateQueries({ queryKey: ["/api/verification/status"] });
   }
 
-  const isVerified = verificationStatus?.isVerified;
+  const verificationExpiry = verificationStatus?.verificationExpiry ? new Date(verificationStatus.verificationExpiry) : null;
+  const isExpired = verificationExpiry ? verificationExpiry < new Date() : false;
+  const isVerified = verificationStatus?.isVerified && !isExpired;
   const request = verificationStatus?.request;
   const hasSubmitted = !!request;
   const isPending = request?.status === "pending";
   const isUnderReview = request?.status === "under_review";
-  const isRejected = request?.status === "rejected";
-  const isApproved = request?.status === "approved";
+  const isRejected = request?.status === "rejected" || isExpired;
+  const isApproved = request?.status === "approved" && !isExpired;
 
   return (
     <div className="space-y-6">
@@ -189,6 +193,30 @@ export default function Verification() {
               <div>
                 <h3 className="font-bold text-lg text-green-800 dark:text-green-300">You're Verified!</h3>
                 <p className="text-sm text-green-700 dark:text-green-400">Your identity has been verified. You enjoy priority listing and a verified badge on your profile.</p>
+                {verificationExpiry && (
+                  <p className="text-xs text-green-600 dark:text-green-500 mt-1.5 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Renewal date: {verificationExpiry.toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {isExpired && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-amber-800 dark:text-amber-300">Verification Expired</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Your verification expired on {verificationExpiry?.toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}. Please renew below to keep your verified badge and priority listing.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -254,12 +282,14 @@ export default function Verification() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              {isPending ? "Complete Payment" : "Apply for Verification"}
+              {isPending ? "Complete Payment" : isExpired ? "Renew Verification" : "Apply for Verification"}
             </CardTitle>
             <CardDescription>
               {isPending 
                 ? "Your documents have been submitted. Pay ₦9,999 to complete verification."
-                : "Upload your government-issued ID card and a selfie holding the ID to prove your identity. One-time fee of ₦9,999."
+                : isExpired
+                ? "Your verification has expired. Renew for another 30 days at ₦9,999."
+                : "Upload your government-issued ID card and a selfie holding the ID to prove your identity. Monthly fee of ₦9,999."
               }
             </CardDescription>
           </CardHeader>

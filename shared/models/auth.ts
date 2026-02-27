@@ -40,6 +40,7 @@ export const users = pgTable("users", {
   emailVerificationCode: varchar("email_verification_code"),
   emailVerificationExpiry: timestamp("email_verification_expiry"),
   isVerified: boolean("is_verified").default(false),
+  verificationExpiry: timestamp("verification_expiry"),
   subscriptionStatus: varchar("subscription_status").default("free"),
   subscriptionEndDate: timestamp("subscription_end_date"),
   paystackCustomerId: varchar("paystack_customer_id"),

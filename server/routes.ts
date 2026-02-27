@@ -1545,9 +1545,16 @@ export async function registerRoutes(
   app.get("/api/verification/status", isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isExpired = user.verificationExpiry && new Date(user.verificationExpiry) < new Date();
+    if (user.isVerified && isExpired) {
+      await storage.updateUser(user.id, { isVerified: false });
+    }
+
     const request = await storage.getVerificationRequestByUser(user.id);
     res.json({
-      isVerified: user.isVerified || false,
+      isVerified: user.isVerified && !isExpired ? true : false,
+      verificationExpiry: user.verificationExpiry || null,
       request: request || null,
     });
   });
@@ -1560,7 +1567,8 @@ export async function registerRoutes(
     const user = await storage.getUser(req.session.userId!);
     if (!user) return res.status(404).json({ message: "User not found" });
     if (user.role !== "applicant") return res.status(403).json({ message: "Only applicants can request verification" });
-    if (user.isVerified) return res.status(400).json({ message: "You are already verified" });
+    const verificationExpired = user.verificationExpiry && new Date(user.verificationExpiry) < new Date();
+    if (user.isVerified && !verificationExpired) return res.status(400).json({ message: "You are already verified" });
 
     const existing = await storage.getVerificationRequestByUser(user.id);
     if (existing && (existing.status === "pending" || existing.status === "under_review")) {
@@ -1604,7 +1612,8 @@ export async function registerRoutes(
   app.post("/api/verification/pay/paystack", isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
     if (!user || user.role !== "applicant") return res.status(403).json({ message: "Only applicants can pay for verification" });
-    if (user.isVerified) return res.status(400).json({ message: "You are already verified" });
+    const paysExpired = user.verificationExpiry && new Date(user.verificationExpiry) < new Date();
+    if (user.isVerified && !paysExpired) return res.status(400).json({ message: "You are already verified" });
 
     const existing = await storage.getVerificationRequestByUser(user.id);
     if (!existing || existing.status !== "pending") {
@@ -1679,7 +1688,8 @@ export async function registerRoutes(
   app.post("/api/verification/pay/flutterwave", isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
     if (!user || user.role !== "applicant") return res.status(403).json({ message: "Only applicants can pay for verification" });
-    if (user.isVerified) return res.status(400).json({ message: "You are already verified" });
+    const flwExpired = user.verificationExpiry && new Date(user.verificationExpiry) < new Date();
+    if (user.isVerified && !flwExpired) return res.status(400).json({ message: "You are already verified" });
 
     const existing = await storage.getVerificationRequestByUser(user.id);
     if (!existing || existing.status !== "pending") {
@@ -1802,7 +1812,9 @@ export async function registerRoutes(
     });
 
     if (status === "approved") {
-      await storage.updateUser(request.userId, { isVerified: true });
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      await storage.updateUser(request.userId, { isVerified: true, verificationExpiry: expiryDate });
     }
 
     res.json(updated);
