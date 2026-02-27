@@ -185,6 +185,11 @@ function ApplicantProfileDialog({ applicantId, open, onOpenChange }: { applicant
                     Download CV
                   </Button>
                 </a>
+              ) : !profile.isVerified ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-3 rounded-lg" data-testid="text-cv-hidden">
+                  <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+                  CV hidden — applicant not verified
+                </p>
               ) : (
                 <p className="text-sm text-muted-foreground bg-muted/40 p-3 rounded-lg text-center" data-testid="text-no-cv">
                   No CV uploaded
