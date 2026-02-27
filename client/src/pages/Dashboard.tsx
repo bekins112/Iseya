@@ -227,6 +227,12 @@ function ApplicantProfile() {
                   </Link>
                 )}
               </div>
+              {user?.isVerified && (user as any)?.verificationExpiry && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1" data-testid="text-renewal-date">
+                  <Calendar className="w-3 h-3" />
+                  Next renewal: {new Date((user as any).verificationExpiry).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}
+                </p>
+              )}
               <div className="flex items-center gap-1 mt-1">
                 <Mail className="w-3 h-3 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground" data-testid="text-applicant-email">{user?.email}</p>
