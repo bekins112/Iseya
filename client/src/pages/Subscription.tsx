@@ -48,6 +48,7 @@ const plans = [
       "Basic applicant filtering",
       "Email support",
       "Standard job visibility",
+      "Background check report on applicants",
     ],
     limitations: [
       "Limited to 5 job postings",
@@ -73,6 +74,8 @@ const plans = [
       "Analytics dashboard",
       "Priority support",
       "Verified employer badge",
+      "Background check report on applicants",
+      "3 interviews — our team interviews & recommends your selected applicants",
     ],
     limitations: [
       "Limited to 10 job postings",
@@ -97,6 +100,8 @@ const plans = [
       "Dedicated support",
       "Verified employer badge",
       "Featured company profile",
+      "Background check report on applicants",
+      "5 interviews — our team interviews & recommends your selected applicants",
     ],
     limitations: [],
     icon: Building2,
