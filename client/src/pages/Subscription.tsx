@@ -75,7 +75,7 @@ const plans = [
       "Priority support",
       "Verified employer badge",
       "Background check report on applicants",
-      "3 interviews — Iṣéyá team interviews & recommends your selected applicants",
+      "3 interviews — Iṣéyá team interviews & recommends selected applicants",
     ],
     limitations: [
       "Limited to 10 job postings",
@@ -101,7 +101,7 @@ const plans = [
       "Verified employer badge",
       "Featured company profile",
       "Background check report on applicants",
-      "5 interviews — Iṣéyá team interviews & recommends your selected applicants",
+      "5 interviews — Iṣéyá team interviews & recommends selected applicants",
     ],
     limitations: [],
     icon: Building2,
