@@ -1338,6 +1338,18 @@ export async function registerRoutes(
         paystackCustomerId: data.data.customer?.customer_code || null,
       });
 
+      await storage.createTransaction({
+        userId,
+        type: "subscription",
+        gateway: "paystack",
+        reference: data.data.reference || String(reference),
+        amount: data.data.amount || SUBSCRIPTION_PLANS[plan].amount,
+        currency: "NGN",
+        status: "success",
+        plan,
+        metadata: JSON.stringify({ planName: SUBSCRIPTION_PLANS[plan].name, paystackRef: data.data.reference }),
+      });
+
       res.json({ verified: true, plan, message: "Subscription activated successfully" });
 
       if (user.email) {
@@ -1373,6 +1385,17 @@ export async function registerRoutes(
         await storage.updateUser(userId, {
           subscriptionStatus: plan,
           subscriptionEndDate: endDate,
+        });
+        await storage.createTransaction({
+          userId,
+          type: "subscription",
+          gateway: "paystack",
+          reference: event.data?.reference || "",
+          amount: event.data?.amount || SUBSCRIPTION_PLANS[plan].amount,
+          currency: "NGN",
+          status: "success",
+          plan,
+          metadata: JSON.stringify({ source: "webhook", planName: SUBSCRIPTION_PLANS[plan].name }),
         });
       }
     }
@@ -1492,6 +1515,18 @@ export async function registerRoutes(
         subscriptionEndDate: endDate,
       });
 
+      await storage.createTransaction({
+        userId,
+        type: "subscription",
+        gateway: "flutterwave",
+        reference: data.data.tx_ref || data.data.flw_ref || String(transaction_id),
+        amount: Math.round(data.data.amount * 100),
+        currency: "NGN",
+        status: "success",
+        plan,
+        metadata: JSON.stringify({ planName: SUBSCRIPTION_PLANS[plan].name, flwRef: data.data.flw_ref }),
+      });
+
       res.json({ verified: true, plan, message: "Subscription activated successfully" });
 
       if (user.email) {
@@ -1525,6 +1560,17 @@ export async function registerRoutes(
           await storage.updateUser(userId, {
             subscriptionStatus: plan,
             subscriptionEndDate: endDate,
+          });
+          await storage.createTransaction({
+            userId,
+            type: "subscription",
+            gateway: "flutterwave",
+            reference: payload.data.tx_ref || payload.data.flw_ref || "",
+            amount: Math.round(payload.data.amount * 100),
+            currency: "NGN",
+            status: "success",
+            plan,
+            metadata: JSON.stringify({ source: "webhook", planName: SUBSCRIPTION_PLANS[plan].name }),
           });
         }
       }
@@ -1700,6 +1746,18 @@ export async function registerRoutes(
       }
 
       await storage.updateVerificationRequest(Number(requestId), { status: "under_review" });
+
+      await storage.createTransaction({
+        userId: userId || req.session.userId!,
+        type: "verification",
+        gateway: "paystack",
+        reference: data.data.reference || String(reference),
+        amount: data.data.amount || 0,
+        currency: "NGN",
+        status: "success",
+        metadata: JSON.stringify({ requestId, paystackRef: data.data.reference }),
+      });
+
       res.json({ verified: true, message: "Payment received! Your verification is now under review." });
     } catch (err) {
       console.error("Verification Paystack verify error:", err);
@@ -1785,6 +1843,18 @@ export async function registerRoutes(
       }
 
       await storage.updateVerificationRequest(Number(requestId), { status: "under_review" });
+
+      await storage.createTransaction({
+        userId: userId || req.session.userId!,
+        type: "verification",
+        gateway: "flutterwave",
+        reference: data.data.tx_ref || data.data.flw_ref || String(transactionId),
+        amount: Math.round((data.data.amount || 0) * 100),
+        currency: "NGN",
+        status: "success",
+        metadata: JSON.stringify({ requestId, flwRef: data.data.flw_ref }),
+      });
+
       res.json({ verified: true, message: "Payment received! Your verification is now under review." });
     } catch (err) {
       console.error("Verification Flutterwave verify error:", err);
@@ -1924,6 +1994,56 @@ export async function registerRoutes(
     if (isNaN(id)) return res.status(400).json({ message: "Invalid notification ID" });
     await storage.deleteNotification(id);
     res.json({ success: true });
+  });
+
+  // ============ TRANSACTION ROUTES ============
+
+  app.get("/api/admin/transactions", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const { type, status, gateway } = req.query as { type?: string; status?: string; gateway?: string };
+    const filters: { type?: string; status?: string; gateway?: string } = {};
+    if (type && type !== "all") filters.type = type;
+    if (status && status !== "all") filters.status = status;
+    if (gateway && gateway !== "all") filters.gateway = gateway;
+    const txns = await storage.getAllTransactions(Object.keys(filters).length > 0 ? filters : undefined);
+    const usersMap = new Map<string, User>();
+    for (const t of txns) {
+      if (!usersMap.has(t.userId)) {
+        const u = await storage.getUser(t.userId);
+        if (u) usersMap.set(t.userId, u);
+      }
+    }
+    const result = txns.map(t => {
+      const u = usersMap.get(t.userId);
+      return {
+        ...t,
+        amount: t.amount / 100,
+        userName: u ? `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email : "Unknown",
+        userEmail: u?.email || "",
+      };
+    });
+    res.json(result);
+  });
+
+  app.get("/api/admin/transactions/stats", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const stats = await storage.getTransactionStats();
+    res.json({
+      ...stats,
+      totalRevenue: stats.totalRevenue / 100,
+      subscriptionRevenue: stats.subscriptionRevenue / 100,
+      verificationRevenue: stats.verificationRevenue / 100,
+      monthlyRevenue: stats.monthlyRevenue.map(m => ({
+        ...m,
+        subscriptions: m.subscriptions / 100,
+        verifications: m.verifications / 100,
+        total: m.total / 100,
+      })),
+    });
   });
 
   // ============ PLATFORM SETTINGS ROUTES ============

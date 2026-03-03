@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extension";
-import { Users, Briefcase, FileText, Building2, UserCheck, Crown, TrendingUp, CheckCircle } from "lucide-react";
+import { Users, Briefcase, FileText, Building2, UserCheck, Crown, TrendingUp, CheckCircle, DollarSign, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Badge } from "@/components/ui/badge";

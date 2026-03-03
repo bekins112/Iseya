@@ -8,6 +8,10 @@ import {
   Building2,
   UserCheck,
   Shield,
+  DollarSign,
+  Crown,
+  ShieldCheck,
+  TrendingUp,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -39,6 +43,17 @@ export default function AdminDashboard() {
 
   const { data: permissions } = useQuery<AdminPermissions>({
     queryKey: ["/api/admin/my-permissions"],
+  });
+
+  const { data: txnStats } = useQuery<{
+    totalRevenue: number;
+    subscriptionRevenue: number;
+    verificationRevenue: number;
+    totalTransactions: number;
+    successfulTransactions: number;
+    failedTransactions: number;
+  }>({
+    queryKey: ["/api/admin/transactions/stats"],
   });
 
   if (user?.role !== "admin") {
@@ -141,6 +156,36 @@ export default function AdminDashboard() {
             </Card>
           ))}
         </div>
+      )}
+
+      {txnStats && (
+        <Card data-testid="card-revenue-summary">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Revenue Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 rounded-lg bg-primary/5">
+                <DollarSign className="w-5 h-5 mx-auto mb-1 text-primary" />
+                <p className="text-xs text-muted-foreground">Total Revenue</p>
+                <p className="text-lg font-bold" data-testid="text-dashboard-total-revenue">₦{txnStats.totalRevenue.toLocaleString()}</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-primary/5">
+                <Crown className="w-5 h-5 mx-auto mb-1 text-primary" />
+                <p className="text-xs text-muted-foreground">Subscriptions</p>
+                <p className="text-lg font-bold" data-testid="text-dashboard-sub-revenue">₦{txnStats.subscriptionRevenue.toLocaleString()}</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-900/10">
+                <ShieldCheck className="w-5 h-5 mx-auto mb-1 text-green-600" />
+                <p className="text-xs text-muted-foreground">Verifications</p>
+                <p className="text-lg font-bold" data-testid="text-dashboard-ver-revenue">₦{txnStats.verificationRevenue.toLocaleString()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid md:grid-cols-3 gap-4">

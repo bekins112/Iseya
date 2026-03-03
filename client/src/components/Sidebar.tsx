@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Calendar,
   SlidersHorizontal,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -44,6 +45,7 @@ export function Sidebar() {
       { href: "/admin/users", label: "Manage Users", icon: Users },
       { href: "/admin/jobs", label: "Manage Jobs", icon: Briefcase },
       { href: "/admin/subscriptions", label: "Subscriptions", icon: Crown },
+      { href: "/admin/transactions", label: "Transactions", icon: DollarSign },
       { href: "/admin/tickets", label: "Support Tickets", icon: Ticket },
       { href: "/admin/reports", label: "Reports", icon: Flag },
       { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },

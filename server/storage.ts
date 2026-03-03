@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -107,6 +107,22 @@ export interface IStorage {
   getSetting(key: string): Promise<string | null>;
   getAllSettings(): Promise<PlatformSetting[]>;
   upsertSetting(key: string, value: string, updatedBy: string): Promise<PlatformSetting>;
+
+  // Transaction methods
+  createTransaction(transaction: InsertTransaction): Promise<Transaction>;
+  getTransaction(id: number): Promise<Transaction | undefined>;
+  getAllTransactions(filters?: { type?: string; status?: string; gateway?: string }): Promise<Transaction[]>;
+  getTransactionsByUser(userId: string): Promise<Transaction[]>;
+  updateTransactionStatus(id: number, status: string): Promise<Transaction>;
+  getTransactionStats(): Promise<{
+    totalRevenue: number;
+    subscriptionRevenue: number;
+    verificationRevenue: number;
+    totalTransactions: number;
+    successfulTransactions: number;
+    failedTransactions: number;
+    monthlyRevenue: { month: string; subscriptions: number; verifications: number; total: number }[];
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -669,6 +685,84 @@ export class DatabaseStorage implements IStorage {
     }
     const [created] = await db.insert(platformSettings).values({ key, value, updatedBy }).returning();
     return created;
+  }
+
+  // Transaction methods
+  async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
+    const [created] = await db.insert(transactions).values(transaction).returning();
+    return created;
+  }
+
+  async getTransaction(id: number): Promise<Transaction | undefined> {
+    const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction;
+  }
+
+  async getAllTransactions(filters?: { type?: string; status?: string; gateway?: string }): Promise<Transaction[]> {
+    const conditions = [];
+    if (filters?.type) conditions.push(eq(transactions.type, filters.type));
+    if (filters?.status) conditions.push(eq(transactions.status, filters.status));
+    if (filters?.gateway) conditions.push(eq(transactions.gateway, filters.gateway));
+
+    if (conditions.length > 0) {
+      return await db.select().from(transactions).where(and(...conditions)).orderBy(desc(transactions.createdAt));
+    }
+    return await db.select().from(transactions).orderBy(desc(transactions.createdAt));
+  }
+
+  async getTransactionsByUser(userId: string): Promise<Transaction[]> {
+    return await db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.createdAt));
+  }
+
+  async updateTransactionStatus(id: number, status: string): Promise<Transaction> {
+    const [updated] = await db.update(transactions).set({ status }).where(eq(transactions.id, id)).returning();
+    return updated;
+  }
+
+  async getTransactionStats(): Promise<{
+    totalRevenue: number;
+    subscriptionRevenue: number;
+    verificationRevenue: number;
+    totalTransactions: number;
+    successfulTransactions: number;
+    failedTransactions: number;
+    monthlyRevenue: { month: string; subscriptions: number; verifications: number; total: number }[];
+  }> {
+    const allTxns = await db.select().from(transactions).orderBy(desc(transactions.createdAt));
+
+    const successful = allTxns.filter(t => t.status === "success");
+    const totalRevenue = successful.reduce((sum, t) => sum + t.amount, 0);
+    const subscriptionRevenue = successful.filter(t => t.type === "subscription").reduce((sum, t) => sum + t.amount, 0);
+    const verificationRevenue = successful.filter(t => t.type === "verification").reduce((sum, t) => sum + t.amount, 0);
+
+    const monthlyMap = new Map<string, { subscriptions: number; verifications: number }>();
+    for (const t of successful) {
+      if (!t.createdAt) continue;
+      const month = `${t.createdAt.getFullYear()}-${String(t.createdAt.getMonth() + 1).padStart(2, '0')}`;
+      const existing = monthlyMap.get(month) || { subscriptions: 0, verifications: 0 };
+      if (t.type === "subscription") existing.subscriptions += t.amount;
+      else if (t.type === "verification") existing.verifications += t.amount;
+      monthlyMap.set(month, existing);
+    }
+
+    const monthlyRevenue = Array.from(monthlyMap.entries())
+      .map(([month, data]) => ({
+        month,
+        subscriptions: data.subscriptions,
+        verifications: data.verifications,
+        total: data.subscriptions + data.verifications,
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    return {
+      totalRevenue,
+      subscriptionRevenue,
+      verificationRevenue,
+      totalTransactions: allTxns.length,
+      successfulTransactions: successful.length,
+      failedTransactions: allTxns.filter(t => t.status === "failed").length,
+      monthlyRevenue,
+    };
   }
 }
 

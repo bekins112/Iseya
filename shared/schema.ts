@@ -294,5 +294,24 @@ export const insertPlatformSettingSchema = createInsertSchema(platformSettings).
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
 
+export const transactions = pgTable("transactions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: varchar("type").notNull(),
+  gateway: varchar("gateway").notNull(),
+  reference: varchar("reference"),
+  amount: integer("amount").notNull(),
+  currency: varchar("currency").notNull().default("NGN"),
+  status: varchar("status").notNull().default("pending"),
+  plan: varchar("plan"),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTransactionSchema = createInsertSchema(transactions).omit({ id: true, createdAt: true });
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;
