@@ -136,6 +136,13 @@ export const adminPermissions = pgTable("admin_permissions", {
   canManageApplications: boolean("can_manage_applications").default(false),
   canManageAdmins: boolean("can_manage_admins").default(false),
   canViewStats: boolean("can_view_stats").default(true),
+  canManageSubscriptions: boolean("can_manage_subscriptions").default(false),
+  canManageTransactions: boolean("can_manage_transactions").default(false),
+  canManageTickets: boolean("can_manage_tickets").default(false),
+  canManageReports: boolean("can_manage_reports").default(false),
+  canManageVerifications: boolean("can_manage_verifications").default(false),
+  canManageNotifications: boolean("can_manage_notifications").default(false),
+  canManageSettings: boolean("can_manage_settings").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -160,6 +167,13 @@ export const insertAdminPermissionsSchema = z.object({
   canManageApplications: z.boolean().default(false),
   canManageAdmins: z.boolean().default(false),
   canViewStats: z.boolean().default(true),
+  canManageSubscriptions: z.boolean().default(false),
+  canManageTransactions: z.boolean().default(false),
+  canManageTickets: z.boolean().default(false),
+  canManageReports: z.boolean().default(false),
+  canManageVerifications: z.boolean().default(false),
+  canManageNotifications: z.boolean().default(false),
+  canManageSettings: z.boolean().default(false),
   createdBy: z.string().optional().nullable(),
 });
 
@@ -170,6 +184,13 @@ export const updateAdminPermissionsSchema = z.object({
   canManageApplications: z.boolean().optional(),
   canManageAdmins: z.boolean().optional(),
   canViewStats: z.boolean().optional(),
+  canManageSubscriptions: z.boolean().optional(),
+  canManageTransactions: z.boolean().optional(),
+  canManageTickets: z.boolean().optional(),
+  canManageReports: z.boolean().optional(),
+  canManageVerifications: z.boolean().optional(),
+  canManageNotifications: z.boolean().optional(),
+  canManageSettings: z.boolean().optional(),
 });
 
 // Schema for admin user updates
@@ -200,6 +221,13 @@ export const createSubAdminSchema = z.object({
     canManageApplications: z.boolean().optional(),
     canManageAdmins: z.boolean().optional(),
     canViewStats: z.boolean().optional(),
+    canManageSubscriptions: z.boolean().optional(),
+    canManageTransactions: z.boolean().optional(),
+    canManageTickets: z.boolean().optional(),
+    canManageReports: z.boolean().optional(),
+    canManageVerifications: z.boolean().optional(),
+    canManageNotifications: z.boolean().optional(),
+    canManageSettings: z.boolean().optional(),
   }),
 });
 

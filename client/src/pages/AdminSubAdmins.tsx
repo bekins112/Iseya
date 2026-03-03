@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye } from "lucide-react";
+import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -33,6 +33,13 @@ export default function AdminSubAdmins() {
     canManageApplications: false,
     canManageAdmins: false,
     canViewStats: true,
+    canManageSubscriptions: false,
+    canManageTransactions: false,
+    canManageTickets: false,
+    canManageReports: false,
+    canManageVerifications: false,
+    canManageNotifications: false,
+    canManageSettings: false,
   });
 
   const { data: admins = [], isLoading: adminsLoading } = useQuery<AdminWithPermissions[]>({
@@ -100,6 +107,13 @@ export default function AdminSubAdmins() {
       canManageApplications: false,
       canManageAdmins: false,
       canViewStats: true,
+      canManageSubscriptions: false,
+      canManageTransactions: false,
+      canManageTickets: false,
+      canManageReports: false,
+      canManageVerifications: false,
+      canManageNotifications: false,
+      canManageSettings: false,
     });
   };
 
@@ -114,6 +128,13 @@ export default function AdminSubAdmins() {
         canManageApplications: admin.permissions.canManageApplications || false,
         canManageAdmins: admin.permissions.canManageAdmins || false,
         canViewStats: admin.permissions.canViewStats !== false,
+        canManageSubscriptions: admin.permissions.canManageSubscriptions || false,
+        canManageTransactions: admin.permissions.canManageTransactions || false,
+        canManageTickets: admin.permissions.canManageTickets || false,
+        canManageReports: admin.permissions.canManageReports || false,
+        canManageVerifications: admin.permissions.canManageVerifications || false,
+        canManageNotifications: admin.permissions.canManageNotifications || false,
+        canManageSettings: admin.permissions.canManageSettings || false,
       });
     }
   };
@@ -133,9 +154,16 @@ export default function AdminSubAdmins() {
 
   const permissionLabels = [
     { key: "canViewStats", label: "View Statistics", icon: Eye, description: "Can view platform stats and analytics" },
-    { key: "canManageUsers", label: "Manage Users", icon: Users, description: "Can view, edit, and verify users" },
+    { key: "canManageUsers", label: "Manage Users", icon: Users, description: "Can view, edit, and manage all users" },
     { key: "canManageJobs", label: "Manage Jobs", icon: Briefcase, description: "Can edit, activate/deactivate, and delete jobs" },
-    { key: "canManageApplications", label: "Manage Applications", icon: FileText, description: "Can view all applications" },
+    { key: "canManageApplications", label: "Manage Applications", icon: FileText, description: "Can view and manage all applications" },
+    { key: "canManageSubscriptions", label: "Manage Subscriptions", icon: Crown, description: "Can view and update user subscriptions" },
+    { key: "canManageTransactions", label: "View Transactions", icon: DollarSign, description: "Can view transaction history and revenue stats" },
+    { key: "canManageTickets", label: "Manage Tickets", icon: Ticket, description: "Can view and respond to support tickets" },
+    { key: "canManageReports", label: "Manage Reports", icon: Flag, description: "Can review and resolve user reports" },
+    { key: "canManageVerifications", label: "Manage Verifications", icon: ShieldCheck, description: "Can approve or reject verification requests" },
+    { key: "canManageNotifications", label: "Send Notifications", icon: Bell, description: "Can create and manage platform notifications" },
+    { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform configuration" },
     { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
   ];
 
@@ -193,21 +221,24 @@ export default function AdminSubAdmins() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="hidden md:flex flex-wrap gap-1">
-                      {admin.permissions?.canManageUsers && (
-                        <Badge variant="outline" className="text-xs">Users</Badge>
-                      )}
-                      {admin.permissions?.canManageJobs && (
-                        <Badge variant="outline" className="text-xs">Jobs</Badge>
-                      )}
-                      {admin.permissions?.canManageApplications && (
-                        <Badge variant="outline" className="text-xs">Apps</Badge>
-                      )}
-                      {admin.permissions?.canManageAdmins && (
-                        <Badge variant="outline" className="text-xs">Admins</Badge>
-                      )}
-                      {!admin.permissions && (
+                    <div className="hidden md:flex flex-wrap gap-1 max-w-[300px]">
+                      {!admin.permissions ? (
                         <Badge className="text-xs">Full Access</Badge>
+                      ) : (
+                        <>
+                          {admin.permissions.canViewStats && <Badge variant="outline" className="text-xs">Stats</Badge>}
+                          {admin.permissions.canManageUsers && <Badge variant="outline" className="text-xs">Users</Badge>}
+                          {admin.permissions.canManageJobs && <Badge variant="outline" className="text-xs">Jobs</Badge>}
+                          {admin.permissions.canManageApplications && <Badge variant="outline" className="text-xs">Apps</Badge>}
+                          {admin.permissions.canManageSubscriptions && <Badge variant="outline" className="text-xs">Subs</Badge>}
+                          {admin.permissions.canManageTransactions && <Badge variant="outline" className="text-xs">Txns</Badge>}
+                          {admin.permissions.canManageTickets && <Badge variant="outline" className="text-xs">Tickets</Badge>}
+                          {admin.permissions.canManageReports && <Badge variant="outline" className="text-xs">Reports</Badge>}
+                          {admin.permissions.canManageVerifications && <Badge variant="outline" className="text-xs">Verify</Badge>}
+                          {admin.permissions.canManageNotifications && <Badge variant="outline" className="text-xs">Notifs</Badge>}
+                          {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Settings</Badge>}
+                          {admin.permissions.canManageAdmins && <Badge variant="outline" className="text-xs">Admins</Badge>}
+                        </>
                       )}
                     </div>
                     {admin.id !== user?.id && (
@@ -241,14 +272,14 @@ export default function AdminSubAdmins() {
       </Card>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Add Sub-Admin</DialogTitle>
             <DialogDescription>
               Select a user and configure their admin permissions
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 overflow-y-auto flex-1">
             <div className="space-y-2">
               <Label>Select User</Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -305,14 +336,14 @@ export default function AdminSubAdmins() {
       </Dialog>
 
       <Dialog open={!!editingAdmin} onOpenChange={() => setEditingAdmin(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Permissions</DialogTitle>
             <DialogDescription>
               Update permissions for {editingAdmin?.firstName || editingAdmin?.email}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
+          <div className="space-y-3 py-4 overflow-y-auto flex-1">
             {permissionLabels.map((perm) => (
               <div key={perm.key} className="flex items-center justify-between p-3 rounded-lg border">
                 <div className="flex items-center gap-2">

@@ -35,7 +35,7 @@ Preferred communication style: Simple, everyday language.
 - New users are directed to onboarding.
 - **Applicant Gating**: Non-verified applicants can apply but cannot cancel/withdraw applications or respond to offers. Contact info and CVs are masked from employers for unverified applicants.
 - **Employer Gating**: Free-tier employers have job posting limits (1 job) and cannot manage jobs, view applicant lists, update application status, or send offers.
-- **Admin Dashboard**: Role-based access with configurable permissions (`canViewStats`, `canManageUsers`, `canManageJobs`, `canManageApplications`, `canManageAdmins`).
+- **Admin Dashboard**: Role-based access with configurable permissions (`canViewStats`, `canManageUsers`, `canManageJobs`, `canManageApplications`, `canManageAdmins`, `canManageSubscriptions`, `canManageTransactions`, `canManageTickets`, `canManageReports`, `canManageVerifications`, `canManageNotifications`, `canManageSettings`).
 
 ### Subscription System
 - Tracks `subscriptionStatus` (`free`, `standard`, `premium`, `enterprise`).

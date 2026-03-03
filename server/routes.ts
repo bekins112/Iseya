@@ -552,6 +552,13 @@ export async function registerRoutes(
         canManageApplications: input.permissions.canManageApplications ?? false,
         canManageAdmins: input.permissions.canManageAdmins ?? false,
         canViewStats: input.permissions.canViewStats ?? true,
+        canManageSubscriptions: input.permissions.canManageSubscriptions ?? false,
+        canManageTransactions: input.permissions.canManageTransactions ?? false,
+        canManageTickets: input.permissions.canManageTickets ?? false,
+        canManageReports: input.permissions.canManageReports ?? false,
+        canManageVerifications: input.permissions.canManageVerifications ?? false,
+        canManageNotifications: input.permissions.canManageNotifications ?? false,
+        canManageSettings: input.permissions.canManageSettings ?? false,
       });
       
       res.status(201).json(adminPerms);
@@ -604,6 +611,13 @@ export async function registerRoutes(
       canManageApplications: true,
       canManageAdmins: true,
       canViewStats: true,
+      canManageSubscriptions: true,
+      canManageTransactions: true,
+      canManageTickets: true,
+      canManageReports: true,
+      canManageVerifications: true,
+      canManageNotifications: true,
+      canManageSettings: true,
     });
   });
 
@@ -647,6 +661,9 @@ export async function registerRoutes(
 
   // Admin: Get all tickets
   app.get("/api/admin/tickets", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageTickets) {
+      return res.status(403).json({ message: "You do not have permission to manage tickets" });
+    }
     const { status, priority } = req.query;
     const tickets = await storage.getAllTickets({ 
       status: status as string, 
@@ -657,6 +674,9 @@ export async function registerRoutes(
 
   // Admin: Get single ticket
   app.get("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageTickets) {
+      return res.status(403).json({ message: "You do not have permission to manage tickets" });
+    }
     const id = Number(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid ticket ID" });
     const ticket = await storage.getTicket(id);
@@ -666,6 +686,9 @@ export async function registerRoutes(
 
   // Admin: Update ticket
   app.patch("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageTickets) {
+      return res.status(403).json({ message: "You do not have permission to manage tickets" });
+    }
     const ticketId = Number(req.params.id);
     if (isNaN(ticketId)) return res.status(400).json({ message: "Invalid ticket ID" });
     try {
@@ -703,6 +726,9 @@ export async function registerRoutes(
 
   // Admin: Get all reports
   app.get("/api/admin/reports", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageReports) {
+      return res.status(403).json({ message: "You do not have permission to manage reports" });
+    }
     const { status, type } = req.query;
     const reports = await storage.getAllReports({ 
       status: status as string, 
@@ -713,6 +739,9 @@ export async function registerRoutes(
 
   // Admin: Get single report
   app.get("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageReports) {
+      return res.status(403).json({ message: "You do not have permission to manage reports" });
+    }
     const reportId = Number(req.params.id);
     if (isNaN(reportId)) return res.status(400).json({ message: "Invalid report ID" });
     const report = await storage.getReport(reportId);
@@ -722,6 +751,9 @@ export async function registerRoutes(
 
   // Admin: Update report
   app.patch("/api/admin/reports/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageReports) {
+      return res.status(403).json({ message: "You do not have permission to manage reports" });
+    }
     const reportId = Number(req.params.id);
     if (isNaN(reportId)) return res.status(400).json({ message: "Invalid report ID" });
     try {
@@ -1182,6 +1214,9 @@ export async function registerRoutes(
 
   // Admin: Get users by subscription status
   app.get("/api/admin/subscriptions", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSubscriptions) {
+      return res.status(403).json({ message: "You do not have permission to manage subscriptions" });
+    }
     const { status } = req.query;
     if (status) {
       const users = await storage.getUsersBySubscription(status as string);
@@ -1195,7 +1230,7 @@ export async function registerRoutes(
 
   // Admin: Update user subscription
   app.patch("/api/admin/subscriptions/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+    if (req.adminPermissions && !req.adminPermissions.canManageSubscriptions) {
       return res.status(403).json({ message: "You don't have permission to manage subscriptions" });
     }
     try {
@@ -1864,7 +1899,7 @@ export async function registerRoutes(
 
   // Admin: Get all verification requests
   app.get("/api/admin/verification-requests", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+    if (req.adminPermissions && !req.adminPermissions.canManageVerifications) {
       return res.status(403).json({ message: "You don't have permission to manage verifications" });
     }
     const status = req.query.status as string | undefined;
@@ -1883,7 +1918,7 @@ export async function registerRoutes(
 
   // Admin: Review verification request (approve/reject)
   app.patch("/api/admin/verification-requests/:id", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+    if (req.adminPermissions && !req.adminPermissions.canManageVerifications) {
       return res.status(403).json({ message: "You don't have permission to manage verifications" });
     }
 
@@ -1957,18 +1992,19 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  app.get("/api/admin/notifications", isAuthenticated, async (req, res) => {
-    const userId = req.session.userId!;
-    const user = await storage.getUser(userId);
-    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+  app.get("/api/admin/notifications", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+      return res.status(403).json({ message: "You do not have permission to manage notifications" });
+    }
     const notifs = await storage.getAllNotifications();
     res.json(notifs);
   });
 
-  app.post("/api/admin/notifications", isAuthenticated, async (req, res) => {
+  app.post("/api/admin/notifications", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+      return res.status(403).json({ message: "You do not have permission to manage notifications" });
+    }
     const userId = req.session.userId!;
-    const user = await storage.getUser(userId);
-    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
     const { title, message, type, targetRole, targetUserId } = req.body;
     if (!title || !message) return res.status(400).json({ message: "Title and message are required" });
     const validTypes = ["all", "role", "individual"];
@@ -1986,10 +2022,10 @@ export async function registerRoutes(
     res.json(notification);
   });
 
-  app.delete("/api/admin/notifications/:id", isAuthenticated, async (req, res) => {
-    const userId = req.session.userId!;
-    const user = await storage.getUser(userId);
-    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+  app.delete("/api/admin/notifications/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+      return res.status(403).json({ message: "You do not have permission to manage notifications" });
+    }
     const id = parseInt(req.params.id);
     if (isNaN(id)) return res.status(400).json({ message: "Invalid notification ID" });
     await storage.deleteNotification(id);
@@ -1998,10 +2034,10 @@ export async function registerRoutes(
 
   // ============ TRANSACTION ROUTES ============
 
-  app.get("/api/admin/transactions", isAuthenticated, async (req, res) => {
-    const userId = req.session.userId!;
-    const user = await storage.getUser(userId);
-    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+  app.get("/api/admin/transactions", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageTransactions) {
+      return res.status(403).json({ message: "You do not have permission to manage transactions" });
+    }
     const { type, status, gateway } = req.query as { type?: string; status?: string; gateway?: string };
     const filters: { type?: string; status?: string; gateway?: string } = {};
     if (type && type !== "all") filters.type = type;
@@ -2027,10 +2063,10 @@ export async function registerRoutes(
     res.json(result);
   });
 
-  app.get("/api/admin/transactions/stats", isAuthenticated, async (req, res) => {
-    const userId = req.session.userId!;
-    const user = await storage.getUser(userId);
-    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+  app.get("/api/admin/transactions/stats", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageTransactions) {
+      return res.status(403).json({ message: "You do not have permission to manage transactions" });
+    }
     const stats = await storage.getTransactionStats();
     res.json({
       ...stats,
@@ -2073,12 +2109,10 @@ export async function registerRoutes(
     res.json(result);
   });
 
-  app.get("/api/admin/settings", isAuthenticated, async (req, res) => {
-    const userId = req.session.userId!;
-    const user = await storage.getUser(userId);
-    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
-    const perms = await storage.getAdminPermissions(userId);
-    if (perms && !perms.canManageAdmins) return res.status(403).json({ message: "You do not have permission to view platform settings" });
+  app.get("/api/admin/settings", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to view platform settings" });
+    }
     const settings = await storage.getAllSettings();
     const result: Record<string, string> = { ...DEFAULT_SETTINGS };
     for (const s of settings) {
@@ -2087,12 +2121,11 @@ export async function registerRoutes(
     res.json(result);
   });
 
-  app.patch("/api/admin/settings", isAuthenticated, async (req, res) => {
+  app.patch("/api/admin/settings", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to modify platform settings" });
+    }
     const userId = req.session.userId!;
-    const user = await storage.getUser(userId);
-    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
-    const perms = await storage.getAdminPermissions(userId);
-    if (perms && !perms.canManageAdmins) return res.status(403).json({ message: "You do not have permission to modify platform settings" });
     const updates = req.body as Record<string, string>;
     if (!updates || typeof updates !== "object") return res.status(400).json({ message: "Invalid settings data" });
     const validKeys = Object.keys(DEFAULT_SETTINGS);
