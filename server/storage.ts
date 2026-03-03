@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -102,6 +102,11 @@ export interface IStorage {
   markAllNotificationsRead(userId: string, role: string): Promise<void>;
   getAllNotifications(): Promise<Notification[]>;
   deleteNotification(id: number): Promise<void>;
+
+  // Platform settings methods
+  getSetting(key: string): Promise<string | null>;
+  getAllSettings(): Promise<PlatformSetting[]>;
+  upsertSetting(key: string, value: string, updatedBy: string): Promise<PlatformSetting>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -640,6 +645,30 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNotification(id: number): Promise<void> {
     await db.delete(notifications).where(eq(notifications.id, id));
+  }
+
+  // Platform settings methods
+  async getSetting(key: string): Promise<string | null> {
+    const [setting] = await db.select().from(platformSettings).where(eq(platformSettings.key, key));
+    return setting?.value ?? null;
+  }
+
+  async getAllSettings(): Promise<PlatformSetting[]> {
+    return await db.select().from(platformSettings).orderBy(platformSettings.key);
+  }
+
+  async upsertSetting(key: string, value: string, updatedBy: string): Promise<PlatformSetting> {
+    const [existing] = await db.select().from(platformSettings).where(eq(platformSettings.key, key));
+    if (existing) {
+      const [updated] = await db
+        .update(platformSettings)
+        .set({ value, updatedBy, updatedAt: new Date() })
+        .where(eq(platformSettings.key, key))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(platformSettings).values({ key, value, updatedBy }).returning();
+    return created;
   }
 }
 

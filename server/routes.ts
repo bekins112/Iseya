@@ -1215,20 +1215,32 @@ export async function registerRoutes(
   });
 
   // === PAYSTACK SUBSCRIPTION PAYMENT ===
-  const SUBSCRIPTION_PLANS: Record<string, { name: string; amount: number; jobLimit: number }> = {
-    free: { name: "Basic", amount: 0, jobLimit: 1 },
-    standard: { name: "Standard", amount: 999900, jobLimit: 5 },
-    premium: { name: "Premium", amount: 2499900, jobLimit: 10 },
-    enterprise: { name: "Enterprise", amount: 4499900, jobLimit: -1 },
-  };
+  async function getSubscriptionPlans() {
+    const standardPrice = parseFloat(await getSettingValue("subscription_standard_price"));
+    const premiumPrice = parseFloat(await getSettingValue("subscription_premium_price"));
+    const enterprisePrice = parseFloat(await getSettingValue("subscription_enterprise_price"));
+    const standardDiscount = parseFloat(await getSettingValue("subscription_standard_discount"));
+    const premiumDiscount = parseFloat(await getSettingValue("subscription_premium_discount"));
+    const enterpriseDiscount = parseFloat(await getSettingValue("subscription_enterprise_discount"));
 
-  app.get("/api/subscription/plans", (_req, res) => {
-    const plans = Object.entries(SUBSCRIPTION_PLANS).map(([id, plan]) => ({
+    const applyDiscount = (price: number, discount: number) => Math.round(price * (1 - discount / 100));
+
+    return {
+      free: { name: "Basic", amount: 0, jobLimit: 1, originalAmount: 0, discount: 0 },
+      standard: { name: "Standard", amount: applyDiscount(standardPrice, standardDiscount) * 100, jobLimit: 5, originalAmount: standardPrice * 100, discount: standardDiscount },
+      premium: { name: "Premium", amount: applyDiscount(premiumPrice, premiumDiscount) * 100, jobLimit: 10, originalAmount: premiumPrice * 100, discount: premiumDiscount },
+      enterprise: { name: "Enterprise", amount: applyDiscount(enterprisePrice, enterpriseDiscount) * 100, jobLimit: -1, originalAmount: enterprisePrice * 100, discount: enterpriseDiscount },
+    } as Record<string, { name: string; amount: number; jobLimit: number; originalAmount: number; discount: number }>;
+  }
+
+  app.get("/api/subscription/plans", async (_req, res) => {
+    const plans = await getSubscriptionPlans();
+    const result = Object.entries(plans).map(([id, plan]) => ({
       id,
       ...plan,
       amountFormatted: `₦${(plan.amount / 100).toLocaleString()}`,
     }));
-    res.json(plans);
+    res.json(result);
   });
 
   app.post("/api/subscription/initialize", isAuthenticated, async (req, res) => {
@@ -1237,6 +1249,7 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Only employers can subscribe" });
     }
 
+    const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
     const { plan } = req.body;
     if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
       return res.status(400).json({ message: "Invalid plan selected" });
@@ -1306,6 +1319,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Payment verification failed", verified: false });
       }
 
+      const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
       const { userId, plan } = data.data.metadata;
       if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
         return res.status(400).json({ message: "Invalid plan in payment metadata", verified: false });
@@ -1349,6 +1363,7 @@ export async function registerRoutes(
       return res.sendStatus(401);
     }
 
+    const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
     const event = req.body;
     if (event.event === "charge.success") {
       const { userId, plan } = event.data.metadata || {};
@@ -1371,6 +1386,7 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Only employers can subscribe" });
     }
 
+    const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
     const { plan } = req.body;
     if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
       return res.status(400).json({ message: "Invalid plan selected" });
@@ -1448,6 +1464,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Payment verification failed", verified: false });
       }
 
+      const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
       const { userId, plan } = data.data.meta || {};
       if (!plan || !SUBSCRIPTION_PLANS[plan] || plan === "free") {
         return res.status(400).json({ message: "Invalid plan in payment metadata", verified: false });
@@ -1496,6 +1513,7 @@ export async function registerRoutes(
       return res.sendStatus(401);
     }
 
+    const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
     const payload = req.body;
     if (payload.event === "charge.completed" && payload.data?.status === "successful") {
       const { userId, plan } = payload.data.meta || {};
@@ -1518,6 +1536,7 @@ export async function registerRoutes(
     const user = await storage.getUser(req.session.userId!);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
     const plan = SUBSCRIPTION_PLANS[user.subscriptionStatus || "free"] || SUBSCRIPTION_PLANS.free;
     const employerJobs = await storage.getJobsByEmployer(user.id);
     const activeJobCount = employerJobs.filter(j => j.isActive).length;
@@ -1901,6 +1920,67 @@ export async function registerRoutes(
     if (isNaN(id)) return res.status(400).json({ message: "Invalid notification ID" });
     await storage.deleteNotification(id);
     res.json({ success: true });
+  });
+
+  // ============ PLATFORM SETTINGS ROUTES ============
+
+  const DEFAULT_SETTINGS: Record<string, string> = {
+    "subscription_standard_price": "9999",
+    "subscription_premium_price": "24999",
+    "subscription_enterprise_price": "44999",
+    "subscription_standard_discount": "0",
+    "subscription_premium_discount": "0",
+    "subscription_enterprise_discount": "0",
+    "verification_fee": "9999",
+    "verification_discount": "0",
+  };
+
+  async function getSettingValue(key: string): Promise<string> {
+    const val = await storage.getSetting(key);
+    return val ?? DEFAULT_SETTINGS[key] ?? "0";
+  }
+
+  app.get("/api/settings/public", async (_req, res) => {
+    const keys = Object.keys(DEFAULT_SETTINGS);
+    const result: Record<string, string> = {};
+    for (const key of keys) {
+      result[key] = await getSettingValue(key);
+    }
+    res.json(result);
+  });
+
+  app.get("/api/admin/settings", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const settings = await storage.getAllSettings();
+    const result: Record<string, string> = { ...DEFAULT_SETTINGS };
+    for (const s of settings) {
+      result[s.key] = s.value;
+    }
+    res.json(result);
+  });
+
+  app.patch("/api/admin/settings", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const updates = req.body as Record<string, string>;
+    if (!updates || typeof updates !== "object") return res.status(400).json({ message: "Invalid settings data" });
+    const validKeys = Object.keys(DEFAULT_SETTINGS);
+    for (const [key, value] of Object.entries(updates)) {
+      if (!validKeys.includes(key)) continue;
+      const numVal = parseFloat(value);
+      if (isNaN(numVal) || numVal < 0) continue;
+      if (key.includes("discount") && numVal > 100) continue;
+      await storage.upsertSetting(key, String(numVal), userId);
+    }
+    const settings = await storage.getAllSettings();
+    const result: Record<string, string> = { ...DEFAULT_SETTINGS };
+    for (const s of settings) {
+      result[s.key] = s.value;
+    }
+    res.json(result);
   });
 
   return httpServer;
