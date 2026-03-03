@@ -18,7 +18,6 @@ import {
   Flag,
   ShieldCheck,
   Calendar,
-  Bell,
   SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ export function Sidebar() {
       { href: "/admin/reports", label: "Reports", icon: Flag },
       { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },
       { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck },
-      { href: "/admin/notifications", label: "Notifications", icon: Bell },
       { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal },
     ] : isEmployer ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
