@@ -78,7 +78,10 @@ export const api = {
     update: {
       method: 'PATCH' as const,
       path: '/api/jobs/:id',
-      input: insertJobSchema.partial(),
+      input: insertJobSchema.partial().extend({
+        deadline: z.union([z.string(), z.date(), z.null()]).optional(),
+        status: z.string().optional(),
+      }),
       responses: {
         200: z.custom<typeof jobs.$inferSelect>(),
         404: errorSchemas.notFound,

@@ -208,7 +208,7 @@ export function useUpdateJob() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: number } & Partial<InsertJob & { isActive: boolean }>) => {
+    mutationFn: async ({ id, ...updates }: { id: number } & Partial<InsertJob & { isActive: boolean; deadline: string | null; status: string }>) => {
       const url = buildUrl(api.jobs.update.path, { id });
       const res = await fetch(url, {
         method: api.jobs.update.method,

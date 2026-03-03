@@ -256,8 +256,9 @@ export async function registerRoutes(
       }
       const updatedJob = await storage.updateJob(jobId, updateData);
       res.json(updatedJob);
-    } catch (err) {
-      res.status(400).json({ message: "Invalid input" });
+    } catch (err: any) {
+      console.error("Job update error:", err?.message || err);
+      res.status(400).json({ message: err?.message || "Invalid input" });
     }
   });
 
