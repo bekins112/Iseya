@@ -125,7 +125,7 @@ export default function AdminDashboard() {
       />
 
       {statsLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-4">
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {statCards.map((stat) => (
             <Card
               key={stat.title}
@@ -145,11 +145,11 @@ export default function AdminDashboard() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <stat.icon className={`w-4 h-4 ${stat.color}`} />
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {stat.title}
                   </span>
                 </div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl font-bold">
                   {stat.value.toLocaleString()}
                 </p>
               </CardContent>
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="text-center p-3 rounded-lg bg-primary/5">
                 <DollarSign className="w-5 h-5 mx-auto mb-1 text-primary" />
                 <p className="text-xs text-muted-foreground">Total Revenue</p>
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
         </Card>
       )}
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {adminLinks.map(
           (link) =>
             link.permission !== false && (

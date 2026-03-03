@@ -38,7 +38,7 @@ export function Sidebar() {
     : undefined;
 
   const links: { href: string; label: string; icon: any; subtitle?: string }[] = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    ...(!isAdmin ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
     ...(isAdmin ? [
       { href: "/admin/dashboard", label: "Admin Panel", icon: Shield },
       { href: "/admin/statistics", label: "Statistics", icon: BarChart3 },
@@ -66,30 +66,32 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t z-50 md:hidden flex items-center justify-around h-16 px-2 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-        {links.map((link) => {
-          const Icon = link.icon;
-          const isActive = location === link.href;
-          return (
-            <Link key={link.href} href={link.href}>
-              <button className={cn(
-                "flex flex-col items-center justify-center gap-1 transition-all",
-                isActive ? "text-primary scale-110" : "text-muted-foreground"
-              )} data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                <Icon className={cn("w-6 h-6", isActive && "stroke-[2.5px]")} />
-                <span className="text-[10px] font-bold uppercase tracking-tighter">{link.label.split(' ')[0]}</span>
-              </button>
-            </Link>
-          );
-        })}
-        <button
-          className="flex flex-col items-center justify-center gap-1 transition-all text-red-500"
-          onClick={() => logout()}
-          data-testid="mobile-nav-logout"
-        >
-          <LogOut className="w-6 h-6" />
-          <span className="text-[10px] font-bold uppercase tracking-tighter">Logout</span>
-        </button>
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t z-50 md:hidden h-16 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center h-full px-2 overflow-x-auto scrollbar-hide gap-1">
+          {links.map((link) => {
+            const Icon = link.icon;
+            const isActive = location === link.href;
+            return (
+              <Link key={link.href} href={link.href}>
+                <button className={cn(
+                  "flex flex-col items-center justify-center gap-1 transition-all min-w-[56px] px-1",
+                  isActive ? "text-primary scale-110" : "text-muted-foreground"
+                )} data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5px]")} />
+                  <span className="text-[9px] font-bold uppercase tracking-tighter whitespace-nowrap">{link.label.split(' ')[0]}</span>
+                </button>
+              </Link>
+            );
+          })}
+          <button
+            className="flex flex-col items-center justify-center gap-1 transition-all text-red-500 min-w-[56px] px-1"
+            onClick={() => logout()}
+            data-testid="mobile-nav-logout"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-[9px] font-bold uppercase tracking-tighter">Logout</span>
+          </button>
+        </div>
       </nav>
 
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
@@ -98,7 +100,7 @@ export function Sidebar() {
          <NotificationBell />
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {links.map((link) => {
           const Icon = link.icon;
           const isActive = location === link.href;
