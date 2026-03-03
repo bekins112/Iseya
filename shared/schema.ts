@@ -22,6 +22,8 @@ export const jobs = pgTable("jobs", {
   ageMin: integer("age_min"),
   ageMax: integer("age_max"),
   isActive: boolean("is_active").default(true),
+  status: varchar("status").default("active"),
+  deadline: timestamp("deadline"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -202,6 +204,7 @@ export const adminUpdateUserSchema = z.object({
 // Schema for admin job updates
 export const adminUpdateJobSchema = z.object({
   isActive: z.boolean().optional(),
+  status: z.string().optional(),
   title: z.string().optional(),
   description: z.string().optional(),
   category: z.string().optional(),
@@ -210,6 +213,7 @@ export const adminUpdateJobSchema = z.object({
   wage: z.string().optional(),
   salaryMin: z.number().optional(),
   salaryMax: z.number().optional(),
+  deadline: z.string().optional(),
 });
 
 // Schema for creating sub-admin

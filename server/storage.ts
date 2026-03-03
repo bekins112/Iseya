@@ -172,7 +172,11 @@ export class DatabaseStorage implements IStorage {
     minSalary?: number;
     maxSalary?: number;
   }): Promise<Job[]> {
-    const conditions = [eq(jobs.isActive, true)];
+    await this.expireOverdueJobs();
+    const conditions = [
+      eq(jobs.isActive, true),
+      eq(jobs.status, "active"),
+    ];
     
     if (filters?.category) conditions.push(eq(jobs.category, filters.category));
     if (filters?.location) conditions.push(sql`${jobs.location} ILIKE ${`%${filters.location}%`}`);
@@ -181,6 +185,18 @@ export class DatabaseStorage implements IStorage {
     if (filters?.maxSalary) conditions.push(sql`${jobs.salaryMax} <= ${filters.maxSalary}`);
     
     return await db.select().from(jobs).where(and(...conditions)).orderBy(desc(jobs.createdAt));
+  }
+
+  async expireOverdueJobs(): Promise<void> {
+    await db
+      .update(jobs)
+      .set({ status: "expired", isActive: false })
+      .where(
+        and(
+          eq(jobs.status, "active"),
+          sql`${jobs.deadline} IS NOT NULL AND ${jobs.deadline} < NOW()`
+        )
+      );
   }
 
   async deleteJob(id: number): Promise<void> {

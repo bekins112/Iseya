@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { AlertTriangle, ArrowUpCircle } from "lucide-react";
+import { AlertTriangle, ArrowUpCircle, CalendarClock } from "lucide-react";
 
 const categories = [
   "Waiter / Waitress",
@@ -57,7 +57,7 @@ const categories = [
   "Other",
 ];
 
-const postJobSchema = insertJobSchema.omit({ employerId: true, isActive: true }).extend({
+const postJobSchema = insertJobSchema.omit({ employerId: true, isActive: true, status: true, deadline: true }).extend({
   category: z.string().min(1, "Category is required"),
   jobType: z.string().min(1, "Job type is required"),
   salaryMin: z.coerce.number().min(0, "Minimum salary must be at least 0"),
@@ -69,6 +69,7 @@ const postJobSchema = insertJobSchema.omit({ employerId: true, isActive: true })
   gender: z.string().default("Any"),
   ageMin: z.coerce.number().min(16, "Minimum age must be at least 16").nullable().optional(),
   ageMax: z.coerce.number().max(100, "Maximum age cannot exceed 100").nullable().optional(),
+  deadline: z.string().min(1, "Application deadline is required"),
 });
 
 type JobFormValues = z.infer<typeof postJobSchema>;
@@ -93,18 +94,21 @@ export default function PostJob() {
       gender: "Any",
       ageMin: null,
       ageMax: null,
+      deadline: "",
     }
   });
 
   const onSubmit = (data: JobFormValues) => {
     setLimitMessage(null);
+    const { deadline, ...rest } = data;
     createJob.mutate({
-        ...data,
-        ageMin: data.ageMin || null,
-        ageMax: data.ageMax || null,
+        ...rest,
+        ageMin: rest.ageMin || null,
+        ageMax: rest.ageMax || null,
         employerId: user!.id,
         isActive: true,
-    }, {
+        deadline,
+    } as any, {
       onSuccess: () => setLocation("/dashboard"),
       onError: (error: any) => {
         if (error.code === "JOB_LIMIT_REACHED") {
@@ -334,19 +338,43 @@ export default function PostJob() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Location</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Downtown Cafe, Main St." {...field} data-testid="input-job-location" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Downtown Cafe, Main St." {...field} data-testid="input-job-location" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="deadline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        <CalendarClock className="w-4 h-4" />
+                        Application Deadline
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                          {...field}
+                          data-testid="input-job-deadline"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}

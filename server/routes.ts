@@ -186,7 +186,11 @@ export async function registerRoutes(
         ...req.body,
         employerId: user.id
       });
-      const job = await storage.createJob(input);
+      const jobData: any = { ...input, status: "active" };
+      if (req.body.deadline) {
+        jobData.deadline = new Date(req.body.deadline);
+      }
+      const job = await storage.createJob(jobData);
       res.status(201).json(job);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -240,7 +244,17 @@ export async function registerRoutes(
 
     try {
       const input = api.jobs.update.input.parse(req.body);
-      const updatedJob = await storage.updateJob(jobId, input);
+      const updateData: any = { ...input };
+      if (req.body.deadline) {
+        updateData.deadline = new Date(req.body.deadline);
+      }
+      if (req.body.deadline === null) {
+        updateData.deadline = null;
+      }
+      if (req.body.status) {
+        updateData.status = req.body.status;
+      }
+      const updatedJob = await storage.updateJob(jobId, updateData);
       res.json(updatedJob);
     } catch (err) {
       res.status(400).json({ message: "Invalid input" });
@@ -255,8 +269,9 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Only employers can access this" });
     }
 
-    const jobs = await storage.getJobsByEmployer(userId);
-    res.json(jobs);
+    await storage.expireOverdueJobs();
+    const jobsList = await storage.getJobsByEmployer(userId);
+    res.json(jobsList);
   });
 
   // === APPLICATIONS ===
@@ -1042,6 +1057,7 @@ export async function registerRoutes(
       
       if (input.status === "accepted") {
         await storage.updateApplicationStatus(offer.applicationId, "accepted");
+        await storage.updateJob(offer.jobId, { status: "filled", isActive: false });
       } else {
         await storage.updateApplicationStatus(offer.applicationId, "pending");
       }
