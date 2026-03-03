@@ -12,12 +12,18 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
 
-const plans = [
-  {
-    id: "free",
+const planMeta: Record<string, {
+  name: string;
+  period: string;
+  description: string;
+  features: string[];
+  limitations: string[];
+  icon: any;
+  popular: boolean;
+  recommended: boolean;
+}> = {
+  free: {
     name: "Basic",
-    price: 0,
-    priceFormatted: "₦0",
     period: "forever",
     description: "Explore the platform",
     features: [
@@ -35,11 +41,8 @@ const plans = [
     popular: false,
     recommended: false,
   },
-  {
-    id: "standard",
+  standard: {
     name: "Standard",
-    price: 9999,
-    priceFormatted: "₦9,999",
     period: "per month",
     description: "Start hiring talent",
     features: [
@@ -59,11 +62,8 @@ const plans = [
     popular: false,
     recommended: false,
   },
-  {
-    id: "premium",
+  premium: {
     name: "Premium",
-    price: 24999,
-    priceFormatted: "₦24,999",
     period: "per month",
     description: "Scale your hiring",
     features: [
@@ -84,11 +84,8 @@ const plans = [
     popular: true,
     recommended: true,
   },
-  {
-    id: "enterprise",
+  enterprise: {
     name: "Enterprise",
-    price: 44999,
-    priceFormatted: "₦44,999",
     period: "per month",
     description: "Unlimited hiring power",
     features: [
@@ -108,7 +105,44 @@ const plans = [
     popular: false,
     recommended: false,
   },
-];
+};
+
+function buildPlans(settings: Record<string, string> | undefined) {
+  const s = settings || {};
+  const stdPrice = Number(s.subscription_standard_price || "9999");
+  const stdDiscount = Number(s.subscription_standard_discount || "0");
+  const premPrice = Number(s.subscription_premium_price || "24999");
+  const premDiscount = Number(s.subscription_premium_discount || "0");
+  const entPrice = Number(s.subscription_enterprise_price || "44999");
+  const entDiscount = Number(s.subscription_enterprise_discount || "0");
+
+  const calc = (price: number, discount: number) => Math.round(price * (1 - discount / 100));
+
+  return [
+    { id: "free", ...planMeta.free, price: 0, originalPrice: 0, discount: 0, priceFormatted: "₦0" },
+    {
+      id: "standard", ...planMeta.standard,
+      price: calc(stdPrice, stdDiscount),
+      originalPrice: stdPrice,
+      discount: stdDiscount,
+      priceFormatted: `₦${calc(stdPrice, stdDiscount).toLocaleString()}`,
+    },
+    {
+      id: "premium", ...planMeta.premium,
+      price: calc(premPrice, premDiscount),
+      originalPrice: premPrice,
+      discount: premDiscount,
+      priceFormatted: `₦${calc(premPrice, premDiscount).toLocaleString()}`,
+    },
+    {
+      id: "enterprise", ...planMeta.enterprise,
+      price: calc(entPrice, entDiscount),
+      originalPrice: entPrice,
+      discount: entDiscount,
+      priceFormatted: `₦${calc(entPrice, entDiscount).toLocaleString()}`,
+    },
+  ];
+}
 
 const planOrder = ["free", "standard", "premium", "enterprise"];
 
@@ -120,6 +154,12 @@ export default function Subscription() {
   const currentPlan = user?.subscriptionStatus || "free";
   const [gatewayDialogOpen, setGatewayDialogOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+
+  const { data: platformSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings/public"],
+  });
+
+  const plans = buildPlans(platformSettings);
 
   const { data: subscriptionStatus } = useQuery<{
     currentPlan: string;
@@ -353,9 +393,22 @@ export default function Subscription() {
                   <CardTitle className="text-xl">{plan.name}</CardTitle>
                   <CardDescription className="text-xs">{plan.description}</CardDescription>
                   <div className="pt-3">
-                    <span className="text-3xl font-bold">{plan.priceFormatted}</span>
-                    {plan.price > 0 && (
-                      <span className="text-muted-foreground text-sm ml-1">/{plan.period}</span>
+                    {plan.discount > 0 && plan.originalPrice > 0 ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-lg line-through text-muted-foreground">₦{plan.originalPrice.toLocaleString()}</span>
+                          <Badge variant="destructive" className="text-xs" data-testid={`badge-discount-${plan.id}`}>-{plan.discount}%</Badge>
+                        </div>
+                        <span className="text-3xl font-bold">{plan.priceFormatted}</span>
+                        <span className="text-muted-foreground text-sm ml-1">/{plan.period}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold">{plan.priceFormatted}</span>
+                        {plan.price > 0 && (
+                          <span className="text-muted-foreground text-sm ml-1">/{plan.period}</span>
+                        )}
+                      </>
                     )}
                   </div>
                 </CardHeader>

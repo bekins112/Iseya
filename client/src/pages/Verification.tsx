@@ -58,6 +58,16 @@ export default function Verification() {
   const idDocRef = useRef<HTMLInputElement>(null);
   const selfieRef = useRef<HTMLInputElement>(null);
 
+  const { data: platformSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings/public"],
+  });
+
+  const verificationFee = Number(platformSettings?.verification_fee || "9999");
+  const verificationDiscount = Number(platformSettings?.verification_discount || "0");
+  const finalVerificationFee = Math.round(verificationFee * (1 - verificationDiscount / 100));
+  const feeFormatted = `₦${finalVerificationFee.toLocaleString()}`;
+  const originalFeeFormatted = `₦${verificationFee.toLocaleString()}`;
+
   const params = new URLSearchParams(searchString);
   const verifyReference = params.get("reference");
   const flwTransactionId = params.get("transaction_id");
@@ -286,10 +296,10 @@ export default function Verification() {
             </CardTitle>
             <CardDescription>
               {isPending 
-                ? "Your documents have been submitted. Pay ₦9,999 to complete verification."
+                ? `Your documents have been submitted. Pay ${feeFormatted} to complete verification.`
                 : isExpired
-                ? "Your verification has expired. Renew for another 30 days at ₦9,999."
-                : "Upload your government-issued ID card and a selfie holding the ID to prove your identity. Monthly fee of ₦9,999."
+                ? `Your verification has expired. Renew for another 30 days at ${feeFormatted}.`
+                : `Upload your government-issued ID card and a selfie holding the ID to prove your identity. Monthly fee of ${feeFormatted}.`
               }
             </CardDescription>
           </CardHeader>
@@ -411,9 +421,19 @@ export default function Verification() {
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Verification Fee</span>
-                    <span className="text-2xl font-bold text-primary">₦9,999</span>
+                    <div className="text-right">
+                      {verificationDiscount > 0 ? (
+                        <div className="space-y-0.5">
+                          <span className="text-sm line-through text-muted-foreground block">{originalFeeFormatted}</span>
+                          <span className="text-2xl font-bold text-primary" data-testid="text-verification-price">{feeFormatted}</span>
+                          <Badge variant="destructive" className="text-xs ml-2" data-testid="badge-verification-discount">-{verificationDiscount}%</Badge>
+                        </div>
+                      ) : (
+                        <span className="text-2xl font-bold text-primary" data-testid="text-verification-price">{feeFormatted}</span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">One-time payment for identity verification and background check</p>
+                  <p className="text-xs text-muted-foreground">Monthly payment for identity verification and background check</p>
                 </div>
 
                 <div className="flex items-start gap-2 p-3 rounded-md bg-muted/50">
@@ -430,7 +450,7 @@ export default function Verification() {
                   data-testid="button-pay-verification"
                 >
                   <CreditCard className="w-4 h-4" />
-                  Pay ₦9,999 to Verify
+                  Pay {feeFormatted} to Verify
                 </Button>
               </div>
             )}
@@ -443,7 +463,7 @@ export default function Verification() {
           <DialogHeader>
             <DialogTitle>Choose Payment Method</DialogTitle>
             <DialogDescription>
-              Select your preferred payment gateway to pay the ₦9,999 verification fee.
+              Select your preferred payment gateway to pay the {feeFormatted} verification fee.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">

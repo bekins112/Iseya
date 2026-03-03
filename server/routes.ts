@@ -1552,8 +1552,12 @@ export async function registerRoutes(
   });
 
   // === APPLICANT VERIFICATION SYSTEM ===
-  const VERIFICATION_FEE = 999900; // ₦9,999 in kobo for Paystack
-  const VERIFICATION_FEE_NAIRA = 9999; // ₦9,999 for Flutterwave
+  async function getVerificationFee() {
+    const fee = parseFloat(await getSettingValue("verification_fee"));
+    const discount = parseFloat(await getSettingValue("verification_discount"));
+    const finalFee = Math.round(fee * (1 - discount / 100));
+    return { feeKobo: finalFee * 100, feeNaira: finalFee, originalFee: fee, discount };
+  }
 
   // Ensure uploads/verification directory exists
   if (!fs.existsSync(path.join(process.cwd(), "uploads", "verification"))) {
@@ -1651,7 +1655,7 @@ export async function registerRoutes(
         },
         body: JSON.stringify({
           email: user.email,
-          amount: VERIFICATION_FEE,
+          amount: (await getVerificationFee()).feeKobo,
           currency: "NGN",
           callback_url: `${req.protocol}://${req.get("host")}/verification/verify`,
           metadata: {
@@ -1728,7 +1732,7 @@ export async function registerRoutes(
         },
         body: JSON.stringify({
           tx_ref: txRef,
-          amount: VERIFICATION_FEE_NAIRA,
+          amount: (await getVerificationFee()).feeNaira,
           currency: "NGN",
           redirect_url: `${req.protocol}://${req.get("host")}/verification/verify?gateway=flutterwave`,
           customer: {
@@ -1953,6 +1957,8 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const user = await storage.getUser(userId);
     if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const perms = await storage.getAdminPermissions(userId);
+    if (perms && !perms.canManageAdmins) return res.status(403).json({ message: "You do not have permission to view platform settings" });
     const settings = await storage.getAllSettings();
     const result: Record<string, string> = { ...DEFAULT_SETTINGS };
     for (const s of settings) {
@@ -1965,6 +1971,8 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const user = await storage.getUser(userId);
     if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const perms = await storage.getAdminPermissions(userId);
+    if (perms && !perms.canManageAdmins) return res.status(403).json({ message: "You do not have permission to modify platform settings" });
     const updates = req.body as Record<string, string>;
     if (!updates || typeof updates !== "object") return res.status(400).json({ message: "Invalid settings data" });
     const validKeys = Object.keys(DEFAULT_SETTINGS);

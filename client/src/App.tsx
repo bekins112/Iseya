@@ -34,6 +34,7 @@ import AdminTickets from "@/pages/AdminTickets";
 import AdminReports from "@/pages/AdminReports";
 import AdminVerifications from "@/pages/AdminVerifications";
 import AdminNotifications from "@/pages/AdminNotifications";
+import AdminSettings from "@/pages/AdminSettings";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
@@ -228,6 +229,12 @@ function Router() {
       <Route path="/admin/notifications">
         <AuthenticatedLayout>
           <AdminNotifications />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/settings">
+        <AuthenticatedLayout>
+          <AdminSettings />
         </AuthenticatedLayout>
       </Route>
 
