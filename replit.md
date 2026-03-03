@@ -39,6 +39,8 @@ API routes are defined in `server/routes.ts` with a shared route contract in `sh
   - `jobs` - Job postings linked to employer users
   - `applications` - Job applications linking applicants to jobs
   - `sessions` - Server-side session storage for authentication
+  - `notifications` - Admin-sent notifications (title, message, type, target)
+  - `notification_reads` - Tracks which users have read which notifications
 
 ### Authentication Flow
 - Replit Auth handles OAuth/OpenID Connect login

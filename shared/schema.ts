@@ -255,5 +255,31 @@ export type InsertInterview = z.infer<typeof insertInterviewSchema>;
 export type VerificationRequest = typeof verificationRequests.$inferSelect;
 export type InsertVerificationRequest = z.infer<typeof insertVerificationRequestSchema>;
 
+export const notifications = pgTable("notifications", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  type: varchar("type").notNull().default("all"),
+  targetRole: varchar("target_role"),
+  targetUserId: varchar("target_user_id").references(() => users.id),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const notificationReads = pgTable("notification_reads", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  notificationId: integer("notification_id").notNull().references(() => notifications.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  readAt: timestamp("read_at").defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export const insertNotificationReadSchema = createInsertSchema(notificationReads).omit({ id: true, readAt: true });
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type NotificationRead = typeof notificationReads.$inferSelect;
+export type InsertNotificationRead = z.infer<typeof insertNotificationReadSchema>;
+
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;

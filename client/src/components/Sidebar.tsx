@@ -18,8 +18,10 @@ import {
   Flag,
   ShieldCheck,
   Calendar,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/NotificationBell";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
 export function Sidebar() {
@@ -46,6 +48,7 @@ export function Sidebar() {
       { href: "/admin/reports", label: "Reports", icon: Flag },
       { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },
       { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck },
+      { href: "/admin/notifications", label: "Notifications", icon: Bell },
     ] : isEmployer ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
       { href: "/post-job", label: "Post a Job", icon: PlusCircle },
@@ -88,8 +91,9 @@ export function Sidebar() {
       </nav>
 
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
-      <div className="h-16 flex items-center px-6 border-b">
+      <div className="h-16 flex items-center justify-between px-6 border-b">
          <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
+         <NotificationBell />
       </div>
 
       <nav className="flex-1 p-4 space-y-1">

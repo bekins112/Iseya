@@ -1830,5 +1830,78 @@ export async function registerRoutes(
     }
   });
 
+  // ============ NOTIFICATION ROUTES ============
+
+  app.get("/api/notifications", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const notifs = await storage.getNotificationsForUser(userId, user.role || "applicant");
+    res.json(notifs);
+  });
+
+  app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const count = await storage.getUnreadCountForUser(userId, user.role || "applicant");
+    res.json({ count });
+  });
+
+  app.post("/api/notifications/:id/read", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const notificationId = parseInt(req.params.id);
+    if (isNaN(notificationId)) return res.status(400).json({ message: "Invalid notification ID" });
+    await storage.markNotificationRead(notificationId, userId);
+    res.json({ success: true });
+  });
+
+  app.post("/api/notifications/read-all", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    await storage.markAllNotificationsRead(userId, user.role || "applicant");
+    res.json({ success: true });
+  });
+
+  app.get("/api/admin/notifications", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const notifs = await storage.getAllNotifications();
+    res.json(notifs);
+  });
+
+  app.post("/api/admin/notifications", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const { title, message, type, targetRole, targetUserId } = req.body;
+    if (!title || !message) return res.status(400).json({ message: "Title and message are required" });
+    const validTypes = ["all", "role", "individual"];
+    if (type && !validTypes.includes(type)) return res.status(400).json({ message: "Invalid notification type" });
+    if (type === "role" && !targetRole) return res.status(400).json({ message: "Target role is required for role-based notifications" });
+    if (type === "individual" && !targetUserId) return res.status(400).json({ message: "Target user ID is required for individual notifications" });
+    const notification = await storage.createNotification({
+      title,
+      message,
+      type: type || "all",
+      targetRole: targetRole || null,
+      targetUserId: targetUserId || null,
+      createdBy: userId,
+    });
+    res.json(notification);
+  });
+
+  app.delete("/api/admin/notifications/:id", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required" });
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid notification ID" });
+    await storage.deleteNotification(id);
+    res.json({ success: true });
+  });
+
   return httpServer;
 }

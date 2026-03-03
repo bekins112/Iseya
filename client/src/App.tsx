@@ -33,6 +33,7 @@ import AdminStatistics from "@/pages/AdminStatistics";
 import AdminTickets from "@/pages/AdminTickets";
 import AdminReports from "@/pages/AdminReports";
 import AdminVerifications from "@/pages/AdminVerifications";
+import AdminNotifications from "@/pages/AdminNotifications";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
@@ -221,6 +222,12 @@ function Router() {
       <Route path="/admin/verifications">
         <AuthenticatedLayout>
           <AdminVerifications />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/notifications">
+        <AuthenticatedLayout>
+          <AdminNotifications />
         </AuthenticatedLayout>
       </Route>
 

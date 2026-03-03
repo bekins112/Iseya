@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -93,6 +93,15 @@ export interface IStorage {
 
   // Subscription methods
   getUsersBySubscription(status: string): Promise<User[]>;
+
+  // Notification methods
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotificationsForUser(userId: string, role: string): Promise<(Notification & { isRead: boolean })[]>;
+  getUnreadCountForUser(userId: string, role: string): Promise<number>;
+  markNotificationRead(notificationId: number, userId: string): Promise<void>;
+  markAllNotificationsRead(userId: string, role: string): Promise<void>;
+  getAllNotifications(): Promise<Notification[]>;
+  deleteNotification(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -535,6 +544,102 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(and(eq(users.role, "employer"), eq(users.subscriptionStatus, status)))
       .orderBy(desc(users.createdAt));
+  }
+
+  // Notification methods
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [created] = await db.insert(notifications).values(notification).returning();
+    return created;
+  }
+
+  async getNotificationsForUser(userId: string, role: string): Promise<(Notification & { isRead: boolean })[]> {
+    const allNotifs = await db
+      .select()
+      .from(notifications)
+      .where(
+        or(
+          eq(notifications.type, "all"),
+          and(eq(notifications.type, "role"), eq(notifications.targetRole, role)),
+          and(eq(notifications.type, "individual"), eq(notifications.targetUserId, userId))
+        )
+      )
+      .orderBy(desc(notifications.createdAt));
+
+    const reads = await db
+      .select({ notificationId: notificationReads.notificationId })
+      .from(notificationReads)
+      .where(eq(notificationReads.userId, userId));
+
+    const readSet = new Set(reads.map(r => r.notificationId));
+    return allNotifs.map(n => ({ ...n, isRead: readSet.has(n.id) }));
+  }
+
+  async getUnreadCountForUser(userId: string, role: string): Promise<number> {
+    const allNotifs = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        or(
+          eq(notifications.type, "all"),
+          and(eq(notifications.type, "role"), eq(notifications.targetRole, role)),
+          and(eq(notifications.type, "individual"), eq(notifications.targetUserId, userId))
+        )
+      );
+
+    if (allNotifs.length === 0) return 0;
+
+    const reads = await db
+      .select({ notificationId: notificationReads.notificationId })
+      .from(notificationReads)
+      .where(eq(notificationReads.userId, userId));
+
+    const readSet = new Set(reads.map(r => r.notificationId));
+    return allNotifs.filter(n => !readSet.has(n.id)).length;
+  }
+
+  async markNotificationRead(notificationId: number, userId: string): Promise<void> {
+    const existing = await db
+      .select()
+      .from(notificationReads)
+      .where(and(eq(notificationReads.notificationId, notificationId), eq(notificationReads.userId, userId)));
+    if (existing.length === 0) {
+      await db.insert(notificationReads).values({ notificationId, userId });
+    }
+  }
+
+  async markAllNotificationsRead(userId: string, role: string): Promise<void> {
+    const allNotifs = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(
+        or(
+          eq(notifications.type, "all"),
+          and(eq(notifications.type, "role"), eq(notifications.targetRole, role)),
+          and(eq(notifications.type, "individual"), eq(notifications.targetUserId, userId))
+        )
+      );
+
+    const reads = await db
+      .select({ notificationId: notificationReads.notificationId })
+      .from(notificationReads)
+      .where(eq(notificationReads.userId, userId));
+
+    const readSet = new Set(reads.map(r => r.notificationId));
+    const unread = allNotifs.filter(n => !readSet.has(n.id));
+
+    if (unread.length > 0) {
+      await db.insert(notificationReads).values(
+        unread.map(n => ({ notificationId: n.id, userId }))
+      );
+    }
+  }
+
+  async getAllNotifications(): Promise<Notification[]> {
+    return await db.select().from(notifications).orderBy(desc(notifications.createdAt));
+  }
+
+  async deleteNotification(id: number): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.id, id));
   }
 }
 
