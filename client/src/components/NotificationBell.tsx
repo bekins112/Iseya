@@ -65,11 +65,16 @@ export function NotificationBell() {
         inset: 0,
       });
     } else {
+      const dropdownWidth = 384;
+      let left = rect.left;
+      if (left + dropdownWidth > window.innerWidth - 16) {
+        left = window.innerWidth - dropdownWidth - 16;
+      }
       setDropdownStyle({
         position: "fixed",
         top: rect.bottom + 8,
-        left: rect.left - 340 + rect.width,
-        width: 384,
+        left,
+        width: dropdownWidth,
       });
     }
   }, []);
