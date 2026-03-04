@@ -696,18 +696,16 @@ export async function registerRoutes(
           targetRole: null,
           targetUserId: userId,
           createdBy: userId,
-        }).catch(() => {});
+        }).catch((e) => console.error("Failed to create user ticket notification:", e));
 
-        if (primaryAdmin) {
-          storage.createNotification({
-            title: "New Support Ticket",
-            message: `${userName} submitted a new support ticket "#${ticket.id}: ${ticket.subject}" (${ticket.priority} priority).`,
-            type: "role",
-            targetRole: "admin",
-            targetUserId: null,
-            createdBy: userId,
-          }).catch(() => {});
-        }
+        storage.createNotification({
+          title: "New Support Ticket",
+          message: `${userName} submitted a new support ticket "#${ticket.id}: ${ticket.subject}" (${ticket.priority} priority).`,
+          type: "role",
+          targetRole: "admin",
+          targetUserId: null,
+          createdBy: userId,
+        }).catch((e) => console.error("Failed to create admin ticket notification:", e));
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -773,7 +771,7 @@ export async function registerRoutes(
           targetRole: null,
           targetUserId: ticket.userId,
           createdBy: adminUserId,
-        }).catch(() => {});
+        }).catch((e) => console.error("Failed to create ticket update notification:", e));
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
