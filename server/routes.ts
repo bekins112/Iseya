@@ -23,7 +23,7 @@ import {
   sendTicketAdminNotifyEmail,
 } from "./email";
 
-for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo"]) {
+for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets"]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -100,6 +100,25 @@ const uploadVerificationDocs = multer({
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) cb(null, true);
     else cb(new Error("Only image files (JPG, PNG, WEBP) and PDF are allowed"));
+  },
+});
+
+const ticketAttachmentStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/tickets"),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${req.session.userId}_${Date.now()}${ext}`);
+  },
+});
+
+const uploadTicketAttachment = multer({
+  storage: ticketAttachmentStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf", ".doc", ".docx"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only images (JPG, PNG, WEBP, GIF), PDF, and DOC files are allowed"));
   },
 });
 
@@ -749,7 +768,7 @@ export async function registerRoutes(
   });
 
   // Post a message to a ticket (user must own the ticket)
-  app.post("/api/tickets/:id/messages", isAuthenticated, async (req, res) => {
+  app.post("/api/tickets/:id/messages", isAuthenticated, uploadTicketAttachment.single("attachment"), async (req, res) => {
     const userId = req.session.userId!;
     const ticketId = Number(req.params.id);
     if (isNaN(ticketId)) return res.status(400).json({ message: "Invalid ticket ID" });
@@ -759,16 +778,20 @@ export async function registerRoutes(
     if (ticket.userId !== userId && user?.role !== "admin") {
       return res.status(403).json({ message: "Not authorized" });
     }
-    const { message } = req.body;
-    if (!message || typeof message !== "string" || message.trim().length === 0) {
-      return res.status(400).json({ message: "Message is required" });
+    const message = req.body.message?.trim() || "";
+    const attachmentUrl = req.file ? `/uploads/tickets/${req.file.filename}` : null;
+    const attachmentName = req.file ? req.file.originalname : null;
+    if (!message && !attachmentUrl) {
+      return res.status(400).json({ message: "Message or attachment is required" });
     }
     const senderRole = user?.role === "admin" ? "admin" : "user";
     const created = await storage.createTicketMessage({
       ticketId,
       senderId: userId,
       senderRole,
-      message: message.trim(),
+      message: message || (attachmentName ? `Attached: ${attachmentName}` : ""),
+      attachmentUrl,
+      attachmentName,
       isRead: false,
     });
     res.status(201).json(created);

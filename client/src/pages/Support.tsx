@@ -25,6 +25,11 @@ import {
   Mail,
   Plus,
   Shield,
+  Paperclip,
+  FileText,
+  Image,
+  X,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -140,19 +145,35 @@ export default function Support() {
     },
   });
 
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const sendReply = useMutation({
-    mutationFn: async (text: string) => {
+    mutationFn: async ({ text, file }: { text: string; file: File | null }) => {
       if (!viewingTicket) throw new Error("No ticket selected");
-      await apiRequest("POST", `/api/tickets/${viewingTicket.id}/messages`, { message: text });
+      const formData = new FormData();
+      if (text) formData.append("message", text);
+      if (file) formData.append("attachment", file);
+      const res = await fetch(`/api/tickets/${viewingTicket.id}/messages`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || "Failed to send");
+      }
+      return res.json();
     },
     onSuccess: () => {
       setReplyText("");
+      setAttachedFile(null);
       refetchMessages();
       queryClient.invalidateQueries({ queryKey: ["/api/tickets/unread-counts"] });
     },
     onError: (err) => {
       console.error("Reply error:", err);
-      toast({ title: "Failed to send reply", variant: "destructive" });
+      toast({ title: "Failed to send reply", description: err.message, variant: "destructive" });
     },
   });
 
@@ -457,6 +478,7 @@ export default function Support() {
                   {/* Conversation messages */}
                   {messages.map((msg) => {
                     const isUser = msg.senderRole === "user";
+                    const isImage = msg.attachmentName && /\.(jpg|jpeg|png|webp|gif)$/i.test(msg.attachmentName);
                     return (
                       <div key={msg.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                         <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
@@ -470,7 +492,35 @@ export default function Support() {
                               <span className="text-[10px] font-semibold text-primary">Support Team</span>
                             </div>
                           )}
-                          <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                          {msg.message && !msg.message.startsWith("Attached: ") && (
+                            <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                          )}
+                          {msg.attachmentUrl && (
+                            <div className="mt-1">
+                              {isImage ? (
+                                <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer">
+                                  <img
+                                    src={msg.attachmentUrl}
+                                    alt={msg.attachmentName || "Attachment"}
+                                    className="max-w-[200px] max-h-[200px] rounded-lg object-cover border cursor-pointer hover:opacity-90"
+                                    data-testid={`img-attachment-${msg.id}`}
+                                  />
+                                </a>
+                              ) : (
+                                <a
+                                  href={msg.attachmentUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 px-3 py-2 bg-background/60 rounded-lg border text-xs hover:bg-background/80 transition-colors"
+                                  data-testid={`link-attachment-${msg.id}`}
+                                >
+                                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                                  <span className="truncate">{msg.attachmentName}</span>
+                                  <Download className="w-3 h-3 text-muted-foreground shrink-0" />
+                                </a>
+                              )}
+                            </div>
+                          )}
                           <p className={`text-[10px] text-muted-foreground mt-1 ${isUser ? "text-right" : ""}`}>
                             {msg.createdAt && format(new Date(msg.createdAt), "MMM d, h:mm a")}
                           </p>
@@ -484,7 +534,56 @@ export default function Support() {
                 {/* Reply input */}
                 {viewingTicket.status !== "closed" && (
                   <div className="px-6 py-3 border-t shrink-0">
+                    {attachedFile && (
+                      <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-muted rounded-lg text-xs">
+                        {/\.(jpg|jpeg|png|webp|gif)$/i.test(attachedFile.name) ? (
+                          <Image className="w-4 h-4 text-primary shrink-0" />
+                        ) : (
+                          <FileText className="w-4 h-4 text-primary shrink-0" />
+                        )}
+                        <span className="truncate flex-1">{attachedFile.name}</span>
+                        <span className="text-muted-foreground shrink-0">
+                          {(attachedFile.size / 1024).toFixed(0)}KB
+                        </span>
+                        <button
+                          onClick={() => setAttachedFile(null)}
+                          className="shrink-0 hover:text-destructive"
+                          data-testid="button-remove-attachment"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 10 * 1024 * 1024) {
+                            toast({ title: "File too large", description: "Maximum file size is 10MB", variant: "destructive" });
+                            return;
+                          }
+                          setAttachedFile(file);
+                        }
+                        e.target.value = "";
+                      }}
+                      data-testid="input-file-attachment"
+                    />
                     <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="shrink-0 h-[44px] w-[44px]"
+                        data-testid="button-attach-file"
+                        title="Attach file"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                      </Button>
                       <Textarea
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
@@ -494,15 +593,15 @@ export default function Support() {
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            if (replyText.trim()) sendReply.mutate(replyText.trim());
+                            if (replyText.trim() || attachedFile) sendReply.mutate({ text: replyText.trim(), file: attachedFile });
                           }
                         }}
                         data-testid="textarea-ticket-reply"
                       />
                       <Button
                         size="icon"
-                        onClick={() => sendReply.mutate(replyText.trim())}
-                        disabled={!replyText.trim() || sendReply.isPending}
+                        onClick={() => sendReply.mutate({ text: replyText.trim(), file: attachedFile })}
+                        disabled={(!replyText.trim() && !attachedFile) || sendReply.isPending}
                         className="shrink-0 h-[44px] w-[44px]"
                         data-testid="button-send-reply"
                       >

@@ -71,6 +71,8 @@ export const ticketMessages = pgTable("ticket_messages", {
   senderId: varchar("sender_id").notNull().references(() => users.id),
   senderRole: varchar("sender_role").notNull(), // 'user' or 'admin'
   message: text("message").notNull(),
+  attachmentUrl: varchar("attachment_url"),
+  attachmentName: varchar("attachment_name"),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
