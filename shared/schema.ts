@@ -64,6 +64,21 @@ export const tickets = pgTable("tickets", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Ticket messages for conversation thread
+export const ticketMessages = pgTable("ticket_messages", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  ticketId: integer("ticket_id").notNull().references(() => tickets.id, { onDelete: "cascade" }),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  senderRole: varchar("sender_role").notNull(), // 'user' or 'admin'
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTicketMessageSchema = createInsertSchema(ticketMessages).omit({ id: true, createdAt: true });
+export type TicketMessage = typeof ticketMessages.$inferSelect;
+export type InsertTicketMessage = z.infer<typeof insertTicketMessageSchema>;
+
 // Reports table for user/job reports
 export const reports = pgTable("reports", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

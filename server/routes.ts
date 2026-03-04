@@ -722,6 +722,80 @@ export async function registerRoutes(
     res.json(tickets);
   });
 
+  // Get unread message counts for user's tickets
+  app.get("/api/tickets/unread-counts", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    const role = user?.role === "admin" ? "admin" : "user";
+    const counts = await storage.getTicketsWithUnreadCounts(userId, role);
+    res.json(counts);
+  });
+
+  // Get messages for a ticket (user must own the ticket)
+  app.get("/api/tickets/:id/messages", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) return res.status(400).json({ message: "Invalid ticket ID" });
+    const ticket = await storage.getTicket(ticketId);
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+    const user = await storage.getUser(userId);
+    if (ticket.userId !== userId && user?.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    const readerRole = user?.role === "admin" ? "admin" : "user";
+    await storage.markTicketMessagesRead(ticketId, readerRole);
+    const messages = await storage.getTicketMessages(ticketId);
+    res.json(messages);
+  });
+
+  // Post a message to a ticket (user must own the ticket)
+  app.post("/api/tickets/:id/messages", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const ticketId = Number(req.params.id);
+    if (isNaN(ticketId)) return res.status(400).json({ message: "Invalid ticket ID" });
+    const ticket = await storage.getTicket(ticketId);
+    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+    const user = await storage.getUser(userId);
+    if (ticket.userId !== userId && user?.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    const { message } = req.body;
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
+      return res.status(400).json({ message: "Message is required" });
+    }
+    const senderRole = user?.role === "admin" ? "admin" : "user";
+    const created = await storage.createTicketMessage({
+      ticketId,
+      senderId: userId,
+      senderRole,
+      message: message.trim(),
+      isRead: false,
+    });
+    res.status(201).json(created);
+
+    // Send notification to the other party
+    const senderName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User";
+    if (senderRole === "admin") {
+      storage.createNotification({
+        title: "New Reply on Ticket",
+        message: `Admin replied to your ticket "#${ticket.id}: ${ticket.subject}".`,
+        type: "individual",
+        targetRole: null,
+        targetUserId: ticket.userId,
+        createdBy: userId,
+      }).catch((e) => console.error("Ticket message notification error:", e));
+    } else {
+      storage.createNotification({
+        title: "New Ticket Reply",
+        message: `${senderName} replied to ticket "#${ticket.id}: ${ticket.subject}".`,
+        type: "role",
+        targetRole: "admin",
+        targetUserId: null,
+        createdBy: userId,
+      }).catch((e) => console.error("Ticket message notification error:", e));
+    }
+  });
+
   // Admin: Get all tickets
   app.get("/api/admin/tickets", isAuthenticated, isAdmin, async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageTickets) {

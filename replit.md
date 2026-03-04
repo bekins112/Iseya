@@ -65,11 +65,15 @@ Preferred communication style: Simple, everyday language.
 ### Support Ticket System
 - Applicants and employers can submit support tickets from their dashboard via `/support` page.
 - Users can track ticket status (open, in progress, resolved, closed) and view admin responses.
+- **Conversation thread**: Both users and admin can exchange messages in a chat-like interface within each ticket.
+- **New message indicators**: Unread reply counts shown on ticket list items (pulsing badge) with ring highlight. Fetched via `/api/tickets/unread-counts`.
+- **Notifications**: In-app notifications sent when tickets are created, updated, or replied to.
 - Ticket creation sends email confirmation to the user and notification email to the primary admin.
-- Admin manages all tickets from `/admin/tickets` with status/priority/notes editing.
+- Admin manages all tickets from `/admin/tickets` with status/priority editing and reply capability.
+- Tables: `tickets`, `ticket_messages` (conversation thread with sender role tracking and read status).
 - Email templates: `sendTicketCreatedEmail` (user confirmation), `sendTicketAdminNotifyEmail` (admin alert).
 - Components: `Support` (client/src/pages/Support.tsx), `AdminTickets` (client/src/pages/AdminTickets.tsx).
-- API routes: POST `/api/tickets`, GET `/api/tickets/my`, GET/PATCH `/api/admin/tickets`, GET `/api/admin/tickets/:id`.
+- API routes: POST `/api/tickets`, GET `/api/tickets/my`, GET `/api/tickets/unread-counts`, GET/POST `/api/tickets/:id/messages`, GET/PATCH `/api/admin/tickets`, GET `/api/admin/tickets/:id`.
 
 ### Login Security
 - Implements image-based CAPTCHA on the login form for bot protection.

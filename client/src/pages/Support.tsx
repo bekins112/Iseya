@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,11 +24,12 @@ import {
   MessageSquare,
   Mail,
   Plus,
+  Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import type { Ticket } from "@shared/schema";
+import type { Ticket, TicketMessage } from "@shared/schema";
 
 const ticketSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters"),
@@ -77,10 +78,41 @@ export default function Support() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [viewingTicket, setViewingTicket] = useState<Ticket | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: tickets = [], isLoading } = useQuery<Ticket[]>({
     queryKey: ["/api/tickets/my"],
   });
+
+  const { data: unreadCounts = {} } = useQuery<Record<number, number>>({
+    queryKey: ["/api/tickets/unread-counts"],
+    refetchInterval: 15000,
+  });
+
+  const { data: messages = [], refetch: refetchMessages } = useQuery<TicketMessage[]>({
+    queryKey: ["/api/tickets", viewingTicket?.id, "messages"],
+    queryFn: async () => {
+      if (!viewingTicket) return [];
+      const res = await fetch(`/api/tickets/${viewingTicket.id}/messages`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
+    },
+    enabled: !!viewingTicket,
+    refetchInterval: viewingTicket ? 10000 : false,
+  });
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (viewingTicket) {
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets/unread-counts"] });
+    }
+  }, [viewingTicket]);
 
   const form = useForm<TicketFormValues>({
     resolver: zodResolver(ticketSchema),
@@ -108,12 +140,29 @@ export default function Support() {
     },
   });
 
+  const sendReply = useMutation({
+    mutationFn: async () => {
+      if (!viewingTicket || !replyText.trim()) return;
+      const res = await apiRequest("POST", `/api/tickets/${viewingTicket.id}/messages`, { message: replyText.trim() });
+      return res.json();
+    },
+    onSuccess: () => {
+      setReplyText("");
+      refetchMessages();
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets/unread-counts"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to send reply", variant: "destructive" });
+    },
+  });
+
   const onSubmit = (data: TicketFormValues) => {
     createTicket.mutate(data);
   };
 
   const openCount = tickets.filter(t => t.status === "open" || t.status === "in_progress").length;
   const resolvedCount = tickets.filter(t => t.status === "resolved" || t.status === "closed").length;
+  const totalUnread = Object.values(unreadCounts).reduce((sum, c) => sum + c, 0);
 
   return (
     <div className="space-y-8 pb-10" data-testid="support-page">
@@ -175,6 +224,9 @@ export default function Support() {
         <h2 className="text-xl font-bold flex items-center gap-2">
           <HelpCircle className="w-5 h-5" />
           Your Tickets
+          {totalUnread > 0 && (
+            <Badge className="bg-red-500 text-white text-[10px] ml-1">{totalUnread} new</Badge>
+          )}
         </h2>
 
         {isLoading ? (
@@ -199,6 +251,7 @@ export default function Support() {
             {tickets.map((ticket, idx) => {
               const statusInfo = getStatusInfo(ticket.status);
               const StatusIcon = statusInfo.icon;
+              const unread = unreadCounts[ticket.id] || 0;
               return (
                 <motion.div
                   key={ticket.id}
@@ -207,7 +260,7 @@ export default function Support() {
                   transition={{ delay: idx * 0.05 }}
                 >
                   <Card
-                    className="hover:shadow-md transition-all cursor-pointer"
+                    className={`hover:shadow-md transition-all cursor-pointer ${unread > 0 ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
                     onClick={() => setViewingTicket(ticket)}
                     data-testid={`ticket-item-${ticket.id}`}
                   >
@@ -215,6 +268,7 @@ export default function Support() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="text-xs font-mono text-muted-foreground">#{ticket.id}</span>
                             <p className="font-semibold text-sm truncate">{ticket.subject}</p>
                             <Badge className={`${statusInfo.color} text-[10px] gap-1`}>
                               <StatusIcon className="w-3 h-3" />
@@ -223,6 +277,11 @@ export default function Support() {
                             <Badge className={`${getPriorityColor(ticket.priority)} text-[10px]`}>
                               {ticket.priority}
                             </Badge>
+                            {unread > 0 && (
+                              <Badge className="bg-red-500 text-white text-[10px] animate-pulse">
+                                {unread} new {unread === 1 ? "reply" : "replies"}
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{ticket.description}</p>
                           <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
@@ -245,6 +304,7 @@ export default function Support() {
         )}
       </div>
 
+      {/* Create Ticket Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -344,56 +404,119 @@ export default function Support() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!viewingTicket} onOpenChange={() => setViewingTicket(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Ticket Details</DialogTitle>
-          </DialogHeader>
+      {/* Ticket Conversation Dialog */}
+      <Dialog open={!!viewingTicket} onOpenChange={() => { setViewingTicket(null); setReplyText(""); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
           {viewingTicket && (() => {
             const statusInfo = getStatusInfo(viewingTicket.status);
             const StatusIcon = statusInfo.icon;
             return (
-              <div className="space-y-4 py-2">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Subject</p>
-                  <p className="font-semibold">{viewingTicket.subject}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className={`${statusInfo.color} gap-1`}>
-                    <StatusIcon className="w-3 h-3" />
-                    {statusInfo.label}
-                  </Badge>
-                  <Badge className={getPriorityColor(viewingTicket.priority)}>
-                    {viewingTicket.priority}
-                  </Badge>
-                  <Badge variant="outline" className="capitalize">
-                    {viewingTicket.category || "General"}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Description</p>
-                  <div className="bg-muted/50 rounded-lg p-3 text-sm whitespace-pre-wrap">
-                    {viewingTicket.description}
+              <>
+                <div className="px-6 pt-6 pb-3 border-b shrink-0">
+                  <DialogHeader>
+                    <DialogTitle className="text-base">Ticket #{viewingTicket.id}: {viewingTicket.subject}</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <Badge className={`${statusInfo.color} gap-1 text-[10px]`}>
+                      <StatusIcon className="w-3 h-3" />
+                      {statusInfo.label}
+                    </Badge>
+                    <Badge className={`${getPriorityColor(viewingTicket.priority)} text-[10px]`}>
+                      {viewingTicket.priority}
+                    </Badge>
+                    <Badge variant="outline" className="capitalize text-[10px]">
+                      {viewingTicket.category || "General"}
+                    </Badge>
                   </div>
                 </div>
-                {viewingTicket.adminNotes && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Response from Support</p>
-                    <div className="bg-primary/5 border-l-4 border-primary rounded-r-lg p-3 text-sm whitespace-pre-wrap">
-                      {viewingTicket.adminNotes}
+
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-[200px] max-h-[50vh]">
+                  {/* Original description as first message */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] bg-primary/10 rounded-2xl rounded-tr-sm px-4 py-2.5">
+                      <p className="text-sm whitespace-pre-wrap break-words">{viewingTicket.description}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                        {viewingTicket.createdAt && format(new Date(viewingTicket.createdAt), "MMM d, h:mm a")}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Admin notes as legacy reply */}
+                  {viewingTicket.adminNotes && messages.length === 0 && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[85%] bg-muted rounded-2xl rounded-tl-sm px-4 py-2.5">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Shield className="w-3 h-3 text-primary" />
+                          <span className="text-[10px] font-semibold text-primary">Support Team</span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap break-words">{viewingTicket.adminNotes}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Conversation messages */}
+                  {messages.map((msg) => {
+                    const isUser = msg.senderRole === "user";
+                    return (
+                      <div key={msg.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+                          isUser
+                            ? "bg-primary/10 rounded-tr-sm"
+                            : "bg-muted rounded-tl-sm"
+                        }`}>
+                          {!isUser && (
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <Shield className="w-3 h-3 text-primary" />
+                              <span className="text-[10px] font-semibold text-primary">Support Team</span>
+                            </div>
+                          )}
+                          <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                          <p className={`text-[10px] text-muted-foreground mt-1 ${isUser ? "text-right" : ""}`}>
+                            {msg.createdAt && format(new Date(msg.createdAt), "MMM d, h:mm a")}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Reply input */}
+                {viewingTicket.status !== "closed" && (
+                  <div className="px-6 py-3 border-t shrink-0">
+                    <div className="flex gap-2">
+                      <Textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Type your reply..."
+                        className="min-h-[44px] max-h-[100px] resize-none text-sm"
+                        rows={1}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            if (replyText.trim()) sendReply.mutate();
+                          }
+                        }}
+                        data-testid="textarea-ticket-reply"
+                      />
+                      <Button
+                        size="icon"
+                        onClick={() => sendReply.mutate()}
+                        disabled={!replyText.trim() || sendReply.isPending}
+                        className="shrink-0 h-[44px] w-[44px]"
+                        data-testid="button-send-reply"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-                  <span>Ticket #{viewingTicket.id}</span>
-                  {viewingTicket.createdAt && (
-                    <span>Submitted {format(new Date(viewingTicket.createdAt), "MMM d, yyyy 'at' h:mm a")}</span>
-                  )}
-                  {viewingTicket.updatedAt && viewingTicket.updatedAt !== viewingTicket.createdAt && (
-                    <span>Updated {format(new Date(viewingTicket.updatedAt), "MMM d, yyyy")}</span>
-                  )}
-                </div>
-              </div>
+                {viewingTicket.status === "closed" && (
+                  <div className="px-6 py-3 border-t text-center text-xs text-muted-foreground">
+                    This ticket is closed. Create a new ticket if you need further help.
+                  </div>
+                )}
+              </>
             );
           })()}
         </DialogContent>

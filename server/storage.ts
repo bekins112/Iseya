@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -56,6 +56,13 @@ export interface IStorage {
   getTicketsByUser(userId: string): Promise<Ticket[]>;
   updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket>;
   
+  // Ticket message methods
+  createTicketMessage(msg: InsertTicketMessage): Promise<TicketMessage>;
+  getTicketMessages(ticketId: number): Promise<TicketMessage[]>;
+  getUnreadMessageCount(ticketId: number, role: string): Promise<number>;
+  markTicketMessagesRead(ticketId: number, readerRole: string): Promise<void>;
+  getTicketsWithUnreadCounts(userId: string, role: string): Promise<Record<number, number>>;
+
   // Report methods
   createReport(report: InsertReport): Promise<Report>;
   getReport(id: number): Promise<Report | undefined>;
@@ -433,6 +440,90 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tickets.id, id))
       .returning();
     return ticket;
+  }
+
+  // Ticket message methods
+  async createTicketMessage(msg: InsertTicketMessage): Promise<TicketMessage> {
+    const [created] = await db.insert(ticketMessages).values(msg).returning();
+    return created;
+  }
+
+  async getTicketMessages(ticketId: number): Promise<TicketMessage[]> {
+    return await db
+      .select()
+      .from(ticketMessages)
+      .where(eq(ticketMessages.ticketId, ticketId))
+      .orderBy(ticketMessages.createdAt);
+  }
+
+  async getUnreadMessageCount(ticketId: number, role: string): Promise<number> {
+    const oppositeRole = role === "admin" ? "user" : "admin";
+    const [result] = await db
+      .select({ count: count() })
+      .from(ticketMessages)
+      .where(
+        and(
+          eq(ticketMessages.ticketId, ticketId),
+          eq(ticketMessages.senderRole, oppositeRole),
+          eq(ticketMessages.isRead, false)
+        )
+      );
+    return result?.count || 0;
+  }
+
+  async markTicketMessagesRead(ticketId: number, readerRole: string): Promise<void> {
+    const oppositeRole = readerRole === "admin" ? "user" : "admin";
+    await db
+      .update(ticketMessages)
+      .set({ isRead: true })
+      .where(
+        and(
+          eq(ticketMessages.ticketId, ticketId),
+          eq(ticketMessages.senderRole, oppositeRole),
+          eq(ticketMessages.isRead, false)
+        )
+      );
+  }
+
+  async getTicketsWithUnreadCounts(userId: string, role: string): Promise<Record<number, number>> {
+    const oppositeRole = role === "admin" ? "user" : "admin";
+    let rows;
+    if (role === "admin") {
+      rows = await db
+        .select({
+          ticketId: ticketMessages.ticketId,
+          unread: count(),
+        })
+        .from(ticketMessages)
+        .where(
+          and(
+            eq(ticketMessages.senderRole, oppositeRole),
+            eq(ticketMessages.isRead, false)
+          )
+        )
+        .groupBy(ticketMessages.ticketId);
+    } else {
+      rows = await db
+        .select({
+          ticketId: ticketMessages.ticketId,
+          unread: count(),
+        })
+        .from(ticketMessages)
+        .innerJoin(tickets, eq(ticketMessages.ticketId, tickets.id))
+        .where(
+          and(
+            eq(tickets.userId, userId),
+            eq(ticketMessages.senderRole, oppositeRole),
+            eq(ticketMessages.isRead, false)
+          )
+        )
+        .groupBy(ticketMessages.ticketId);
+    }
+    const result: Record<number, number> = {};
+    for (const row of rows) {
+      result[row.ticketId] = row.unread;
+    }
+    return result;
   }
 
   // Report methods

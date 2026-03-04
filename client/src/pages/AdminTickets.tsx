@@ -1,25 +1,24 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extension";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Ticket, Clock, AlertCircle, CheckCircle2, XCircle, MoreVertical, MessageSquare } from "lucide-react";
+import { Search, Ticket, Clock, AlertCircle, CheckCircle2, XCircle, MoreVertical, MessageSquare, User, Mail, Send, Shield } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Ticket as TicketType } from "@shared/schema";
-import { User, Mail } from "lucide-react";
+import type { Ticket as TicketType, TicketMessage } from "@shared/schema";
+import { format } from "date-fns";
 
 type TicketWithSender = TicketType & { senderName?: string; senderEmail?: string; senderRole?: string };
-import { format } from "date-fns";
 
 export default function AdminTickets() {
   const { user } = useAuth();
@@ -28,11 +27,13 @@ export default function AdminTickets() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<TicketWithSender | null>(null);
-  const [editForm, setEditForm] = useState({ 
-    status: "open" as string, 
+  const [editForm, setEditForm] = useState({
+    status: "open" as string,
     priority: "medium" as string,
-    adminNotes: "" 
   });
+  const [replyText, setReplyText] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: tickets = [], isLoading } = useQuery<TicketWithSender[]>({
     queryKey: ["/api/admin/tickets", statusFilter, priorityFilter],
@@ -47,6 +48,35 @@ export default function AdminTickets() {
     },
   });
 
+  const { data: unreadCounts = {} } = useQuery<Record<number, number>>({
+    queryKey: ["/api/tickets/unread-counts"],
+    refetchInterval: 15000,
+  });
+
+  const { data: messages = [], refetch: refetchMessages } = useQuery<TicketMessage[]>({
+    queryKey: ["/api/tickets", selectedTicket?.id, "messages"],
+    queryFn: async () => {
+      if (!selectedTicket) return [];
+      const res = await fetch(`/api/tickets/${selectedTicket.id}/messages`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
+    },
+    enabled: !!selectedTicket,
+    refetchInterval: selectedTicket ? 10000 : false,
+  });
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (selectedTicket) {
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets/unread-counts"] });
+    }
+  }, [selectedTicket]);
+
   const updateTicketMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: Partial<TicketType> }) => {
       return apiRequest("PATCH", `/api/admin/tickets/${id}`, updates);
@@ -54,10 +84,26 @@ export default function AdminTickets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tickets"] });
       toast({ title: "Ticket updated successfully" });
-      setSelectedTicket(null);
+      setShowSettings(false);
     },
     onError: () => {
       toast({ title: "Failed to update ticket", variant: "destructive" });
+    },
+  });
+
+  const sendReply = useMutation({
+    mutationFn: async () => {
+      if (!selectedTicket || !replyText.trim()) return;
+      const res = await apiRequest("POST", `/api/tickets/${selectedTicket.id}/messages`, { message: replyText.trim() });
+      return res.json();
+    },
+    onSuccess: () => {
+      setReplyText("");
+      refetchMessages();
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets/unread-counts"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to send reply", variant: "destructive" });
     },
   });
 
@@ -67,7 +113,7 @@ export default function AdminTickets() {
 
   const filteredTickets = tickets.filter((t) => {
     const q = search.toLowerCase();
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       t.subject?.toLowerCase().includes(q) ||
       t.description?.toLowerCase().includes(q) ||
       t.senderName?.toLowerCase().includes(q) ||
@@ -111,16 +157,17 @@ export default function AdminTickets() {
     }
   };
 
-  const openTicketDialog = (ticket: TicketType) => {
+  const openTicketDialog = (ticket: TicketWithSender) => {
     setSelectedTicket(ticket);
-    setEditForm({ 
+    setEditForm({
       status: ticket.status || "open",
       priority: ticket.priority || "medium",
-      adminNotes: ticket.adminNotes || ""
     });
+    setReplyText("");
+    setShowSettings(false);
   };
 
-  const handleSaveTicket = () => {
+  const handleSaveSettings = () => {
     if (!selectedTicket) return;
     updateTicketMutation.mutate({
       id: selectedTicket.id,
@@ -227,170 +274,256 @@ export default function AdminTickets() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredTickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => openTicketDialog(ticket)}
-                  data-testid={`ticket-row-${ticket.id}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-xs font-mono text-muted-foreground">#{ticket.id}</span>
-                      <p className="font-medium truncate">{ticket.subject}</p>
-                      <Badge className={getStatusColor(ticket.status)} variant="secondary">
-                        {getStatusIcon(ticket.status)}
-                        <span className="ml-1 capitalize">{ticket.status}</span>
-                      </Badge>
-                      <Badge className={getPriorityColor(ticket.priority)} variant="secondary">
-                        <span className="capitalize">{ticket.priority}</span>
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {ticket.senderName || "Unknown"}
-                        {ticket.senderRole && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 ml-1 capitalize">{ticket.senderRole}</Badge>
+              {filteredTickets.map((ticket) => {
+                const unread = unreadCounts[ticket.id] || 0;
+                return (
+                  <div
+                    key={ticket.id}
+                    className={`flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer ${unread > 0 ? "ring-2 ring-primary/50 bg-primary/5" : ""}`}
+                    onClick={() => openTicketDialog(ticket)}
+                    data-testid={`ticket-row-${ticket.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-xs font-mono text-muted-foreground">#{ticket.id}</span>
+                        <p className="font-medium truncate">{ticket.subject}</p>
+                        <Badge className={getStatusColor(ticket.status)} variant="secondary">
+                          {getStatusIcon(ticket.status)}
+                          <span className="ml-1 capitalize">{ticket.status}</span>
+                        </Badge>
+                        <Badge className={getPriorityColor(ticket.priority)} variant="secondary">
+                          <span className="capitalize">{ticket.priority}</span>
+                        </Badge>
+                        {unread > 0 && (
+                          <Badge className="bg-red-500 text-white text-[10px] animate-pulse">
+                            {unread} new
+                          </Badge>
                         )}
-                      </span>
-                      {ticket.senderEmail && (
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
-                          <Mail className="w-3 h-3" />
-                          {ticket.senderEmail}
+                          <User className="w-3 h-3" />
+                          {ticket.senderName || "Unknown"}
+                          {ticket.senderRole && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 ml-1 capitalize">{ticket.senderRole}</Badge>
+                          )}
                         </span>
-                      )}
-                      <span>Category: {ticket.category || "General"}</span>
-                      {ticket.createdAt && (
-                        <span>Created: {format(new Date(ticket.createdAt), "MMM d, yyyy")}</span>
-                      )}
+                        {ticket.senderEmail && (
+                          <span className="flex items-center gap-1">
+                            <Mail className="w-3 h-3" />
+                            {ticket.senderEmail}
+                          </span>
+                        )}
+                        <span>Category: {ticket.category || "General"}</span>
+                        {ticket.createdAt && (
+                          <span>Created: {format(new Date(ticket.createdAt), "MMM d, yyyy")}</span>
+                        )}
+                      </div>
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" data-testid={`button-ticket-menu-${ticket.id}`}>
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openTicketDialog(ticket); }}>
+                          View / Reply
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTicketMutation.mutate({ id: ticket.id, updates: { status: "in_progress" } });
+                          }}
+                        >
+                          Mark In Progress
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTicketMutation.mutate({ id: ticket.id, updates: { status: "resolved" } });
+                          }}
+                        >
+                          Mark Resolved
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" data-testid={`button-ticket-menu-${ticket.id}`}>
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openTicketDialog(ticket); }}>
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          updateTicketMutation.mutate({ id: ticket.id, updates: { status: "in_progress" } });
-                        }}
-                      >
-                        Mark In Progress
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          updateTicketMutation.mutate({ id: ticket.id, updates: { status: "resolved" } });
-                        }}
-                      >
-                        Mark Resolved
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Ticket #{selectedTicket?.id}</DialogTitle>
-          </DialogHeader>
+      {/* Ticket Conversation Dialog */}
+      <Dialog open={!!selectedTicket} onOpenChange={() => { setSelectedTicket(null); setReplyText(""); setShowSettings(false); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
           {selectedTicket && (
-            <div className="space-y-4 py-4">
-              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                <Label className="text-muted-foreground text-xs uppercase tracking-wide">Submitted By</Label>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <User className="w-4 h-4 text-muted-foreground" />
+            <>
+              <div className="px-6 pt-6 pb-3 border-b shrink-0">
+                <DialogHeader>
+                  <DialogTitle className="text-base">Ticket #{selectedTicket.id}: {selectedTicket.subject}</DialogTitle>
+                </DialogHeader>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <Badge className={`${getStatusColor(selectedTicket.status)} gap-1 text-[10px]`}>
+                    {getStatusIcon(selectedTicket.status)}
+                    <span className="ml-1 capitalize">{selectedTicket.status}</span>
+                  </Badge>
+                  <Badge className={`${getPriorityColor(selectedTicket.priority)} text-[10px]`}>
+                    {selectedTicket.priority}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <User className="w-3 h-3" />
                     {selectedTicket.senderName || "Unknown"}
                   </span>
                   {selectedTicket.senderEmail && (
-                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <Mail className="w-4 h-4" />
+                    <span className="flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
                       {selectedTicket.senderEmail}
                     </span>
                   )}
                   {selectedTicket.senderRole && (
-                    <Badge variant="outline" className="capitalize">{selectedTicket.senderRole}</Badge>
+                    <Badge variant="outline" className="capitalize text-[10px]">{selectedTicket.senderRole}</Badge>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-[10px] ml-auto"
+                    onClick={() => setShowSettings(!showSettings)}
+                    data-testid="button-toggle-ticket-settings"
+                  >
+                    {showSettings ? "Hide Settings" : "Status / Priority"}
+                  </Button>
+                </div>
+
+                {showSettings && (
+                  <div className="mt-3 p-3 border rounded-lg bg-muted/30 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Status</Label>
+                        <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                          <SelectTrigger className="h-8 text-xs" data-testid="select-edit-ticket-status">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="resolved">Resolved</SelectItem>
+                            <SelectItem value="closed">Closed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Priority</Label>
+                        <Select value={editForm.priority} onValueChange={(v) => setEditForm({ ...editForm, priority: v })}>
+                          <SelectTrigger className="h-8 text-xs" data-testid="select-edit-ticket-priority">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                            <SelectItem value="urgent">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs w-full"
+                      onClick={handleSaveSettings}
+                      disabled={updateTicketMutation.isPending}
+                      data-testid="button-save-ticket-settings"
+                    >
+                      {updateTicketMutation.isPending ? "Saving..." : "Update Status / Priority"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 min-h-[200px] max-h-[50vh]">
+                {/* Original description */}
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] bg-muted rounded-2xl rounded-tl-sm px-4 py-2.5">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <User className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-[10px] font-semibold text-muted-foreground">{selectedTicket.senderName || "User"}</span>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap break-words">{selectedTicket.description}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {selectedTicket.createdAt && format(new Date(selectedTicket.createdAt), "MMM d, h:mm a")}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Conversation messages */}
+                {messages.map((msg) => {
+                  const isAdmin = msg.senderRole === "admin";
+                  return (
+                    <div key={msg.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+                        isAdmin
+                          ? "bg-primary/10 rounded-tr-sm"
+                          : "bg-muted rounded-tl-sm"
+                      }`}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {isAdmin ? (
+                            <>
+                              <Shield className="w-3 h-3 text-primary" />
+                              <span className="text-[10px] font-semibold text-primary">You (Admin)</span>
+                            </>
+                          ) : (
+                            <>
+                              <User className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-[10px] font-semibold text-muted-foreground">{selectedTicket.senderName || "User"}</span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                        <p className={`text-[10px] text-muted-foreground mt-1 ${isAdmin ? "text-right" : ""}`}>
+                          {msg.createdAt && format(new Date(msg.createdAt), "MMM d, h:mm a")}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Reply input */}
+              <div className="px-6 py-3 border-t shrink-0">
+                <div className="flex gap-2">
+                  <Textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Type your reply to the user..."
+                    className="min-h-[44px] max-h-[100px] resize-none text-sm"
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (replyText.trim()) sendReply.mutate();
+                      }
+                    }}
+                    data-testid="textarea-admin-reply"
+                  />
+                  <Button
+                    size="icon"
+                    onClick={() => sendReply.mutate()}
+                    disabled={!replyText.trim() || sendReply.isPending}
+                    className="shrink-0 h-[44px] w-[44px]"
+                    data-testid="button-send-admin-reply"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-              <div>
-                <Label className="text-muted-foreground">Subject</Label>
-                <p className="font-medium">{selectedTicket.subject}</p>
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Description</Label>
-                <p className="text-sm whitespace-pre-wrap bg-muted p-3 rounded-lg mt-1">
-                  {selectedTicket.description}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
-                    <SelectTrigger data-testid="select-edit-ticket-status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Priority</Label>
-                  <Select value={editForm.priority} onValueChange={(v) => setEditForm({ ...editForm, priority: v })}>
-                    <SelectTrigger data-testid="select-edit-ticket-priority">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Admin Notes</Label>
-                <Textarea
-                  value={editForm.adminNotes}
-                  onChange={(e) => setEditForm({ ...editForm, adminNotes: e.target.value })}
-                  placeholder="Add internal notes about this ticket..."
-                  rows={3}
-                  data-testid="textarea-admin-notes"
-                />
-              </div>
-            </div>
+            </>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedTicket(null)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveTicket} 
-              disabled={updateTicketMutation.isPending}
-              data-testid="button-save-ticket"
-            >
-              {updateTicketMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
