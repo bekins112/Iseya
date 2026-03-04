@@ -4,7 +4,11 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema } from "@shared/schema";
+import bcrypt from "bcryptjs";
+import { db } from "./db";
+import { users } from "@shared/models/auth";
+import { eq } from "drizzle-orm";
+import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, createNewAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -604,6 +608,56 @@ export async function registerRoutes(
         return res.status(400).json({ message: err.errors[0].message });
       }
       res.status(400).json({ message: "Failed to create admin" });
+    }
+  });
+
+  app.post("/api/admin/admins/create-new", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to create admins" });
+    }
+
+    try {
+      const input = createNewAdminSchema.parse(req.body);
+
+      const [existing] = await db.select().from(users).where(eq(users.email, input.email));
+      if (existing) {
+        return res.status(400).json({ message: "An account with this email already exists" });
+      }
+
+      const hashedPassword = await bcrypt.hash(input.password, 10);
+
+      const [newUser] = await db.insert(users).values({
+        email: input.email,
+        password: hashedPassword,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        role: "admin",
+      }).returning();
+
+      const adminPerms = await storage.createAdminPermissions({
+        userId: newUser.id,
+        createdBy: req.adminUser.id,
+        canManageUsers: input.permissions.canManageUsers ?? false,
+        canManageJobs: input.permissions.canManageJobs ?? false,
+        canManageApplications: input.permissions.canManageApplications ?? false,
+        canManageAdmins: input.permissions.canManageAdmins ?? false,
+        canViewStats: input.permissions.canViewStats ?? true,
+        canManageSubscriptions: input.permissions.canManageSubscriptions ?? false,
+        canManageTransactions: input.permissions.canManageTransactions ?? false,
+        canManageTickets: input.permissions.canManageTickets ?? false,
+        canManageReports: input.permissions.canManageReports ?? false,
+        canManageVerifications: input.permissions.canManageVerifications ?? false,
+        canManageNotifications: input.permissions.canManageNotifications ?? false,
+        canManageSettings: input.permissions.canManageSettings ?? false,
+      });
+
+      res.status(201).json(adminPerms);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("Create new admin error:", err);
+      res.status(400).json({ message: "Failed to create admin account" });
     }
   });
 

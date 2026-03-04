@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { PageHeader } from "@/components/ui-extension";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal } from "lucide-react";
+import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -20,27 +21,46 @@ interface AdminWithPermissions extends User {
   permissions?: AdminPermissions;
 }
 
+const defaultPermissions = {
+  canManageUsers: false,
+  canManageJobs: false,
+  canManageApplications: false,
+  canManageAdmins: false,
+  canViewStats: true,
+  canManageSubscriptions: false,
+  canManageTransactions: false,
+  canManageTickets: false,
+  canManageReports: false,
+  canManageVerifications: false,
+  canManageNotifications: false,
+  canManageSettings: false,
+};
+
+const permissionLabels = [
+  { key: "canViewStats", label: "View Statistics", icon: Eye, description: "Can view platform stats and analytics" },
+  { key: "canManageUsers", label: "Manage Users", icon: Users, description: "Can view, edit, and manage all users" },
+  { key: "canManageJobs", label: "Manage Jobs", icon: Briefcase, description: "Can edit, activate/deactivate, and delete jobs" },
+  { key: "canManageApplications", label: "Manage Applications", icon: FileText, description: "Can view and manage all applications" },
+  { key: "canManageSubscriptions", label: "Manage Subscriptions", icon: Crown, description: "Can view and update user subscriptions" },
+  { key: "canManageTransactions", label: "View Transactions", icon: DollarSign, description: "Can view transaction history and revenue stats" },
+  { key: "canManageTickets", label: "Manage Tickets", icon: Ticket, description: "Can view and respond to support tickets" },
+  { key: "canManageReports", label: "Manage Reports", icon: Flag, description: "Can review and resolve user reports" },
+  { key: "canManageVerifications", label: "Manage Verifications", icon: ShieldCheck, description: "Can approve or reject verification requests" },
+  { key: "canManageNotifications", label: "Send Notifications", icon: Bell, description: "Can create and manage platform notifications" },
+  { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform configuration" },
+  { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
+];
+
 export default function AdminSubAdmins() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<AdminWithPermissions | null>(null);
   const [removingAdmin, setRemovingAdmin] = useState<AdminWithPermissions | null>(null);
+  const [addMode, setAddMode] = useState<"existing" | "new">("new");
   const [selectedUserId, setSelectedUserId] = useState("");
-  const [permissions, setPermissions] = useState({
-    canManageUsers: false,
-    canManageJobs: false,
-    canManageApplications: false,
-    canManageAdmins: false,
-    canViewStats: true,
-    canManageSubscriptions: false,
-    canManageTransactions: false,
-    canManageTickets: false,
-    canManageReports: false,
-    canManageVerifications: false,
-    canManageNotifications: false,
-    canManageSettings: false,
-  });
+  const [newAdminForm, setNewAdminForm] = useState({ email: "", password: "", firstName: "", lastName: "" });
+  const [permissions, setPermissions] = useState({ ...defaultPermissions });
 
   const { data: admins = [], isLoading: adminsLoading } = useQuery<AdminWithPermissions[]>({
     queryKey: ["/api/admin/admins"],
@@ -63,6 +83,24 @@ export default function AdminSubAdmins() {
     },
     onError: () => {
       toast({ title: "Failed to create sub-admin", variant: "destructive" });
+    },
+  });
+
+  const createNewAdminMutation = useMutation({
+    mutationFn: async (data: { email: string; password: string; firstName: string; lastName: string; permissions: typeof permissions }) => {
+      const res = await apiRequest("POST", "/api/admin/admins/create-new", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/admins"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ title: "New admin account created successfully" });
+      setIsAddDialogOpen(false);
+      resetForm();
+    },
+    onError: (err: Error) => {
+      const msg = err.message.includes(":") ? err.message.split(": ").slice(1).join(": ") : err.message;
+      toast({ title: "Failed to create admin", description: msg, variant: "destructive" });
     },
   });
 
@@ -101,20 +139,9 @@ export default function AdminSubAdmins() {
 
   const resetForm = () => {
     setSelectedUserId("");
-    setPermissions({
-      canManageUsers: false,
-      canManageJobs: false,
-      canManageApplications: false,
-      canManageAdmins: false,
-      canViewStats: true,
-      canManageSubscriptions: false,
-      canManageTransactions: false,
-      canManageTickets: false,
-      canManageReports: false,
-      canManageVerifications: false,
-      canManageNotifications: false,
-      canManageSettings: false,
-    });
+    setNewAdminForm({ email: "", password: "", firstName: "", lastName: "" });
+    setPermissions({ ...defaultPermissions });
+    setAddMode("new");
   };
 
   const nonAdminUsers = allUsers.filter((u) => u.role !== "admin");
@@ -140,11 +167,23 @@ export default function AdminSubAdmins() {
   };
 
   const handleCreateAdmin = () => {
-    if (!selectedUserId) {
-      toast({ title: "Please select a user", variant: "destructive" });
-      return;
+    if (addMode === "existing") {
+      if (!selectedUserId) {
+        toast({ title: "Please select a user", variant: "destructive" });
+        return;
+      }
+      createAdminMutation.mutate({ userId: selectedUserId, permissions });
+    } else {
+      if (!newAdminForm.email || !newAdminForm.password || !newAdminForm.firstName || !newAdminForm.lastName) {
+        toast({ title: "Please fill in all fields", variant: "destructive" });
+        return;
+      }
+      if (newAdminForm.password.length < 6) {
+        toast({ title: "Password must be at least 6 characters", variant: "destructive" });
+        return;
+      }
+      createNewAdminMutation.mutate({ ...newAdminForm, permissions });
     }
-    createAdminMutation.mutate({ userId: selectedUserId, permissions });
   };
 
   const handleUpdatePermissions = () => {
@@ -152,20 +191,8 @@ export default function AdminSubAdmins() {
     updatePermissionsMutation.mutate({ userId: editingAdmin.id, perms: permissions });
   };
 
-  const permissionLabels = [
-    { key: "canViewStats", label: "View Statistics", icon: Eye, description: "Can view platform stats and analytics" },
-    { key: "canManageUsers", label: "Manage Users", icon: Users, description: "Can view, edit, and manage all users" },
-    { key: "canManageJobs", label: "Manage Jobs", icon: Briefcase, description: "Can edit, activate/deactivate, and delete jobs" },
-    { key: "canManageApplications", label: "Manage Applications", icon: FileText, description: "Can view and manage all applications" },
-    { key: "canManageSubscriptions", label: "Manage Subscriptions", icon: Crown, description: "Can view and update user subscriptions" },
-    { key: "canManageTransactions", label: "View Transactions", icon: DollarSign, description: "Can view transaction history and revenue stats" },
-    { key: "canManageTickets", label: "Manage Tickets", icon: Ticket, description: "Can view and respond to support tickets" },
-    { key: "canManageReports", label: "Manage Reports", icon: Flag, description: "Can review and resolve user reports" },
-    { key: "canManageVerifications", label: "Manage Verifications", icon: ShieldCheck, description: "Can approve or reject verification requests" },
-    { key: "canManageNotifications", label: "Send Notifications", icon: Bell, description: "Can create and manage platform notifications" },
-    { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform configuration" },
-    { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
-  ];
+  const isCreating = createAdminMutation.isPending || createNewAdminMutation.isPending;
+  const canSubmit = addMode === "existing" ? !!selectedUserId : (!!newAdminForm.email && !!newAdminForm.password && !!newAdminForm.firstName && !!newAdminForm.lastName);
 
   return (
     <div className="space-y-6">
@@ -271,32 +298,98 @@ export default function AdminSubAdmins() {
         </CardContent>
       </Card>
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      {/* Add Sub-Admin Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Add Sub-Admin</DialogTitle>
             <DialogDescription>
-              Select a user and configure their admin permissions
+              Create a new admin account or promote an existing user
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4 overflow-y-auto flex-1">
-            <div className="space-y-2">
-              <Label>Select User</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger data-testid="select-user-for-admin">
-                  <SelectValue placeholder="Choose a user..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {nonAdminUsers.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.firstName && u.lastName 
-                        ? `${u.firstName} ${u.lastName} (${u.email})` 
-                        : u.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4 py-2 overflow-y-auto flex-1">
+            {/* Mode toggle */}
+            <div className="flex rounded-lg border overflow-hidden">
+              <button
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${addMode === "new" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}
+                onClick={() => setAddMode("new")}
+                data-testid="tab-create-new"
+              >
+                <Plus className="w-4 h-4 inline mr-1.5" />
+                Create New Account
+              </button>
+              <button
+                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${addMode === "existing" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted"}`}
+                onClick={() => setAddMode("existing")}
+                data-testid="tab-existing-user"
+              >
+                <Users className="w-4 h-4 inline mr-1.5" />
+                Existing User
+              </button>
             </div>
+
+            {addMode === "new" ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">First Name</Label>
+                    <Input
+                      placeholder="First name"
+                      value={newAdminForm.firstName}
+                      onChange={(e) => setNewAdminForm({ ...newAdminForm, firstName: e.target.value })}
+                      data-testid="input-admin-firstname"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Last Name</Label>
+                    <Input
+                      placeholder="Last name"
+                      value={newAdminForm.lastName}
+                      onChange={(e) => setNewAdminForm({ ...newAdminForm, lastName: e.target.value })}
+                      data-testid="input-admin-lastname"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Email Address</Label>
+                  <Input
+                    type="email"
+                    placeholder="admin@example.com"
+                    value={newAdminForm.email}
+                    onChange={(e) => setNewAdminForm({ ...newAdminForm, email: e.target.value })}
+                    data-testid="input-admin-email"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Password</Label>
+                  <Input
+                    type="password"
+                    placeholder="Min. 6 characters"
+                    value={newAdminForm.password}
+                    onChange={(e) => setNewAdminForm({ ...newAdminForm, password: e.target.value })}
+                    data-testid="input-admin-password"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Select User</Label>
+                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                  <SelectTrigger data-testid="select-user-for-admin">
+                    <SelectValue placeholder="Choose a user..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {nonAdminUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.firstName && u.lastName 
+                          ? `${u.firstName} ${u.lastName} (${u.email})` 
+                          : u.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-3">
               <Label>Permissions</Label>
@@ -326,15 +419,16 @@ export default function AdminSubAdmins() {
             </Button>
             <Button 
               onClick={handleCreateAdmin}
-              disabled={createAdminMutation.isPending || !selectedUserId}
+              disabled={isCreating || !canSubmit}
               data-testid="button-create-admin"
             >
-              {createAdminMutation.isPending ? "Creating..." : "Create Sub-Admin"}
+              {isCreating ? "Creating..." : addMode === "new" ? "Create Admin Account" : "Promote to Admin"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Edit Permissions Dialog */}
       <Dialog open={!!editingAdmin} onOpenChange={() => setEditingAdmin(null)}>
         <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
@@ -377,6 +471,7 @@ export default function AdminSubAdmins() {
         </DialogContent>
       </Dialog>
 
+      {/* Remove Admin Dialog */}
       <Dialog open={!!removingAdmin} onOpenChange={() => setRemovingAdmin(null)}>
         <DialogContent>
           <DialogHeader>

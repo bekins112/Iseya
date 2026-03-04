@@ -252,6 +252,27 @@ export const createSubAdminSchema = z.object({
   }),
 });
 
+export const createNewAdminSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  permissions: z.object({
+    canManageUsers: z.boolean().optional(),
+    canManageJobs: z.boolean().optional(),
+    canManageApplications: z.boolean().optional(),
+    canManageAdmins: z.boolean().optional(),
+    canViewStats: z.boolean().optional(),
+    canManageSubscriptions: z.boolean().optional(),
+    canManageTransactions: z.boolean().optional(),
+    canManageTickets: z.boolean().optional(),
+    canManageReports: z.boolean().optional(),
+    canManageVerifications: z.boolean().optional(),
+    canManageNotifications: z.boolean().optional(),
+    canManageSettings: z.boolean().optional(),
+  }),
+});
+
 // Schema for admin ticket updates
 export const adminUpdateTicketSchema = z.object({
   status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
