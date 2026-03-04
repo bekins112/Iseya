@@ -16,6 +16,9 @@ import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Ticket as TicketType } from "@shared/schema";
+import { User, Mail } from "lucide-react";
+
+type TicketWithSender = TicketType & { senderName?: string; senderEmail?: string; senderRole?: string };
 import { format } from "date-fns";
 
 export default function AdminTickets() {
@@ -24,14 +27,14 @@ export default function AdminTickets() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [selectedTicket, setSelectedTicket] = useState<TicketType | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<TicketWithSender | null>(null);
   const [editForm, setEditForm] = useState({ 
     status: "open" as string, 
     priority: "medium" as string,
     adminNotes: "" 
   });
 
-  const { data: tickets = [], isLoading } = useQuery<TicketType[]>({
+  const { data: tickets = [], isLoading } = useQuery<TicketWithSender[]>({
     queryKey: ["/api/admin/tickets", statusFilter, priorityFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -63,9 +66,13 @@ export default function AdminTickets() {
   }
 
   const filteredTickets = tickets.filter((t) => {
+    const q = search.toLowerCase();
     const matchesSearch = !search || 
-      t.subject?.toLowerCase().includes(search.toLowerCase()) ||
-      t.description?.toLowerCase().includes(search.toLowerCase());
+      t.subject?.toLowerCase().includes(q) ||
+      t.description?.toLowerCase().includes(q) ||
+      t.senderName?.toLowerCase().includes(q) ||
+      t.senderEmail?.toLowerCase().includes(q) ||
+      String(t.id).includes(q);
     return matchesSearch;
   });
 
@@ -227,9 +234,10 @@ export default function AdminTickets() {
                   onClick={() => openTicketDialog(ticket)}
                   data-testid={`ticket-row-${ticket.id}`}
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium">{ticket.subject}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-xs font-mono text-muted-foreground">#{ticket.id}</span>
+                      <p className="font-medium truncate">{ticket.subject}</p>
                       <Badge className={getStatusColor(ticket.status)} variant="secondary">
                         {getStatusIcon(ticket.status)}
                         <span className="ml-1 capitalize">{ticket.status}</span>
@@ -239,7 +247,20 @@ export default function AdminTickets() {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-1">{ticket.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {ticket.senderName || "Unknown"}
+                        {ticket.senderRole && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 ml-1 capitalize">{ticket.senderRole}</Badge>
+                        )}
+                      </span>
+                      {ticket.senderEmail && (
+                        <span className="flex items-center gap-1">
+                          <Mail className="w-3 h-3" />
+                          {ticket.senderEmail}
+                        </span>
+                      )}
                       <span>Category: {ticket.category || "General"}</span>
                       {ticket.createdAt && (
                         <span>Created: {format(new Date(ticket.createdAt), "MMM d, yyyy")}</span>
@@ -284,10 +305,28 @@ export default function AdminTickets() {
       <Dialog open={!!selectedTicket} onOpenChange={() => setSelectedTicket(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Ticket Details</DialogTitle>
+            <DialogTitle>Ticket #{selectedTicket?.id}</DialogTitle>
           </DialogHeader>
           {selectedTicket && (
             <div className="space-y-4 py-4">
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <Label className="text-muted-foreground text-xs uppercase tracking-wide">Submitted By</Label>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    {selectedTicket.senderName || "Unknown"}
+                  </span>
+                  {selectedTicket.senderEmail && (
+                    <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Mail className="w-4 h-4" />
+                      {selectedTicket.senderEmail}
+                    </span>
+                  )}
+                  {selectedTicket.senderRole && (
+                    <Badge variant="outline" className="capitalize">{selectedTicket.senderRole}</Badge>
+                  )}
+                </div>
+              </div>
               <div>
                 <Label className="text-muted-foreground">Subject</Label>
                 <p className="font-medium">{selectedTicket.subject}</p>

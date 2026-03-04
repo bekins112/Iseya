@@ -392,15 +392,34 @@ export class DatabaseStorage implements IStorage {
     return ticket;
   }
 
-  async getAllTickets(filters?: { status?: string; priority?: string }): Promise<Ticket[]> {
+  async getAllTickets(filters?: { status?: string; priority?: string }): Promise<(Ticket & { senderName?: string; senderEmail?: string; senderRole?: string })[]> {
     const conditions: any[] = [];
     if (filters?.status) conditions.push(eq(tickets.status, filters.status));
     if (filters?.priority) conditions.push(eq(tickets.priority, filters.priority));
     
+    const query = db
+      .select({
+        ticket: tickets,
+        senderFirstName: users.firstName,
+        senderLastName: users.lastName,
+        senderEmail: users.email,
+        senderRole: users.role,
+      })
+      .from(tickets)
+      .leftJoin(users, eq(tickets.userId, users.id))
+      .orderBy(desc(tickets.createdAt));
+
     if (conditions.length > 0) {
-      return await db.select().from(tickets).where(and(...conditions)).orderBy(desc(tickets.createdAt));
+      query.where(and(...conditions));
     }
-    return await db.select().from(tickets).orderBy(desc(tickets.createdAt));
+    
+    const rows = await query;
+    return rows.map(r => ({
+      ...r.ticket,
+      senderName: `${r.senderFirstName || ""} ${r.senderLastName || ""}`.trim() || "Unknown",
+      senderEmail: r.senderEmail || undefined,
+      senderRole: r.senderRole || undefined,
+    }));
   }
 
   async getTicketsByUser(userId: string): Promise<Ticket[]> {
