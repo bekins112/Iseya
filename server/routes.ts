@@ -688,6 +688,26 @@ export async function registerRoutes(
             ticket.priority || "medium"
           ).catch(() => {});
         }
+
+        storage.createNotification({
+          title: "Ticket Submitted",
+          message: `Your support ticket "#${ticket.id}: ${ticket.subject}" has been submitted. We'll get back to you soon.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: userId,
+          createdBy: userId,
+        }).catch(() => {});
+
+        if (primaryAdmin) {
+          storage.createNotification({
+            title: "New Support Ticket",
+            message: `${userName} submitted a new support ticket "#${ticket.id}: ${ticket.subject}" (${ticket.priority} priority).`,
+            type: "role",
+            targetRole: "admin",
+            targetUserId: null,
+            createdBy: userId,
+          }).catch(() => {});
+        }
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -740,6 +760,21 @@ export async function registerRoutes(
       const input = adminUpdateTicketSchema.parse(req.body);
       const ticket = await storage.updateTicket(ticketId, input);
       res.json(ticket);
+
+      if (ticket?.userId) {
+        const adminUserId = req.session.userId!;
+        const statusLabel = input.status ? `Status updated to "${input.status}"` : "";
+        const notesLabel = input.adminNotes ? "Admin added a response" : "";
+        const detail = [statusLabel, notesLabel].filter(Boolean).join(". ");
+        storage.createNotification({
+          title: "Ticket Updated",
+          message: `Your support ticket "#${ticket.id}: ${ticket.subject}" has been updated. ${detail}`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: ticket.userId,
+          createdBy: adminUserId,
+        }).catch(() => {});
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });

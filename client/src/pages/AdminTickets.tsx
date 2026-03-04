@@ -32,10 +32,16 @@ export default function AdminTickets() {
   });
 
   const { data: tickets = [], isLoading } = useQuery<TicketType[]>({
-    queryKey: ["/api/admin/tickets", { 
-      status: statusFilter !== "all" ? statusFilter : undefined,
-      priority: priorityFilter !== "all" ? priorityFilter : undefined 
-    }],
+    queryKey: ["/api/admin/tickets", statusFilter, priorityFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (priorityFilter !== "all") params.set("priority", priorityFilter);
+      const qs = params.toString();
+      const res = await fetch(`/api/admin/tickets${qs ? `?${qs}` : ""}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch tickets");
+      return res.json();
+    },
   });
 
   const updateTicketMutation = useMutation({
