@@ -141,17 +141,17 @@ export default function Support() {
   });
 
   const sendReply = useMutation({
-    mutationFn: async () => {
-      if (!viewingTicket || !replyText.trim()) return;
-      const res = await apiRequest("POST", `/api/tickets/${viewingTicket.id}/messages`, { message: replyText.trim() });
-      return res.json();
+    mutationFn: async (text: string) => {
+      if (!viewingTicket) throw new Error("No ticket selected");
+      await apiRequest("POST", `/api/tickets/${viewingTicket.id}/messages`, { message: text });
     },
     onSuccess: () => {
       setReplyText("");
       refetchMessages();
       queryClient.invalidateQueries({ queryKey: ["/api/tickets/unread-counts"] });
     },
-    onError: () => {
+    onError: (err) => {
+      console.error("Reply error:", err);
       toast({ title: "Failed to send reply", variant: "destructive" });
     },
   });
@@ -494,14 +494,14 @@ export default function Support() {
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            if (replyText.trim()) sendReply.mutate();
+                            if (replyText.trim()) sendReply.mutate(replyText.trim());
                           }
                         }}
                         data-testid="textarea-ticket-reply"
                       />
                       <Button
                         size="icon"
-                        onClick={() => sendReply.mutate()}
+                        onClick={() => sendReply.mutate(replyText.trim())}
                         disabled={!replyText.trim() || sendReply.isPending}
                         className="shrink-0 h-[44px] w-[44px]"
                         data-testid="button-send-reply"
