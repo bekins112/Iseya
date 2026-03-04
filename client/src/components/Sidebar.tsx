@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/components/ui-extension";
 import { 
@@ -26,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import type { AdminPermissions } from "@shared/schema";
 
 export function Sidebar() {
   const { user, logout } = useAuth();
@@ -34,27 +36,41 @@ export function Sidebar() {
   const isEmployer = user?.role === "employer";
   const isAdmin = user?.role === "admin";
 
+  const { data: adminPerms } = useQuery<AdminPermissions>({
+    queryKey: ["/api/admin/my-permissions"],
+    enabled: isAdmin,
+  });
+
+  const hasPerm = (key: keyof AdminPermissions) => {
+    if (!adminPerms) return true;
+    return adminPerms[key] !== false;
+  };
+
   const verificationExpiry = (user as any)?.verificationExpiry;
   const verificationSubtitle = user?.isVerified && verificationExpiry
     ? `Renews ${new Date(verificationExpiry).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}`
     : undefined;
 
+  const adminLinks: { href: string; label: string; icon: any; perm?: keyof AdminPermissions }[] = [
+    { href: "/admin/dashboard", label: "Admin Panel", icon: Shield },
+    { href: "/admin/statistics", label: "Statistics", icon: BarChart3, perm: "canViewStats" },
+    { href: "/admin/users", label: "Manage Users", icon: Users, perm: "canManageUsers" },
+    { href: "/admin/jobs", label: "Manage Jobs", icon: Briefcase, perm: "canManageJobs" },
+    { href: "/admin/subscriptions", label: "Subscriptions", icon: Crown, perm: "canManageSubscriptions" },
+    { href: "/admin/transactions", label: "Transactions", icon: DollarSign, perm: "canManageTransactions" },
+    { href: "/admin/tickets", label: "Support Tickets", icon: Ticket, perm: "canManageTickets" },
+    { href: "/admin/reports", label: "Reports", icon: Flag, perm: "canManageReports" },
+    { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
+    { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck, perm: "canManageVerifications" },
+    { href: "/admin/notifications", label: "Notifications", icon: Bell, perm: "canManageNotifications" },
+    { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
+  ];
+
+  const filteredAdminLinks = adminLinks.filter(link => !link.perm || hasPerm(link.perm));
+
   const links: { href: string; label: string; icon: any; subtitle?: string }[] = [
     ...(!isAdmin ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
-    ...(isAdmin ? [
-      { href: "/admin/dashboard", label: "Admin Panel", icon: Shield },
-      { href: "/admin/statistics", label: "Statistics", icon: BarChart3 },
-      { href: "/admin/users", label: "Manage Users", icon: Users },
-      { href: "/admin/jobs", label: "Manage Jobs", icon: Briefcase },
-      { href: "/admin/subscriptions", label: "Subscriptions", icon: Crown },
-      { href: "/admin/transactions", label: "Transactions", icon: DollarSign },
-      { href: "/admin/tickets", label: "Support Tickets", icon: Ticket },
-      { href: "/admin/reports", label: "Reports", icon: Flag },
-      { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings },
-      { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck },
-      { href: "/admin/notifications", label: "Notifications", icon: Bell },
-      { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal },
-    ] : isEmployer ? [
+    ...(isAdmin ? filteredAdminLinks : isEmployer ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
       { href: "/post-job", label: "Post a Job", icon: PlusCircle },
       { href: "/subscription", label: "Subscription", icon: Crown },
