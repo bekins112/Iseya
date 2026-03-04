@@ -44,6 +44,7 @@ import BrowseJobs from "@/pages/BrowseJobs";
 import Disclaimer from "@/pages/Disclaimer";
 import CopyrightPage from "@/pages/Copyright";
 import VerifyEmail from "@/pages/VerifyEmail";
+import Support from "@/pages/Support";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -165,6 +166,12 @@ function Router() {
       <Route path="/profile">
         <AuthenticatedLayout>
           <Profile />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/support">
+        <AuthenticatedLayout>
+          <Support />
         </AuthenticatedLayout>
       </Route>
 

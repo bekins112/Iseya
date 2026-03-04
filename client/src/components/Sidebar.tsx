@@ -21,6 +21,7 @@ import {
   SlidersHorizontal,
   DollarSign,
   Bell,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -62,6 +63,7 @@ export function Sidebar() {
       { href: "/my-applications", label: "Applications", icon: FolderOpen },
       { href: "/verification", label: user?.isVerified ? "Verified" : "Get Verified", icon: ShieldCheck, subtitle: verificationSubtitle },
     ]),
+    ...(!isAdmin ? [{ href: "/support", label: "Support", icon: HelpCircle }] : []),
     { href: "/profile", label: "Profile", icon: User },
   ];
 

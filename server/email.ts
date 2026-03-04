@@ -316,6 +316,62 @@ export async function sendVerificationEmail(to: string, code: string, name: stri
   }
 }
 
+export async function sendTicketCreatedEmail(
+  email: string,
+  name: string,
+  ticketId: number,
+  subject: string,
+  category: string,
+  priority: string
+): Promise<boolean> {
+  const categoryLabels: Record<string, string> = {
+    general: "General Inquiry",
+    account: "Account Issues",
+    payment: "Payment & Billing",
+    job: "Job Listings",
+    technical: "Technical Problem",
+  };
+
+  return sendEmail(email, name, `Support Ticket #${ticketId} — ${subject}`, `
+    <h2 style="color: #333; margin: 0 0 16px;">Support Ticket Received</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${name},</p>
+    <p style="color: #555; line-height: 1.6;">We've received your support request and our team will review it shortly.</p>
+    <div style="background: #f7f7f7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0; color: #333;"><strong>Ticket ID:</strong> #${ticketId}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Subject:</strong> ${subject}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Category:</strong> ${categoryLabels[category] || category}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Priority:</strong> <span style="text-transform: capitalize;">${priority}</span></p>
+    </div>
+    <div style="background: #fdf8e8; border-left: 4px solid ${brandColor}; padding: 16px; margin: 24px 0; border-radius: 4px;">
+      <p style="color: #333; margin: 0;">You can track the status of your ticket from your dashboard under the <strong>Support</strong> section.</p>
+    </div>
+    <p style="color: #666; font-size: 14px;">We typically respond within 24-48 hours. For urgent matters, email us directly at support@iseya.com.</p>
+  `);
+}
+
+export async function sendTicketAdminNotifyEmail(
+  adminEmail: string,
+  adminName: string,
+  ticketId: number,
+  subject: string,
+  userName: string,
+  category: string,
+  priority: string
+): Promise<boolean> {
+  return sendEmail(adminEmail, adminName, `New Support Ticket #${ticketId} — ${subject}`, `
+    <h2 style="color: #333; margin: 0 0 16px;">New Support Ticket</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${adminName},</p>
+    <p style="color: #555; line-height: 1.6;">A new support ticket has been submitted by <strong>${userName}</strong>.</p>
+    <div style="background: #f7f7f7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0; color: #333;"><strong>Ticket ID:</strong> #${ticketId}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Subject:</strong> ${subject}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Category:</strong> ${category}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Priority:</strong> <span style="text-transform: capitalize; ${priority === "urgent" || priority === "high" ? "color: #dc2626; font-weight: 600;" : ""}">${priority}</span></p>
+    </div>
+    <p style="color: #555; line-height: 1.6;">Log in to the admin panel to review and respond to this ticket.</p>
+  `);
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, resetLink: string): Promise<boolean> {
   return sendEmail(to, name, "Password Reset — Iṣéyá", `
     <h2 style="color: #333; margin: 0 0 16px;">Password Reset Request</h2>

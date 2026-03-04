@@ -19,6 +19,8 @@ import {
   sendSubscriptionEmail,
   sendVerificationApprovedEmail,
   sendVerificationRejectedEmail,
+  sendTicketCreatedEmail,
+  sendTicketAdminNotifyEmail,
 } from "./email";
 
 for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo"]) {
@@ -660,6 +662,33 @@ export async function registerRoutes(
       });
       const ticket = await storage.createTicket(input);
       res.status(201).json(ticket);
+
+      const ticketUser = await storage.getUser(userId);
+      if (ticketUser?.email) {
+        const userName = `${ticketUser.firstName || ""} ${ticketUser.lastName || ""}`.trim() || "User";
+        sendTicketCreatedEmail(
+          ticketUser.email,
+          userName,
+          ticket.id,
+          ticket.subject,
+          ticket.category || "general",
+          ticket.priority || "medium"
+        ).catch(() => {});
+
+        const admins = await storage.getAllUsers({ role: "admin" });
+        const primaryAdmin = admins.find(a => a.email === "bekinsmart@gmail.com") || admins[0];
+        if (primaryAdmin?.email) {
+          sendTicketAdminNotifyEmail(
+            primaryAdmin.email,
+            `${primaryAdmin.firstName || ""} ${primaryAdmin.lastName || ""}`.trim() || "Admin",
+            ticket.id,
+            ticket.subject,
+            userName,
+            ticket.category || "general",
+            ticket.priority || "medium"
+          ).catch(() => {});
+        }
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });

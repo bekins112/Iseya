@@ -62,6 +62,15 @@ Preferred communication style: Simple, everyday language.
 - Components: `NotificationBell` (client/src/components/NotificationBell.tsx), `AdminNotifications` (client/src/pages/AdminNotifications.tsx).
 - API routes: GET/POST `/api/notifications`, GET `/api/notifications/unread-count`, POST `/api/notifications/:id/read`, POST `/api/notifications/read-all`, GET/POST/DELETE `/api/admin/notifications`.
 
+### Support Ticket System
+- Applicants and employers can submit support tickets from their dashboard via `/support` page.
+- Users can track ticket status (open, in progress, resolved, closed) and view admin responses.
+- Ticket creation sends email confirmation to the user and notification email to the primary admin.
+- Admin manages all tickets from `/admin/tickets` with status/priority/notes editing.
+- Email templates: `sendTicketCreatedEmail` (user confirmation), `sendTicketAdminNotifyEmail` (admin alert).
+- Components: `Support` (client/src/pages/Support.tsx), `AdminTickets` (client/src/pages/AdminTickets.tsx).
+- API routes: POST `/api/tickets`, GET `/api/tickets/my`, GET/PATCH `/api/admin/tickets`, GET `/api/admin/tickets/:id`.
+
 ### Login Security
 - Implements image-based CAPTCHA on the login form for bot protection.
 
