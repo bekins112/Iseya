@@ -305,8 +305,8 @@ export async function registerRoutes(
   app.post(api.applications.create.path, isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
     
-    if (!user?.age || user.age < 16) {
-       return res.status(403).json({ message: "You must be at least 16 years old to apply." });
+    if (!user?.age || user.age < 18) {
+       return res.status(403).json({ message: "You must be at least 18 years old to apply." });
     }
     try {
       const input = api.applications.create.input.parse({

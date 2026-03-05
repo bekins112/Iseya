@@ -122,7 +122,7 @@ const profileSchema = insertUserSchema.pick({
   isRegisteredCompany: z.boolean().optional(),
   companyRegNo: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
-  age: z.coerce.number().min(16, "Must be at least 16").optional().or(z.literal("")),
+  age: z.coerce.number().min(18, "Must be at least 18").optional().or(z.literal("")),
   expectedSalaryMin: z.coerce.number().optional().or(z.literal("")),
   expectedSalaryMax: z.coerce.number().optional().or(z.literal("")),
 });
@@ -475,7 +475,7 @@ export default function Profile() {
                             <FormItem>
                               <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Age</FormLabel>
                               <FormControl>
-                                <Input type="number" min={16} className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 25" {...field} value={field.value || ""} data-testid="input-age" />
+                                <Input type="number" min={18} className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 25" {...field} value={field.value || ""} data-testid="input-age" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

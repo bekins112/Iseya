@@ -70,7 +70,7 @@ const postJobSchema = z.object({
   wage: z.string().min(1, "Wage information is required"),
   location: z.string().min(1, "Location is required"),
   gender: z.string().default("Any"),
-  ageMin: z.coerce.number().min(16, "Minimum age must be at least 16").nullable().optional(),
+  ageMin: z.coerce.number().min(18, "Minimum age must be at least 18").nullable().optional(),
   ageMax: z.coerce.number().max(100, "Maximum age cannot exceed 100").nullable().optional(),
   deadline: z.string().min(1, "Application deadline is required"),
 });
@@ -248,8 +248,8 @@ export default function PostJob() {
                           <FormControl>
                             <Input
                               type="number"
-                              placeholder="Min (16+)"
-                              min={16}
+                              placeholder="Min (18+)"
+                              min={18}
                               max={100}
                               data-testid="input-job-age-min"
                               {...field}

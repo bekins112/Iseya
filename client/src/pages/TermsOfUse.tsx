@@ -28,7 +28,7 @@ export default function TermsOfUse() {
     {
       icon: <Users className="w-6 h-6" />,
       title: "2. Eligibility",
-      content: "You must be at least 16 years of age to create an account and use the Platform. By registering, you confirm that you meet this age requirement. Iṣéyá reserves the right to request proof of age and to suspend or terminate accounts that violate this requirement. Users under 18 may be subject to additional restrictions as required by Nigerian labour laws."
+      content: "You must be at least 18 years of age to create an account and use the Platform. By registering, you confirm that you meet this age requirement. Iṣéyá reserves the right to request proof of age and to suspend or terminate accounts that violate this requirement."
     },
     {
       icon: <Shield className="w-6 h-6" />,

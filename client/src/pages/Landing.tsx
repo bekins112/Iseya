@@ -1010,7 +1010,7 @@ export default function Landing() {
                   "Interview Assistant",
                   "24/7 Support",
                   "100% Job Guarantee",
-                  "16+ Age protected community"
+                  "18+ Age protected community"
                 ].map((item, i) => (
                   <motion.div
                     key={i}

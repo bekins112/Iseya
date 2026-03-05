@@ -28,7 +28,7 @@ const faqs: FAQItem[] = [
   {
     category: "General",
     question: "What age do I need to be to use Iṣéyá?",
-    answer: "You must be at least 16 years old to create an account and use Iṣéyá. This is to ensure compliance with labor laws and protect young workers."
+    answer: "You must be at least 18 years old to create an account and use Iṣéyá. This is to ensure compliance with labor laws and protect young workers."
   },
   {
     category: "Job Seekers",

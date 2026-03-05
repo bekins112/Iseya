@@ -73,8 +73,8 @@ export default function Onboarding() {
       setAgeError("Please enter your age");
       return;
     }
-    if (ageNum < 16) {
-      setAgeError("You must be at least 16 years old to use this platform");
+    if (ageNum < 18) {
+      setAgeError("You must be at least 18 years old to use this platform");
       return;
     }
     if (ageNum > 100) {
@@ -274,10 +274,10 @@ export default function Onboarding() {
             <Input
               id="age"
               type="number"
-              placeholder="Enter your age (must be 16+)"
+              placeholder="Enter your age (must be 18+)"
               value={age}
               onChange={(e) => setAge(e.target.value)}
-              min={16}
+              min={18}
               max={100}
               data-testid="input-onboarding-age"
             />
@@ -288,7 +288,7 @@ export default function Onboarding() {
               </Alert>
             )}
             <p className="text-xs text-muted-foreground">
-              You must be at least 16 years old to use this platform
+              You must be at least 18 years old to use this platform
             </p>
           </div>
 
