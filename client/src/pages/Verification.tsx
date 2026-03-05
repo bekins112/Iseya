@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
+  X,
   Loader2,
   CreditCard,
   Wallet,
@@ -25,12 +26,14 @@ import {
   Users,
   BadgeCheck,
   Calendar,
+  Receipt,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSearch } from "wouter";
+import type { Transaction } from "@shared/schema";
 
 const idTypes = [
   { value: "nin", label: "National Identification Number (NIN)" },
@@ -134,6 +137,13 @@ export default function Verification() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
+
+  const { data: myTransactions } = useQuery<Transaction[]>({
+    queryKey: ["/api/my-transactions"],
+    enabled: !!user,
+  });
+
+  const verificationTransactions = (myTransactions || []).filter(t => t.type === "verification");
 
   const payMutation = useMutation({
     mutationFn: async (gateway: "paystack" | "flutterwave") => {
@@ -457,6 +467,80 @@ export default function Verification() {
           </CardContent>
         </Card>
       )}
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+        <Card className="border-border/40 shadow-md" data-testid="card-verification-transactions">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-display font-bold flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-primary" />
+                Verification Transaction History
+              </CardTitle>
+              <Badge variant="outline" className="text-xs" data-testid="badge-verification-txn-count">
+                {verificationTransactions.length} transaction{verificationTransactions.length !== 1 ? "s" : ""}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {verificationTransactions.length === 0 ? (
+              <div className="text-center py-6" data-testid="empty-verification-transactions">
+                <Receipt className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground">
+                  No verification transactions yet. Complete identity verification to see your payment history here.
+                </p>
+              </div>
+            ) : (
+              <>
+                {verificationTransactions.map((txn) => (
+                  <div
+                    key={txn.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 border border-border/30"
+                    data-testid={`row-verification-txn-${txn.id}`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        txn.status === "success" ? "bg-green-100 dark:bg-green-900/30" :
+                        txn.status === "failed" ? "bg-red-100 dark:bg-red-900/30" :
+                        "bg-yellow-100 dark:bg-yellow-900/30"
+                      }`}>
+                        {txn.status === "success" ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        ) : txn.status === "failed" ? (
+                          <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        ) : (
+                          <CreditCard className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold truncate" data-testid={`text-vtxn-desc-${txn.id}`}>
+                          Identity Verification
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="capitalize">{txn.gateway}</span>
+                          <span>•</span>
+                          <span>{txn.createdAt ? new Date(txn.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm font-bold" data-testid={`text-vtxn-amount-${txn.id}`}>
+                        ₦{(txn.amount / 100).toLocaleString()}
+                      </span>
+                      <Badge
+                        variant={txn.status === "success" ? "default" : txn.status === "failed" ? "destructive" : "secondary"}
+                        className="text-[10px] px-1.5 py-0"
+                        data-testid={`badge-vtxn-status-${txn.id}`}
+                      >
+                        {txn.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
 
       <Dialog open={gatewayDialogOpen} onOpenChange={setGatewayDialogOpen}>
         <DialogContent className="sm:max-w-md">
