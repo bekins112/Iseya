@@ -523,18 +523,54 @@ function ScheduleInterviewDialog({
 }
 
 function InterviewBadge({ applicationId, interviews }: { applicationId: number; interviews: any[] }) {
-  const interview = interviews?.find((i: any) => i.applicationId === applicationId && i.status === "scheduled");
+  const interview = interviews?.find((i: any) => i.applicationId === applicationId && (i.status === "scheduled" || i.status === "completed"));
   if (!interview) return null;
+
+  const updateInterview = useUpdateInterview();
+  const isCompleted = interview.status === "completed";
+
+  const interviewDatePassed = (() => {
+    if (!interview.interviewDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const iDate = new Date(interview.interviewDate);
+    iDate.setHours(0, 0, 0, 0);
+    return iDate <= today;
+  })();
 
   const typeIcon = interview.interviewType === "video" ? Video : 
                    interview.interviewType === "phone" ? Phone : MapPin;
   const TypeIcon = typeIcon;
 
   return (
-    <div className="mt-2 bg-primary/5 border border-primary/20 rounded-md p-3">
-      <div className="flex items-center gap-2 mb-1">
-        <CalendarClock className="w-4 h-4 text-primary" />
-        <span className="text-sm font-medium text-primary">Interview Scheduled</span>
+    <div className={`mt-2 rounded-md p-3 ${isCompleted ? "bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50" : "bg-primary/5 border border-primary/20"}`}>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          {isCompleted ? (
+            <>
+              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">Interview Completed</span>
+            </>
+          ) : (
+            <>
+              <CalendarClock className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Interview Scheduled</span>
+            </>
+          )}
+        </div>
+        {!isCompleted && interviewDatePassed && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950/30"
+            disabled={updateInterview.isPending}
+            onClick={() => updateInterview.mutate({ id: interview.id, status: "completed" })}
+            data-testid={`btn-confirm-interviewed-${applicationId}`}
+          >
+            <CheckCircle2 className="w-3 h-3 mr-1" />
+            {updateInterview.isPending ? "Confirming..." : "Confirm Interviewed"}
+          </Button>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
@@ -1209,6 +1245,21 @@ export default function ManageApplicants() {
                                 <span key={i} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{reason}</span>
                               ))}
                             </div>
+                            {rec.interviewStatus && (
+                              <div className="mt-1.5 flex items-center gap-1.5">
+                                {rec.interviewStatus === "completed" ? (
+                                  <Badge variant="default" className="text-[10px] bg-green-600 gap-1">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Interviewed
+                                  </Badge>
+                                ) : rec.interviewStatus === "scheduled" ? (
+                                  <Badge variant="secondary" className="text-[10px] gap-1">
+                                    <CalendarClock className="w-3 h-3" />
+                                    Interview {rec.interviewDate || "Scheduled"}
+                                  </Badge>
+                                ) : null}
+                              </div>
+                            )}
                             {rec.adminNote && (
                               <div className="mt-1.5 flex items-start gap-1">
                                 <MessageCircle className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />

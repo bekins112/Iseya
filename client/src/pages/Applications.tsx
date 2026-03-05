@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMyApplications, useMyOffers, useRespondToOffer, useCancelApplication, useMyInterviews } from "@/hooks/use-casual";
+import { useMyApplications, useMyOffers, useRespondToOffer, useCancelApplication, useMyInterviews, useUpdateInterview } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
@@ -232,6 +232,7 @@ export default function Applications() {
   const [cancelApp, setCancelApp] = useState<EnrichedApp | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
+  const confirmInterviewMutation = useUpdateInterview();
   const apps = (applications as EnrichedApp[] | undefined) || [];
   const myInterviews = (interviewsData || []) as any[];
   const isVerified = user?.isVerified || false;
@@ -369,13 +370,46 @@ export default function Applications() {
                         )}
 
                         {(() => {
-                          const interview = myInterviews.find((i: any) => i.applicationId === app.id && i.status === "scheduled");
+                          const interview = myInterviews.find((i: any) => i.applicationId === app.id && (i.status === "scheduled" || i.status === "completed"));
                           if (!interview) return null;
+                          const isCompleted = interview.status === "completed";
+                          const interviewDatePassed = (() => {
+                            if (!interview.interviewDate) return false;
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const iDate = new Date(interview.interviewDate);
+                            iDate.setHours(0, 0, 0, 0);
+                            return iDate <= today;
+                          })();
                           return (
-                            <div className="mt-3 p-2.5 rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50" data-testid={`interview-info-${app.id}`}>
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <CalendarClock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                <span className="font-semibold text-sm text-blue-800 dark:text-blue-300">Interview Scheduled</span>
+                            <div className={`mt-3 p-2.5 rounded-md ${isCompleted ? "bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50" : "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50"}`} data-testid={`interview-info-${app.id}`}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  {isCompleted ? (
+                                    <>
+                                      <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                      <span className="font-semibold text-sm text-green-700 dark:text-green-400">Interview Completed</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CalendarClock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                      <span className="font-semibold text-sm text-blue-800 dark:text-blue-300">Interview Scheduled</span>
+                                    </>
+                                  )}
+                                </div>
+                                {!isCompleted && interviewDatePassed && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950/30"
+                                    disabled={confirmInterviewMutation.isPending}
+                                    onClick={() => confirmInterviewMutation.mutate({ id: interview.id, status: "completed" })}
+                                    data-testid={`btn-confirm-interviewed-${app.id}`}
+                                  >
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    {confirmInterviewMutation.isPending ? "Confirming..." : "Confirm Interviewed"}
+                                  </Button>
+                                )}
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">

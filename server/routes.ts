@@ -1693,9 +1693,9 @@ export async function registerRoutes(
     res.json(enriched);
   });
 
-  // Update interview (employer - reschedule or cancel)
+  // Update interview (employer, admin, or applicant for confirmation)
   app.patch("/api/interviews/:id", isAuthenticated, async (req, res) => {
-    const employerId = req.session.userId!;
+    const userId = req.session.userId!;
     const interviewId = Number(req.params.id);
     if (isNaN(interviewId)) return res.status(400).json({ message: "Invalid interview ID" });
 
@@ -1713,10 +1713,73 @@ export async function registerRoutes(
 
       const interview = await storage.getInterview(interviewId);
       if (!interview) return res.status(404).json({ message: "Interview not found" });
-      const updatingUser = await storage.getUser(employerId);
-      if (interview.employerId !== employerId && updatingUser?.role !== 'admin') return res.status(403).json({ message: "Not authorized" });
+      const updatingUser = await storage.getUser(userId);
+
+      const isEmployer = interview.employerId === userId;
+      const isAdmin = updatingUser?.role === "admin";
+      const isApplicant = interview.applicantId === userId;
+
+      if (isApplicant) {
+        if (Object.keys(input).length !== 1 || input.status !== "completed") {
+          return res.status(403).json({ message: "Applicants can only confirm interviews as completed" });
+        }
+      } else if (!isEmployer && !isAdmin) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      if (input.status === "completed" && !isAdmin) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const interviewDay = new Date(interview.interviewDate);
+        interviewDay.setHours(0, 0, 0, 0);
+        if (interviewDay > today) {
+          return res.status(400).json({ message: "Cannot confirm interview before the scheduled date" });
+        }
+      }
 
       const updated = await storage.updateInterview(interviewId, input);
+
+      if (input.status === "completed") {
+        const job = await storage.getJob(interview.jobId);
+        const applicant = await storage.getUser(interview.applicantId);
+        const employer = await storage.getUser(interview.employerId);
+        const applicantName = `${applicant?.firstName || ""} ${applicant?.lastName || ""}`.trim() || "Applicant";
+        const confirmerName = isAdmin ? "Iṣéyá Team" : isApplicant ? applicantName : (employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim());
+
+        if (isEmployer || isAdmin) {
+          storage.createNotification({
+            title: "Interview Completed",
+            message: `Your interview for "${job?.title || "a job"}" has been confirmed as completed by ${confirmerName}. You will receive recommendations shortly.`,
+            type: "individual",
+            targetRole: null,
+            targetUserId: interview.applicantId,
+            createdBy: userId,
+          }).catch(() => {});
+        }
+
+        if (isApplicant) {
+          storage.createNotification({
+            title: "Interview Confirmed by Applicant",
+            message: `${applicantName} has confirmed the interview for "${job?.title || "a job"}" as completed.`,
+            type: "individual",
+            targetRole: null,
+            targetUserId: interview.employerId,
+            createdBy: userId,
+          }).catch(() => {});
+        }
+
+        if (isAdmin && employer) {
+          storage.createNotification({
+            title: "Interview Completed — Recommendation Coming",
+            message: `The Iṣéyá team has confirmed the interview with ${applicantName} for your job "${job?.title || "a job"}" as completed. We will provide our recommendation shortly.`,
+            type: "individual",
+            targetRole: null,
+            targetUserId: interview.employerId,
+            createdBy: userId,
+          }).catch(() => {});
+        }
+      }
+
       res.json(updated);
     } catch (err) {
       if (err instanceof z.ZodError) {

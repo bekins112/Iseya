@@ -577,10 +577,19 @@ export function useUpdateInterview() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-interviews"] });
-      toast({ title: "Interview Updated", description: "The interview has been updated." });
+      queryClient.invalidateQueries({ queryKey: ["/api/interviews/application"] });
+      queryClient.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && key[0] === "/api/jobs" && key[2] === "interviews";
+      }});
+      if (variables.status === "completed") {
+        toast({ title: "Interview Confirmed", description: "The interview has been marked as completed." });
+      } else {
+        toast({ title: "Interview Updated", description: "The interview has been updated." });
+      }
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });

@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction } from "@shared/schema";
-import { eq, and, desc, sql, count, or, like } from "drizzle-orm";
+import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
@@ -637,8 +637,11 @@ export class DatabaseStorage implements IStorage {
 
   async getInterviewByApplication(applicationId: number): Promise<Interview | undefined> {
     const [interview] = await db.select().from(interviews).where(
-      and(eq(interviews.applicationId, applicationId), eq(interviews.status, "scheduled"))
-    );
+      and(
+        eq(interviews.applicationId, applicationId),
+        inArray(interviews.status, ["scheduled", "completed"])
+      )
+    ).orderBy(desc(interviews.createdAt));
     return interview;
   }
 
