@@ -1,68 +1,5 @@
 import { useState } from "react";
 import { useEmployerJobs, useUpdateJob, useDeleteJob, useJobApplications } from "@/hooks/use-casual";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function DateSelector({ value, onChange, minDate }: { value: string; onChange: (val: string) => void; minDate: Date }) {
-  const parsed = value ? new Date(value + "T00:00:00") : null;
-  const selDay = parsed && !isNaN(parsed.getTime()) ? String(parsed.getDate()) : "";
-  const selMonth = parsed && !isNaN(parsed.getTime()) ? String(parsed.getMonth()) : "";
-  const selYear = parsed && !isNaN(parsed.getTime()) ? String(parsed.getFullYear()) : "";
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
-
-  const buildDate = (day: string, month: string, year: string) => {
-    if (day && month !== "" && year) {
-      const d = new Date(Number(year), Number(month), Number(day));
-      if (!isNaN(d.getTime()) && d >= minDate) {
-        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        onChange(iso);
-        return;
-      }
-    }
-    if (!day && !month && !year) onChange("");
-  };
-
-  const daysInMonth = selMonth !== "" && selYear 
-    ? new Date(Number(selYear), Number(selMonth) + 1, 0).getDate() 
-    : 31;
-
-  return (
-    <div className="flex gap-2">
-      <Select value={selDay} onValueChange={(d) => buildDate(d, selMonth, selYear)}>
-        <SelectTrigger className="w-[80px]">
-          <SelectValue placeholder="Day" />
-        </SelectTrigger>
-        <SelectContent>
-          {Array.from({ length: daysInMonth }, (_, i) => (
-            <SelectItem key={i + 1} value={String(i + 1)}>{String(i + 1).padStart(2, "0")}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={selMonth} onValueChange={(m) => buildDate(selDay, m, selYear)}>
-        <SelectTrigger className="w-[90px]">
-          <SelectValue placeholder="Month" />
-        </SelectTrigger>
-        <SelectContent>
-          {MONTHS.map((name, i) => (
-            <SelectItem key={i} value={String(i)}>{name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={selYear} onValueChange={(y) => buildDate(selDay, selMonth, y)}>
-        <SelectTrigger className="w-[90px]">
-          <SelectValue placeholder="Year" />
-        </SelectTrigger>
-        <SelectContent>
-          {years.map((y) => (
-            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Link } from "wouter";
+import { cn } from "@/lib/utils";
 import { 
   PlusCircle, 
   Briefcase, 
@@ -606,11 +546,42 @@ export default function ManageJobs() {
               </div>
               <div>
                 <Label className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" /> Deadline</Label>
-                <DateSelector
-                  value={editForm.deadline}
-                  onChange={(val) => setEditForm({ ...editForm, deadline: val })}
-                  minDate={new Date(Date.now() + 86400000)}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full pl-3 text-left font-normal",
+                        !editForm.deadline && "text-muted-foreground"
+                      )}
+                      data-testid="input-edit-deadline"
+                    >
+                      {editForm.deadline 
+                        ? format(new Date(editForm.deadline + "T00:00:00"), "dd, MMM, yyyy") 
+                        : "Pick a date"}
+                      <CalendarClock className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={editForm.deadline ? new Date(editForm.deadline + "T00:00:00") : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                          setEditForm({ ...editForm, deadline: iso });
+                        }
+                      }}
+                      disabled={(date) => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(0, 0, 0, 0);
+                        return date < tomorrow;
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
             <div>

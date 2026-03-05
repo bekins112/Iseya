@@ -4,78 +4,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateJob } from "@/hooks/use-casual";
 import { z } from "zod";
 import { useLocation, Link } from "wouter";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { AlertTriangle, ArrowUpCircle, CalendarClock } from "lucide-react";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-function DateSelector({ value, onChange, minDate }: { value: string; onChange: (val: string) => void; minDate: Date }) {
-  const parsed = value ? new Date(value + "T00:00:00") : null;
-  const selDay = parsed && !isNaN(parsed.getTime()) ? String(parsed.getDate()) : "";
-  const selMonth = parsed && !isNaN(parsed.getTime()) ? String(parsed.getMonth()) : "";
-  const selYear = parsed && !isNaN(parsed.getTime()) ? String(parsed.getFullYear()) : "";
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
-
-  const buildDate = (day: string, month: string, year: string) => {
-    if (day && month !== "" && year) {
-      const d = new Date(Number(year), Number(month), Number(day));
-      if (!isNaN(d.getTime()) && d >= minDate) {
-        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        onChange(iso);
-        return;
-      }
-    }
-    if (!day && !month && !year) onChange("");
-  };
-
-  const daysInMonth = selMonth !== "" && selYear 
-    ? new Date(Number(selYear), Number(selMonth) + 1, 0).getDate() 
-    : 31;
-
-  return (
-    <div className="flex gap-2">
-      <Select value={selDay} onValueChange={(d) => buildDate(d, selMonth, selYear)}>
-        <SelectTrigger className="w-[80px]" data-testid="select-deadline-day">
-          <SelectValue placeholder="Day" />
-        </SelectTrigger>
-        <SelectContent>
-          {Array.from({ length: daysInMonth }, (_, i) => (
-            <SelectItem key={i + 1} value={String(i + 1)}>{String(i + 1).padStart(2, "0")}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={selMonth} onValueChange={(m) => buildDate(selDay, m, selYear)}>
-        <SelectTrigger className="w-[90px]" data-testid="select-deadline-month">
-          <SelectValue placeholder="Month" />
-        </SelectTrigger>
-        <SelectContent>
-          {MONTHS.map((name, i) => (
-            <SelectItem key={i} value={String(i)}>{name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={selYear} onValueChange={(y) => buildDate(selDay, selMonth, y)}>
-        <SelectTrigger className="w-[90px]" data-testid="select-deadline-year">
-          <SelectValue placeholder="Year" />
-        </SelectTrigger>
-        <SelectContent>
-          {years.map((y) => (
-            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-}
+import { cn } from "@/lib/utils";
 
 const categories = [
   "Waiter / Waitress",
@@ -418,22 +359,52 @@ export default function PostJob() {
                 <FormField
                   control={form.control}
                   name="deadline"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1">
-                        <CalendarClock className="w-4 h-4" />
-                        Application Deadline
-                      </FormLabel>
-                      <FormControl>
-                        <DateSelector
-                          value={field.value}
-                          onChange={field.onChange}
-                          minDate={new Date(Date.now() + 86400000)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedDate = field.value ? new Date(field.value + "T00:00:00") : undefined;
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(0, 0, 0, 0);
+                    return (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                          <CalendarClock className="w-4 h-4" />
+                          Application Deadline
+                        </FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                                data-testid="input-job-deadline"
+                              >
+                                {field.value ? format(selectedDate!, "dd, MMM, yyyy") : "Pick a date"}
+                                <CalendarClock className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                                  field.onChange(iso);
+                                }
+                              }}
+                              disabled={(date) => date < tomorrow}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
 
