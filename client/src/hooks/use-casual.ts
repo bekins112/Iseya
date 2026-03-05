@@ -600,6 +600,35 @@ export function useInterviewForApplication(applicationId: number | null) {
   });
 }
 
+export function useSubmitAdminReview() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ applicationId, rating, note }: { applicationId: number; rating: number; note: string }) => {
+      const res = await fetch(`/api/applications/${applicationId}/admin-review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating, note }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to submit review");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      toast({ title: "Review Submitted", description: "Your assessment has been saved and will appear in recommendations." });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useUploadCompanyLogo() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

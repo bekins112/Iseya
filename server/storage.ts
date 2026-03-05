@@ -25,6 +25,7 @@ export interface IStorage {
   getApplicationsForApplicant(applicantId: string): Promise<Application[]>;
   getApplication(id: number): Promise<Application | undefined>;
   updateApplicationStatus(id: number, status: string): Promise<Application>;
+  updateApplicationAdminReview(id: number, adminRating: number, adminNote: string, adminReviewedBy: string): Promise<Application>;
   
   // Jobs - additional
   updateJob(id: number, updates: Partial<Job>): Promise<Job>;
@@ -237,6 +238,15 @@ export class DatabaseStorage implements IStorage {
     const [app] = await db
       .update(applications)
       .set({ status })
+      .where(eq(applications.id, id))
+      .returning();
+    return app;
+  }
+
+  async updateApplicationAdminReview(id: number, adminRating: number, adminNote: string, adminReviewedBy: string): Promise<Application> {
+    const [app] = await db
+      .update(applications)
+      .set({ adminRating, adminNote, adminReviewedBy, adminReviewedAt: new Date() })
       .where(eq(applications.id, id))
       .returning();
     return app;

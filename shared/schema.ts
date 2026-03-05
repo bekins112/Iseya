@@ -31,8 +31,12 @@ export const applications = pgTable("applications", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   jobId: integer("job_id").notNull().references(() => jobs.id),
   applicantId: varchar("applicant_id").notNull().references(() => users.id),
-  status: varchar("status").default("pending"), // 'pending', 'accepted', 'rejected'
+  status: varchar("status").default("pending"),
   message: text("message"),
+  adminRating: integer("admin_rating"),
+  adminNote: text("admin_note"),
+  adminReviewedBy: varchar("admin_reviewed_by"),
+  adminReviewedAt: timestamp("admin_reviewed_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

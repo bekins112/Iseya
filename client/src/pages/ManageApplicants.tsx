@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview } from "@/hooks/use-casual";
+import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview, useSubmitAdminReview } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,8 @@ import {
   Star,
   Award,
   Zap,
+  MessageCircle,
+  ClipboardCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -560,6 +562,27 @@ function InterviewBadge({ applicationId, interviews }: { applicationId: number; 
   );
 }
 
+function StarRating({ value, onChange, readonly = false }: { value: number; onChange?: (v: number) => void; readonly?: boolean }) {
+  return (
+    <div className="flex items-center gap-0.5" data-testid="star-rating">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button
+          key={s}
+          type="button"
+          disabled={readonly}
+          className={`${readonly ? "cursor-default" : "cursor-pointer hover:scale-110"} transition-transform`}
+          onClick={() => onChange?.(s)}
+          data-testid={`star-${s}`}
+        >
+          <Star
+            className={`w-4 h-4 ${s <= value ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ApplicantCard({ 
   application, 
   onUpdateStatus,
@@ -568,6 +591,15 @@ function ApplicantCard({
   onScheduleInterview,
   onCancelInterview,
   interviews,
+  isAdmin,
+  reviewAppId,
+  reviewRating,
+  reviewNote,
+  onOpenReview,
+  onSetRating,
+  onSetNote,
+  onSubmitReview,
+  isSubmittingReview,
 }: { 
   application: EnrichedApplication;
   onUpdateStatus: (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => void;
@@ -576,11 +608,22 @@ function ApplicantCard({
   onScheduleInterview: (application: EnrichedApplication) => void;
   onCancelInterview: (interviewId: number) => void;
   interviews: any[];
+  isAdmin?: boolean;
+  reviewAppId?: number | null;
+  reviewRating?: number;
+  reviewNote?: string;
+  onOpenReview?: (appId: number) => void;
+  onSetRating?: (r: number) => void;
+  onSetNote?: (n: string) => void;
+  onSubmitReview?: () => void;
+  isSubmittingReview?: boolean;
 }) {
   const status = application.status || 'pending';
   const StatusIcon = statusConfig[status]?.icon || Clock;
   const name = application.applicantName || `Applicant #${application.id}`;
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  const hasAdminReview = !!(application as any).adminRating;
+  const isReviewOpen = reviewAppId === application.id;
 
   return (
     <motion.div
@@ -619,6 +662,12 @@ function ApplicantCard({
                     <Badge variant="outline" className="text-xs">
                       <FileText className="w-3 h-3 mr-1" />
                       CV
+                    </Badge>
+                  )}
+                  {hasAdminReview && (
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-400 bg-amber-50 dark:bg-amber-950/30">
+                      <ClipboardCheck className="w-3 h-3 mr-1" />
+                      Admin Reviewed
                     </Badge>
                   )}
                 </div>
@@ -780,6 +829,87 @@ function ApplicantCard({
               </DropdownMenu>
             </div>
           </div>
+
+          {hasAdminReview && (
+            <div className="mt-4 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800" data-testid={`admin-review-display-${application.id}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <ClipboardCheck className="w-4 h-4 text-amber-600" />
+                <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">Iṣéyá Admin Assessment</span>
+                <StarRating value={(application as any).adminRating} readonly />
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {(application as any).adminReviewedAt ? format(new Date((application as any).adminReviewedAt), 'MMM d, yyyy') : ''}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground" data-testid={`text-admin-note-${application.id}`}>
+                <MessageCircle className="w-3 h-3 inline mr-1" />
+                {(application as any).adminNote}
+              </p>
+            </div>
+          )}
+
+          {isAdmin && !isReviewOpen && (
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950/30"
+                onClick={() => onOpenReview?.(application.id)}
+                data-testid={`button-admin-review-${application.id}`}
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                {hasAdminReview ? "Update Assessment" : "Add Assessment"}
+              </Button>
+            </div>
+          )}
+
+          {isAdmin && isReviewOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mt-4 p-4 rounded-lg border border-primary/20 bg-muted/30 space-y-3"
+              data-testid={`admin-review-form-${application.id}`}
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <ClipboardCheck className="w-4 h-4 text-primary" />
+                  Admin Assessment — Interview & Background Check
+                </h4>
+                <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => onOpenReview?.(0)}>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Rating (1-5 stars)</Label>
+                <StarRating value={reviewRating || 0} onChange={(v) => onSetRating?.(v)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">Assessment Note</Label>
+                <Textarea
+                  placeholder="Enter your assessment after interview and background check..."
+                  value={reviewNote || ""}
+                  onChange={(e) => onSetNote?.(e.target.value)}
+                  rows={3}
+                  className="text-sm"
+                  data-testid={`input-admin-note-${application.id}`}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="gap-1"
+                  disabled={!reviewRating || !(reviewNote || "").trim() || isSubmittingReview}
+                  onClick={onSubmitReview}
+                  data-testid={`button-submit-review-${application.id}`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {isSubmittingReview ? "Submitting..." : "Submit Assessment"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => onOpenReview?.(0)}>
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
@@ -797,6 +927,7 @@ export default function ManageApplicants() {
   const { data: interviewsData } = useJobInterviews(jobId);
   const updateStatus = useUpdateApplicationStatus();
   const updateInterview = useUpdateInterview();
+  const submitAdminReview = useSubmitAdminReview();
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [profileApplicantId, setProfileApplicantId] = useState<string | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -804,6 +935,9 @@ export default function ManageApplicants() {
   const [offerOpen, setOfferOpen] = useState(false);
   const [interviewApp, setInterviewApp] = useState<EnrichedApplication | null>(null);
   const [interviewOpen, setInterviewOpen] = useState(false);
+  const [reviewAppId, setReviewAppId] = useState<number | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewNote, setReviewNote] = useState("");
 
   const interviews = interviewsData || [];
   const [showRecommendations, setShowRecommendations] = useState(false);
@@ -824,6 +958,33 @@ export default function ManageApplicants() {
 
   const handleUpdateStatus = (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => {
     updateStatus.mutate({ id, status });
+  };
+
+  const handleOpenReview = (appId: number) => {
+    if (appId === 0) {
+      setReviewAppId(null);
+      setReviewRating(0);
+      setReviewNote("");
+      return;
+    }
+    const app = (applications as any[])?.find(a => a.id === appId);
+    setReviewAppId(appId);
+    setReviewRating(app?.adminRating || 0);
+    setReviewNote(app?.adminNote || "");
+  };
+
+  const handleSubmitReview = () => {
+    if (!reviewAppId || !reviewRating || !reviewNote.trim()) return;
+    submitAdminReview.mutate(
+      { applicationId: reviewAppId, rating: reviewRating, note: reviewNote },
+      {
+        onSuccess: () => {
+          setReviewAppId(null);
+          setReviewRating(0);
+          setReviewNote("");
+        },
+      }
+    );
   };
 
   const handleViewProfile = (applicantId: string) => {
@@ -1044,10 +1205,16 @@ export default function ManageApplicants() {
                               )}
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                              {rec.reasons.slice(0, 3).map((reason: string, i: number) => (
+                              {rec.reasons.slice(0, 4).map((reason: string, i: number) => (
                                 <span key={i} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{reason}</span>
                               ))}
                             </div>
+                            {rec.adminNote && (
+                              <div className="mt-1.5 flex items-start gap-1">
+                                <MessageCircle className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                                <span className="text-[11px] text-muted-foreground line-clamp-1 italic">{rec.adminNote}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-col items-end gap-1 flex-shrink-0">
                             <Badge
@@ -1060,6 +1227,13 @@ export default function ManageApplicants() {
                               {rec.matchLevel}
                             </Badge>
                             <span className="text-[10px] text-muted-foreground">Score: {rec.score}</span>
+                            {rec.adminRating && (
+                              <div className="flex items-center gap-0.5">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star key={s} className={`w-2.5 h-2.5 ${s <= rec.adminRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"}`} />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))
@@ -1117,6 +1291,15 @@ export default function ManageApplicants() {
                 onScheduleInterview={handleScheduleInterview}
                 onCancelInterview={handleCancelInterview}
                 interviews={interviews}
+                isAdmin={isAdmin}
+                reviewAppId={reviewAppId}
+                reviewRating={reviewRating}
+                reviewNote={reviewNote}
+                onOpenReview={handleOpenReview}
+                onSetRating={setReviewRating}
+                onSetNote={setReviewNote}
+                onSubmitReview={handleSubmitReview}
+                isSubmittingReview={submitAdminReview.isPending}
               />
             ))
           )}

@@ -473,6 +473,35 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/applications/:id/admin-review", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const currentUser = await storage.getUser(userId);
+    if (!currentUser || currentUser.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can submit reviews" });
+    }
+
+    const appId = Number(req.params.id);
+    if (isNaN(appId)) return res.status(400).json({ message: "Invalid application ID" });
+
+    const application = await storage.getApplication(appId);
+    if (!application) return res.status(404).json({ message: "Application not found" });
+
+    const { rating, note } = req.body;
+    if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    }
+    if (!note || typeof note !== "string" || note.trim().length === 0) {
+      return res.status(400).json({ message: "Review note is required" });
+    }
+
+    try {
+      const updated = await storage.updateApplicationAdminReview(appId, rating, note.trim(), userId);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save admin review" });
+    }
+  });
+
   // Cancel/withdraw application (applicant - requires verification)
   app.delete("/api/applications/:id", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
@@ -1476,6 +1505,11 @@ export async function registerRoutes(
         }
       }
 
+      if (app.adminRating) {
+        score += app.adminRating * 4;
+        reasons.push(`Admin rated ${app.adminRating}/5`);
+      }
+
       const isApplicantVerified = applicant.isVerified || false;
 
       return {
@@ -1495,6 +1529,9 @@ export async function registerRoutes(
         score,
         reasons,
         matchLevel: score >= 60 ? "Excellent" : score >= 40 ? "Good" : score >= 20 ? "Fair" : "Basic",
+        adminRating: app.adminRating || null,
+        adminNote: app.adminNote || null,
+        adminReviewedAt: app.adminReviewedAt || null,
       };
     }));
 
