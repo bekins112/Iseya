@@ -73,8 +73,6 @@ const profileSchema = insertUserSchema.pick({
   role: true,
   location: true,
   bio: true,
-  profileImageUrl: true,
-  cvUrl: true,
   email: true,
   phone: true,
 }).extend({
@@ -83,8 +81,6 @@ const profileSchema = insertUserSchema.pick({
   role: z.enum(["applicant", "employer"]),
   location: z.string().nullable().optional(),
   bio: z.string().optional(),
-  profileImageUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  cvUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   email: z.string().email("Must be a valid email").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   preferredJobTypes: z.array(z.string()).optional(),
@@ -121,8 +117,6 @@ export default function Profile() {
       role: user?.role as "applicant" | "employer" || "applicant",
       email: user?.email || "",
       phone: user?.phone || "",
-      profileImageUrl: user?.profileImageUrl || "",
-      cvUrl: user?.cvUrl || "",
       preferredJobTypes: (user as any)?.preferredJobTypes || [],
       preferredCategories: (user as any)?.preferredCategories || [],
     }
@@ -329,36 +323,6 @@ export default function Profile() {
                         )}
                       />
                     </div>
-                  )}
-
-                  <FormField
-                    control={form.control}
-                    name="profileImageUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Profile Picture URL</FormLabel>
-                        <FormControl>
-                          <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="https://example.com/photo.jpg" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {user?.role === 'applicant' && (
-                    <FormField
-                      control={form.control}
-                      name="cvUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">CV / Resume URL (PDF)</FormLabel>
-                          <FormControl>
-                            <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="https://example.com/my-cv.pdf" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   )}
 
                   {user?.role === 'applicant' && (
