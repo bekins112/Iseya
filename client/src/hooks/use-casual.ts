@@ -581,6 +581,7 @@ export function useUpdateInterview() {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-interviews"] });
       queryClient.invalidateQueries({ queryKey: ["/api/interviews/application"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/interview-credits"] });
       queryClient.invalidateQueries({ predicate: (query) => {
         const key = query.queryKey;
         return Array.isArray(key) && key[0] === "/api/jobs" && key[2] === "interviews";
