@@ -207,14 +207,13 @@ export async function registerRoutes(
     }
 
     try {
-      const input = api.jobs.create.input.parse({
+      const bodyWithDate = {
         ...req.body,
-        employerId: user.id
-      });
+        employerId: user.id,
+        deadline: req.body.deadline ? new Date(req.body.deadline) : undefined,
+      };
+      const input = api.jobs.create.input.parse(bodyWithDate);
       const jobData: any = { ...input, status: "active" };
-      if (req.body.deadline) {
-        jobData.deadline = new Date(req.body.deadline);
-      }
       const job = await storage.createJob(jobData);
       res.status(201).json(job);
     } catch (err) {
@@ -268,11 +267,12 @@ export async function registerRoutes(
     }
 
     try {
-      const input = api.jobs.update.input.parse(req.body);
-      const updateData: any = { ...input };
-      if (req.body.deadline) {
-        updateData.deadline = new Date(req.body.deadline);
+      const bodyForParse = { ...req.body };
+      if (bodyForParse.deadline && typeof bodyForParse.deadline === "string") {
+        bodyForParse.deadline = new Date(bodyForParse.deadline);
       }
+      const input = api.jobs.update.input.parse(bodyForParse);
+      const updateData: any = { ...input };
       if (req.body.deadline === null) {
         updateData.deadline = null;
       }
