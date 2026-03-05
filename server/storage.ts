@@ -657,9 +657,11 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(interviews)
+      .innerJoin(applications, eq(interviews.applicationId, applications.id))
       .where(and(
         eq(interviews.employerId, employerId),
         eq(interviews.status, "completed"),
+        sql`${applications.admin_rating} IS NOT NULL`,
         sql`${interviews.createdAt} >= ${since}`
       ));
     return result[0]?.count || 0;

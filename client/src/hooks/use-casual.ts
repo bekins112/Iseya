@@ -631,6 +631,11 @@ export function useSubmitAdminReview() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/interview-credits"] });
+      queryClient.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && key[0] === "/api/jobs" && (key[2] === "recommended-applicants" || key[2] === "interviews");
+      }});
       toast({ title: "Review Submitted", description: "Your assessment has been saved and will appear in recommendations." });
     },
     onError: (error) => {
