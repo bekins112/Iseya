@@ -660,6 +660,8 @@ function ApplicantCard({
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const hasAdminReview = !!(application as any).adminRating;
   const isReviewOpen = reviewAppId === application.id;
+  const interviewForApp = interviews?.find((i: any) => i.applicationId === application.id);
+  const isInterviewCompleted = interviewForApp?.status === "completed";
 
   return (
     <motion.div
@@ -866,7 +868,7 @@ function ApplicantCard({
             </div>
           </div>
 
-          {hasAdminReview && (
+          {hasAdminReview && isInterviewCompleted && (
             <div className="mt-4 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800" data-testid={`admin-review-display-${application.id}`}>
               <div className="flex items-center gap-2 mb-1">
                 <ClipboardCheck className="w-4 h-4 text-amber-600" />
@@ -883,7 +885,7 @@ function ApplicantCard({
             </div>
           )}
 
-          {isAdmin && !isReviewOpen && (
+          {isAdmin && isInterviewCompleted && !isReviewOpen && (
             <div className="mt-3">
               <Button
                 variant="outline"
@@ -898,7 +900,7 @@ function ApplicantCard({
             </div>
           )}
 
-          {isAdmin && isReviewOpen && (
+          {isAdmin && isInterviewCompleted && isReviewOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -1260,7 +1262,7 @@ export default function ManageApplicants() {
                                 ) : null}
                               </div>
                             )}
-                            {(rec.adminRating || rec.adminNote) && (
+                            {(rec.adminRating || rec.adminNote) && rec.interviewStatus === "completed" && (
                               <div className="mt-1.5 p-2 rounded bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
                                 <div className="flex items-center gap-1.5 mb-0.5">
                                   <ClipboardCheck className="w-3 h-3 text-amber-600 flex-shrink-0" />

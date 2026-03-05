@@ -486,6 +486,11 @@ export async function registerRoutes(
     const application = await storage.getApplication(appId);
     if (!application) return res.status(404).json({ message: "Application not found" });
 
+    const interview = await storage.getInterviewByApplication(appId);
+    if (!interview || interview.status !== "completed") {
+      return res.status(400).json({ message: "Interview must be completed before submitting an assessment" });
+    }
+
     const { rating, note } = req.body;
     if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
       return res.status(400).json({ message: "Rating must be between 1 and 5" });
@@ -496,6 +501,21 @@ export async function registerRoutes(
 
     try {
       const updated = await storage.updateApplicationAdminReview(appId, rating, note.trim(), userId);
+
+      const job = await storage.getJob(application.jobId);
+      const applicant = await storage.getUser(application.applicantId);
+      const applicantName = `${applicant?.firstName || ""} ${applicant?.lastName || ""}`.trim() || "Applicant";
+      if (job) {
+        storage.createNotification({
+          title: "Iṣéyá Assessment Ready",
+          message: `The Iṣéyá team has completed their assessment of ${applicantName} for your job "${job.title}". Check the recommendations for details.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: job.employerId,
+          createdBy: userId,
+        }).catch(() => {});
+      }
+
       res.json(updated);
     } catch (error) {
       res.status(500).json({ message: "Failed to save admin review" });
@@ -1505,17 +1525,17 @@ export async function registerRoutes(
         }
       }
 
-      if (app.adminRating) {
-        score += app.adminRating * 4;
-        reasons.push(`Admin rated ${app.adminRating}/5`);
-      }
-
       const isApplicantVerified = applicant.isVerified || false;
 
       const interviewRecord = await storage.getInterviewByApplication(app.id);
       const interviewStatus = interviewRecord ? interviewRecord.status : null;
       const interviewDate = interviewRecord ? interviewRecord.interviewDate : null;
       const interviewType = interviewRecord ? interviewRecord.interviewType : null;
+
+      if (app.adminRating && interviewStatus === "completed") {
+        score += app.adminRating * 4;
+        reasons.push(`Admin rated ${app.adminRating}/5`);
+      }
 
       return {
         applicationId: app.id,
