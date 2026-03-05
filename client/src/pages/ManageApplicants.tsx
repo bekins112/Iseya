@@ -929,10 +929,10 @@ export default function ManageApplicants() {
               </div>
               <div>
                 <p className="text-sm font-semibold" data-testid="text-interview-credits">
-                  Interview Credits: {interviewCredits.remaining} of {interviewCredits.total} remaining
+                  Iṣéyá Team Interview Credits: {interviewCredits.remaining} of {interviewCredits.total} remaining
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {interviewCredits.plan === "premium" ? "Premium" : "Enterprise"} plan — {interviewCredits.used} used this billing period
+                  {interviewCredits.plan === "premium" ? "Premium" : "Enterprise"} plan — {interviewCredits.used} Iṣéyá team interviews used this period
                 </p>
               </div>
             </div>

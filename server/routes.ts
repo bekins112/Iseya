@@ -1492,22 +1492,6 @@ export async function registerRoutes(
     const employer = await storage.getUser(employerId);
     if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can schedule interviews" });
 
-    const plan = employer.subscriptionStatus || "free";
-    const totalCredits = INTERVIEW_CREDITS[plan] || 0;
-
-    if (totalCredits === 0) {
-      return res.status(403).json({ message: "Upgrade to Premium or Enterprise to schedule interviews.", code: "SUBSCRIPTION_REQUIRED" });
-    }
-
-    const billingStart = getBillingPeriodStart(employer);
-    const used = await storage.getInterviewCountForEmployer(employerId, billingStart);
-    if (used >= totalCredits) {
-      return res.status(403).json({
-        message: `You've used all ${totalCredits} interview credits for this billing period. Upgrade your plan for more.`,
-        code: "INTERVIEW_LIMIT_REACHED",
-      });
-    }
-
     try {
       const interviewSchema = z.object({
         applicationId: z.number(),
