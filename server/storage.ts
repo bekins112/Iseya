@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -116,6 +116,9 @@ export interface IStorage {
   getSetting(key: string): Promise<string | null>;
   getAllSettings(): Promise<PlatformSetting[]>;
   upsertSetting(key: string, value: string, updatedBy: string): Promise<PlatformSetting>;
+
+  // Newsletter
+  addNewsletterSubscriber(email: string): Promise<void>;
 
   // Transaction methods
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
@@ -919,6 +922,10 @@ export class DatabaseStorage implements IStorage {
       failedTransactions: allTxns.filter(t => t.status === "failed").length,
       monthlyRevenue,
     };
+  }
+
+  async addNewsletterSubscriber(email: string): Promise<void> {
+    await db.insert(newsletterSubscribers).values({ email }).onConflictDoNothing();
   }
 }
 

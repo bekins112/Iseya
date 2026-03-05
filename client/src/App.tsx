@@ -44,8 +44,11 @@ import BrowseJobs from "@/pages/BrowseJobs";
 import Disclaimer from "@/pages/Disclaimer";
 import TermsOfUse from "@/pages/TermsOfUse";
 import CopyrightPage from "@/pages/Copyright";
+import CookiePolicy from "@/pages/CookiePolicy";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import VerifyEmail from "@/pages/VerifyEmail";
 import Support from "@/pages/Support";
+import CookieConsent from "@/components/CookieConsent";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -88,6 +91,8 @@ function Router() {
       <Route path="/disclaimer" component={Disclaimer} />
       <Route path="/terms" component={TermsOfUse} />
       <Route path="/copyright" component={CopyrightPage} />
+      <Route path="/cookies" component={CookiePolicy} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/browse-jobs" component={BrowseJobs} />
       
       <Route path="/verify-email" component={VerifyEmail} />
@@ -265,6 +270,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <CookieConsent />
       </TooltipProvider>
     </QueryClientProvider>
   );

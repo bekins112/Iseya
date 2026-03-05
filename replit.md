@@ -1,11 +1,9 @@
 # Iṣéyá - Job Marketplace Platform
 
 ## Overview
-
-Iṣéyá is a job marketplace platform connecting casual workers (applicants) with employers for short-term or part-time job opportunities. It features role-based access, allowing applicants to browse and apply for jobs, and employers to post and manage listings. The platform aims to streamline the process of finding and offering casual work, fostering a dynamic marketplace.
+Iṣéyá is a job marketplace platform designed to connect casual workers with employers for short-term or part-time job opportunities. The platform aims to streamline the process of finding and offering casual work, fostering a dynamic marketplace with features like role-based access, job browsing and application for workers, and job posting and management for employers.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
@@ -17,108 +15,65 @@ Preferred communication style: Simple, everyday language.
 - **Styling**: Tailwind CSS with shadcn/ui (New York variant)
 - **Animations**: Framer Motion
 - **Build Tool**: Vite
-- **Architecture**: Page-based with shared components, custom hooks for API abstraction, and role-based UI rendering. Includes an onboarding flow for new users.
-- **Landing Page**: Features banner carousel, job search/filter bar (search, category, location, job type), recently posted jobs grid (up to 6 cards fetched from API), stats, "How It Works" tabs, testimonials, and footer.
+- **Architecture**: Page-based with shared components, custom hooks for API abstraction, and role-based UI rendering, including an onboarding flow.
+- **Landing Page**: Features a banner carousel, job search/filter bar, recently posted jobs grid, "How It Works" section, testimonials, and footer.
+- **UI/UX**: Consistent styling across legal pages, cookie consent banner with framer-motion animations, newsletter subscription bar.
 
 ### Backend
 - **Framework**: Express.js with TypeScript
 - **Database ORM**: Drizzle ORM with PostgreSQL
 - **Session Management**: express-session with connect-pg-simple
 - **Authentication**: Replit Auth (OpenID Connect) via Passport.js
-- **API**: Routes defined in `server/routes.ts` with shared contracts in `shared/routes.ts` using Zod for validation. Storage layer (`server/storage.ts`) abstracts database operations.
+- **API**: Routes defined in `server/routes.ts` with shared contracts in `shared/routes.ts` using Zod for validation. Database operations are abstracted by a storage layer (`server/storage.ts`).
 
 ### Data Storage
 - **Database**: PostgreSQL
-- **Key Tables**: `users` (profiles, roles, subscription), `jobs` (listings), `applications`, `sessions`, `notifications`, `notification_reads`, `platform_settings`, `verification_requests`.
+- **Key Tables**: `users`, `jobs`, `applications`, `sessions`, `notifications`, `notification_reads`, `platform_settings`, `verification_requests`, `tickets`, `ticket_messages`.
 
 ### Authentication & Access Control
-- Replit Auth for OAuth/OpenID Connect. Sessions stored in PostgreSQL.
-- New users are directed to onboarding.
-- **Applicant Gating**: Non-verified applicants can apply but cannot cancel/withdraw applications or respond to offers. Contact info and CVs are masked from employers for unverified applicants.
-- **Employer Gating**: Free-tier employers have job posting limits (1 job) and cannot manage jobs, view applicant lists, update application status, or send offers.
-- **Admin Dashboard**: Role-based access with configurable permissions (`canViewStats`, `canManageUsers`, `canManageJobs`, `canManageApplications`, `canManageAdmins`, `canManageSubscriptions`, `canManageTransactions`, `canManageTickets`, `canManageReports`, `canManageVerifications`, `canManageNotifications`, `canManageSettings`).
-- **Admin Application Management**: Admin can manage applications for any job — view applicants, update status, schedule interviews, send offers, and access Iṣéyá Recommendations. AdminJobs page has "Applicants" button linking to `/jobs/:id/applications`. All backend routes (applications, interviews, offers, recommendations) allow admin bypass of ownership checks.
+- Replit Auth for OAuth/OpenID Connect. Sessions are PostgreSQL-stored.
+- New users complete an onboarding process.
+- **Gating**: Non-verified applicants have restricted application management and masked contact info. Free-tier employers have job posting limits and restricted job/applicant management.
+- **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, and settings. Admin can bypass ownership checks for application management.
 
 ### Subscription System
-- Tracks `subscriptionStatus` (`free`, `standard`, `premium`, `enterprise`).
-- Employer subscription plans determine job posting limits and access to features.
-- Prices are dynamic, configurable by admin, with per-tier discounts.
-- Supports Paystack and Flutterwave for payments.
-- **Transaction History**: Employers see subscription transaction history on Dashboard; Applicants see verification transaction history on the Verification page (`/verification`). API: `GET /api/my-transactions` returns user's transactions. Amount stored in kobo, displayed as Naira (÷100). Dashboard always shows transaction section for employers (with empty state when no transactions).
-- **Failed Transaction Recording**: When payment gateway reports failure during verification, a failed transaction record is created for all 4 payment flows (Paystack/Flutterwave × subscription/verification). Failed/pending transactions appear in user's dashboard history and admin's transaction management page.
-- **Admin Transaction Resolution**: Admin can resolve failed/pending transactions via `PATCH /api/admin/transactions/:id/resolve`. This marks the transaction as successful AND applies benefits (activates subscription plan or moves verification to "under review"). User receives notification. Admin Transactions page shows "Resolve" button on failed/pending rows with confirmation dialog showing transaction details and what actions will be taken.
-- **Interview Credits**: Premium employers get 3 interview credits per billing period, Enterprise gets 5. Standard/Free get 0. Credits are tracked via `interviewCreditsUsed` field and counted from interviews created since billing period start. Admin-scheduled interviews store the actual employer's ID and count against the employer's credits.
-- **Admin-Scheduled Interviews**: When admin schedules an interview, the applicant receives a notification/email from "Iṣéyá Team", and the job employer is also notified that an interview was scheduled on their behalf.
-- **Interview Confirmation**: After the interview date has passed, employers, admins, or applicants can confirm the interview as "completed" via `PATCH /api/interviews/:id` with `{status: "completed"}`. Applicants can ONLY set status to completed (no other fields). Server validates the date has passed (admin exempt). Notifications sent to relevant parties on completion. Completed interviews show green styling; recommendation cards display "Interviewed" badge for completed interviews and interview date badge for scheduled ones.
-- **Applicant Recommendations**: Premium/Enterprise employers see "Iṣéyá Recommendations" on ManageApplicants page. Applicants are scored (0-100+) based on: verification status (30pts), CV upload (15pts), bio (10pts), relevant experience (10pts), location match (10pts), profile photo (5pts), phone (5pts), location (5pts), gender match (5pts), age range match (5pts), job history (5pts each, max 15pts), admin rating (rating×4 pts). Match levels: Excellent (60+), Good (40+), Fair (20+), Basic.
-- **Admin Assessment**: Admins can rate applicants (1-5 stars) and leave notes after interviews/background checks via `PATCH /api/applications/:id/admin-review`. Admin assessments are displayed on applicant cards and in recommendation cards with star rating and comment. Fields: `adminRating`, `adminNote`, `adminReviewedBy`, `adminReviewedAt` on applications table.
-- API: `GET /api/interview-credits` returns credits info, `GET /api/jobs/:jobId/recommended-applicants` returns scored applicants.
+- Supports `free`, `standard`, `premium`, `enterprise` tiers with varying job posting limits and feature access.
+- Dynamic, admin-configurable pricing with per-tier discounts.
+- Payment gateways: Paystack and Flutterwave.
+- **Transaction History**: Users can view their transaction history. Failed/pending transactions are recorded and can be resolved by admins.
+- **Interview Credits**: Premium/Enterprise employers receive interview credits, tracked against billing periods. Admin-scheduled interviews count against employer credits.
+- **Applicant Recommendations**: Premium/Enterprise employers receive "Iṣéyá Recommendations" based on applicant scoring (verification, CV, bio, experience, location, profile photo, phone, age, gender, job history, admin rating). Scores categorize applicants into "Excellent", "Good", "Fair", "Basic" match levels.
+- **Admin Assessment**: Admins can rate applicants (1-5 stars) and add notes post-interview/background check, displayed on applicant and recommendation cards.
 
 ### Email System
 - Uses Mailjet for transactional emails (e.g., welcome, application notifications, subscription updates).
 - All emails use branded HTML templates.
-- Email verification is currently disabled but infrastructure remains.
 
-### Profile Page (`/profile`)
-- Central location for ALL user profile management (both applicants and employers).
-- **All users**: First name, last name, role, location, bio, profile photo upload.
-- **Applicants**: Gender, age, phone, email, expected salary range (min/max), preferred job types, preferred job categories, CV/resume upload, job history (add/edit/delete entries).
-- **Employers**: Company name, business category, company email, company phone, company address, city, state (Nigerian states), CAC registration.
-- Dashboard no longer contains profile editing — the "Complete your profile" prompt links to `/profile` for both roles.
-
-### Preferred Job Types (Applicant Profile)
-- Applicants can select multiple preferred job types (Full-time, Part-time, Contract) from their profile page.
-- Stored as `preferredJobTypes` text array column on the `users` table.
-- Multi-select dropdown with checkboxes in the Profile page, shown only for applicants.
-- Intended for future job alert mailing when matching jobs are posted.
-
-### Preferred Job Categories (Applicant Profile)
-- Applicants can select multiple preferred job categories from their profile page.
-- Stored as `preferredCategories` text array column on the `users` table.
-- Multi-select dropdown with checkboxes and scrollable list (40 categories matching job posting categories).
-- Shows up to 3 badges in the trigger button with "+N more" for additional selections.
-- Intended for future job alert mailing when matching jobs are posted.
+### Profile Management
+- Centralized `/profile` page for all user profile management.
+- **All users**: First name, last name, role, location, bio, profile photo.
+- **Applicants**: Gender, age, phone, email, expected salary range, preferred job types/categories, CV upload, job history.
+- **Employers**: Company name, business category, company email, company phone, company address, CAC registration.
+- Applicants can select multiple preferred job types and categories, stored as text array columns, for future job alerts.
 
 ### Applicant Verification System
-- Applicants can submit government-issued ID and pay a fee for verification.
-- Verification is valid for 30 days and provides benefits like a verified badge, priority in application listings, and background checks.
-- Admin reviews and approves/rejects verification requests.
+- Applicants can submit government ID and pay a fee for verification, valid for 30 days. Provides a verified badge, priority, and background checks.
+- Admin reviews and approves/rejects requests.
 
 ### Notification System
-- Admin can send notifications to all users, specific roles (applicant/employer), or individual users.
-- Users see a notification bell in the sidebar header with unread count badge.
-- Click bell opens dropdown with recent notifications, mark as read, mark all read.
-- Admin has dedicated "Notifications" management page at `/admin/notifications` with form to create and list to manage.
-- **Automatic job workflow notifications**:
-  - Applicant applies → employer gets "New Application Received" notification.
-  - Employer updates application status (shortlisted/rejected/accepted) → applicant gets "Application [Status]" notification.
-  - Applicant withdraws application → employer gets "Application Withdrawn" notification.
-  - Employer sends offer → applicant gets "You Received a Job Offer!" notification with salary.
-  - Applicant accepts/declines offer → employer gets "Offer Accepted/Declined" notification.
-  - Employer schedules interview → applicant gets "Interview Scheduled" notification with details.
-- Tables: `notifications` (id, title, message, type, targetRole, targetUserId, createdBy, createdAt) and `notification_reads` (id, notificationId, userId, readAt).
-- Components: `NotificationBell` (client/src/components/NotificationBell.tsx), `AdminNotifications` (client/src/pages/AdminNotifications.tsx).
-- API routes: GET/POST `/api/notifications`, GET `/api/notifications/unread-count`, POST `/api/notifications/:id/read`, POST `/api/notifications/read-all`, GET/POST/DELETE `/api/admin/notifications`.
+- Admin can send notifications to all users, specific roles, or individuals.
+- Users receive in-app notifications with unread counts and management options (mark as read, mark all read).
+- **Automated Workflow Notifications**: System sends notifications for application status changes, offers, interview scheduling, and support ticket updates.
 
 ### Support Ticket System
-- Applicants and employers can submit support tickets from their dashboard via `/support` page.
-- Users can track ticket status (open, in progress, resolved, closed) and view admin responses.
-- **Conversation thread**: Both users and admin can exchange messages in a chat-like interface within each ticket.
-- **New message indicators**: Unread reply counts shown on ticket list items (pulsing badge) with ring highlight. Fetched via `/api/tickets/unread-counts`.
-- **Notifications**: In-app notifications sent when tickets are created, updated, or replied to.
-- Ticket creation sends email confirmation to the user and notification email to the primary admin.
-- Admin manages all tickets from `/admin/tickets` with status/priority editing and reply capability.
-- Tables: `tickets`, `ticket_messages` (conversation thread with sender role tracking and read status).
-- Email templates: `sendTicketCreatedEmail` (user confirmation), `sendTicketAdminNotifyEmail` (admin alert).
-- Components: `Support` (client/src/pages/Support.tsx), `AdminTickets` (client/src/pages/AdminTickets.tsx).
-- API routes: POST `/api/tickets`, GET `/api/tickets/my`, GET `/api/tickets/unread-counts`, GET/POST `/api/tickets/:id/messages`, GET/PATCH `/api/admin/tickets`, GET `/api/admin/tickets/:id`.
+- Users can submit and track support tickets via a `/support` page.
+- Features a conversation thread for user-admin communication.
+- New message indicators and in-app notifications for ticket updates.
+- Admin manages tickets from `/admin/tickets`, including status/priority editing and replying.
 
-### Terms of Use & Newsletter
-- Terms of Use page at `/terms` with comprehensive legal sections.
-- Registration form includes mandatory "agree to Terms of Use" checkbox (blocks submit if unchecked).
-- Optional newsletter subscription checkbox on registration.
-- `subscribedToNewsletter` field in users table tracks opt-in.
-- EmployerSignup page links to Terms of Use and Disclaimer.
+### Legal & Policy Pages
+- Comprehensive legal pages: `/terms` (Terms of Use), `/cookies` (Cookie Policy), `/privacy` (Privacy Policy - NDPR compliant), `/disclaimer`, `/copyright`.
+- Registration requires agreement to Terms of Use. Optional newsletter subscription.
 
 ### Login Security
 - Implements image-based CAPTCHA on the login form for bot protection.
@@ -133,7 +88,7 @@ Preferred communication style: Simple, everyday language.
 - **Replit Auth**: OpenID Connect provider.
 
 ### UI Component Libraries
-- **shadcn/ui**: Accessible components based on Radix UI.
+- **shadcn/ui**: Accessible components.
 - **Radix UI**: Headless UI primitives.
 - **Lucide React**: Icon library.
 

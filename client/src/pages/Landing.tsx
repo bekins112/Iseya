@@ -16,6 +16,7 @@ import workersImage from "@assets/file_0000000006b4722f93fd48732a248e00_17701258
 import bannerImg1 from "@assets/file_00000000290071f4a0ad1bcee632895e_(1)_1770976988086.png";
 import bannerImg2 from "@assets/file_00000000290071f4a0ad1bcee632895e_1770976988300.png";
 import bannerImg3 from "@assets/file_00000000290071f4a0ad1bcee632895e_(2)_1770976988376.png";
+import NewsletterBar from "@/components/NewsletterBar";
 
 const bannerSlides = [
   {
@@ -1115,10 +1116,14 @@ export default function Landing() {
               <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
               <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Disclaimer</Link>
               <Link href="/copyright" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Copyright</Link>
+              <Link href="/cookies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookie Policy</Link>
+              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
             </div>
           </div>
         </div>
       </footer>
+
+      <NewsletterBar />
     </div>
   );
 }

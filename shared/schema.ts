@@ -387,5 +387,15 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({ i
 export type Transaction = typeof transactions.$inferSelect;
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  email: varchar("email").notNull().unique(),
+  subscribedAt: timestamp("subscribed_at").defaultNow(),
+});
+
+export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSubscribers).omit({ id: true, subscribedAt: true });
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;
+
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;

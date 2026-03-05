@@ -2851,6 +2851,30 @@ export async function registerRoutes(
     return val ?? DEFAULT_SETTINGS[key] ?? "0";
   }
 
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const normalizedEmail = email.toLowerCase().trim();
+      if (!emailRegex.test(normalizedEmail)) {
+        return res.status(400).json({ message: "Please enter a valid email address" });
+      }
+      const [existingUser] = await db.select().from(users).where(eq(users.email, normalizedEmail));
+      if (existingUser) {
+        await storage.updateUser(existingUser.id, { subscribedToNewsletter: true });
+      } else {
+        await storage.addNewsletterSubscriber(normalizedEmail);
+      }
+      res.json({ message: "Successfully subscribed to newsletter!" });
+    } catch (error: any) {
+      console.error("Newsletter subscribe error:", error);
+      res.status(500).json({ message: "Failed to subscribe. Please try again." });
+    }
+  });
+
   app.get("/api/settings/public", async (_req, res) => {
     const keys = Object.keys(DEFAULT_SETTINGS);
     const result: Record<string, string> = {};
