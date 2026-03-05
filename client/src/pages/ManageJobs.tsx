@@ -1,12 +1,67 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useEmployerJobs, useUpdateJob, useDeleteJob, useJobApplications } from "@/hooks/use-casual";
 
-function formatDateDisplay(isoDate: string): string {
-  if (!isoDate) return "";
-  const d = new Date(isoDate + "T00:00:00");
-  if (isNaN(d.getTime())) return "";
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${String(d.getDate()).padStart(2, "0")}, ${months[d.getMonth()]}, ${d.getFullYear()}`;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function DateSelector({ value, onChange, minDate }: { value: string; onChange: (val: string) => void; minDate: Date }) {
+  const parsed = value ? new Date(value + "T00:00:00") : null;
+  const selDay = parsed && !isNaN(parsed.getTime()) ? String(parsed.getDate()) : "";
+  const selMonth = parsed && !isNaN(parsed.getTime()) ? String(parsed.getMonth()) : "";
+  const selYear = parsed && !isNaN(parsed.getTime()) ? String(parsed.getFullYear()) : "";
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
+
+  const buildDate = (day: string, month: string, year: string) => {
+    if (day && month !== "" && year) {
+      const d = new Date(Number(year), Number(month), Number(day));
+      if (!isNaN(d.getTime()) && d >= minDate) {
+        const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        onChange(iso);
+        return;
+      }
+    }
+    if (!day && !month && !year) onChange("");
+  };
+
+  const daysInMonth = selMonth !== "" && selYear 
+    ? new Date(Number(selYear), Number(selMonth) + 1, 0).getDate() 
+    : 31;
+
+  return (
+    <div className="flex gap-2">
+      <Select value={selDay} onValueChange={(d) => buildDate(d, selMonth, selYear)}>
+        <SelectTrigger className="w-[80px]">
+          <SelectValue placeholder="Day" />
+        </SelectTrigger>
+        <SelectContent>
+          {Array.from({ length: daysInMonth }, (_, i) => (
+            <SelectItem key={i + 1} value={String(i + 1)}>{String(i + 1).padStart(2, "0")}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={selMonth} onValueChange={(m) => buildDate(selDay, m, selYear)}>
+        <SelectTrigger className="w-[90px]">
+          <SelectValue placeholder="Month" />
+        </SelectTrigger>
+        <SelectContent>
+          {MONTHS.map((name, i) => (
+            <SelectItem key={i} value={String(i)}>{name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={selYear} onValueChange={(y) => buildDate(selDay, selMonth, y)}>
+        <SelectTrigger className="w-[90px]">
+          <SelectValue placeholder="Year" />
+        </SelectTrigger>
+        <SelectContent>
+          {years.map((y) => (
+            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 }
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
@@ -551,28 +606,11 @@ export default function ManageJobs() {
               </div>
               <div>
                 <Label className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" /> Deadline</Label>
-                <div className="relative">
-                  <Input
-                    readOnly
-                    value={editForm.deadline ? formatDateDisplay(editForm.deadline) : ""}
-                    placeholder="Select deadline date"
-                    className="cursor-pointer"
-                    onClick={() => {
-                      const el = document.getElementById("edit-deadline-picker") as HTMLInputElement;
-                      el?.showPicker?.();
-                    }}
-                    data-testid="input-edit-deadline"
-                  />
-                  <input
-                    id="edit-deadline-picker"
-                    type="date"
-                    min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                    value={editForm.deadline || ""}
-                    onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    tabIndex={-1}
-                  />
-                </div>
+                <DateSelector
+                  value={editForm.deadline}
+                  onChange={(val) => setEditForm({ ...editForm, deadline: val })}
+                  minDate={new Date(Date.now() + 86400000)}
+                />
               </div>
             </div>
             <div>
