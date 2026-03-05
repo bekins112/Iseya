@@ -1,13 +1,15 @@
 import { useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useUpdateUser, useUploadProfilePicture, useUploadCompanyLogo } from "@/hooks/use-casual";
+import { useUpdateUser, useUploadProfilePicture, useUploadCompanyLogo, useUploadCV, useJobHistory, useCreateJobHistory, useUpdateJobHistory, useDeleteJobHistory } from "@/hooks/use-casual";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -16,8 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion } from "framer-motion";
-import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase, Building2 } from "lucide-react";
+import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase, Building2, FileText, Upload, PlusCircle, Pencil, Trash2, Check, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 const businessCategories = [
   "Restaurant & Food Service",
@@ -118,6 +121,10 @@ const profileSchema = insertUserSchema.pick({
   companyState: z.string().optional().or(z.literal("")),
   isRegisteredCompany: z.boolean().optional(),
   companyRegNo: z.string().optional().or(z.literal("")),
+  gender: z.string().optional().or(z.literal("")),
+  age: z.coerce.number().min(16, "Must be at least 16").optional().or(z.literal("")),
+  expectedSalaryMin: z.coerce.number().optional().or(z.literal("")),
+  expectedSalaryMax: z.coerce.number().optional().or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -127,7 +134,62 @@ export default function Profile() {
   const updateUser = useUpdateUser();
   const uploadPicture = useUploadProfilePicture();
   const uploadLogo = useUploadCompanyLogo();
+  const uploadCV = useUploadCV();
+  const { data: jobHistoryData, isLoading: historyLoading } = useJobHistory();
+  const createHistory = useCreateJobHistory();
+  const updateHistory = useUpdateJobHistory();
+  const deleteHistory = useDeleteJobHistory();
   const pictureInputRef = useRef<HTMLInputElement>(null);
+  const cvInputRef = useRef<HTMLInputElement>(null);
+
+  const { toast } = useToast();
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to change password");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Password changed successfully" });
+      setShowChangePassword(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: Error) => {
+      toast({ title: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      toast({ title: "New passwords do not match", variant: "destructive" });
+      return;
+    }
+    changePasswordMutation.mutate({ currentPassword, newPassword });
+  };
+
+  const [showAddHistory, setShowAddHistory] = useState(false);
+  const [editingHistoryId, setEditingHistoryId] = useState<number | null>(null);
+  const [historyTitle, setHistoryTitle] = useState("");
+  const [historyCompany, setHistoryCompany] = useState("");
+  const [historyStartDate, setHistoryStartDate] = useState("");
+  const [historyEndDate, setHistoryEndDate] = useState("");
+  const [historyIsCurrent, setHistoryIsCurrent] = useState(false);
+  const [historyDescription, setHistoryDescription] = useState("");
 
   const handlePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,6 +199,50 @@ export default function Profile() {
       } else {
         uploadPicture.mutate(file);
       }
+    }
+  };
+
+  const handleCVUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) uploadCV.mutate(file);
+  };
+
+  const resetHistoryForm = () => {
+    setHistoryTitle("");
+    setHistoryCompany("");
+    setHistoryStartDate("");
+    setHistoryEndDate("");
+    setHistoryIsCurrent(false);
+    setHistoryDescription("");
+    setEditingHistoryId(null);
+    setShowAddHistory(false);
+  };
+
+  const startEditHistory = (entry: any) => {
+    setEditingHistoryId(entry.id);
+    setHistoryTitle(entry.jobTitle);
+    setHistoryCompany(entry.company);
+    setHistoryStartDate(entry.startDate || "");
+    setHistoryEndDate(entry.endDate || "");
+    setHistoryIsCurrent(entry.isCurrent || false);
+    setHistoryDescription(entry.description || "");
+    setShowAddHistory(false);
+  };
+
+  const handleSaveHistory = () => {
+    if (!historyTitle.trim() || !historyCompany.trim()) return;
+    const data = {
+      jobTitle: historyTitle.trim(),
+      company: historyCompany.trim(),
+      startDate: historyStartDate || undefined,
+      endDate: historyIsCurrent ? undefined : (historyEndDate || undefined),
+      isCurrent: historyIsCurrent,
+      description: historyDescription.trim() || undefined,
+    };
+    if (editingHistoryId) {
+      updateHistory.mutate({ id: editingHistoryId, ...data }, { onSuccess: resetHistoryForm });
+    } else {
+      createHistory.mutate(data, { onSuccess: resetHistoryForm });
     }
   };
 
@@ -159,6 +265,10 @@ export default function Profile() {
       companyState: (user as any)?.companyState || "",
       isRegisteredCompany: (user as any)?.isRegisteredCompany || false,
       companyRegNo: (user as any)?.companyRegNo || "",
+      gender: user?.gender || "",
+      age: user?.age || "",
+      expectedSalaryMin: user?.expectedSalaryMin || "",
+      expectedSalaryMax: user?.expectedSalaryMax || "",
     }
   });
 
@@ -333,6 +443,105 @@ export default function Profile() {
                       </FormItem>
                     )}
                   />
+
+                  {user?.role === 'applicant' && (
+                    <>
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="gender"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Gender</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl>
+                                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" data-testid="select-gender">
+                                    <SelectValue placeholder="Select gender" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="rounded-2xl">
+                                  <SelectItem value="Male">Male</SelectItem>
+                                  <SelectItem value="Female">Female</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="age"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Age</FormLabel>
+                              <FormControl>
+                                <Input type="number" min={16} className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 25" {...field} value={field.value || ""} data-testid="input-age" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number</FormLabel>
+                              <FormControl>
+                                <Input type="tel" className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 08012345678" {...field} value={field.value || ""} data-testid="input-phone" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email</FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. john@example.com" {...field} value={field.value || ""} data-testid="input-email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="expectedSalaryMin"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expected Salary Min (₦)</FormLabel>
+                              <FormControl>
+                                <Input type="number" className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 5000" {...field} value={field.value || ""} data-testid="input-salary-min" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="expectedSalaryMax"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expected Salary Max (₦)</FormLabel>
+                              <FormControl>
+                                <Input type="number" className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 50000" {...field} value={field.value || ""} data-testid="input-salary-max" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {user?.role === 'employer' && (
                     <>
@@ -696,6 +905,228 @@ export default function Profile() {
                   </div>
                 </form>
               </Form>
+            </CardContent>
+          </Card>
+
+          {user?.role === 'applicant' && (
+            <Card className="rounded-3xl border-border/40 shadow-xl shadow-black/5 overflow-hidden mt-10">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-4 bg-muted/30 border-b border-border/40">
+                <CardTitle className="text-lg font-display flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  CV / Resume
+                </CardTitle>
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => cvInputRef.current?.click()} disabled={uploadCV.isPending} data-testid="button-upload-cv">
+                  <Upload className="w-4 h-4 mr-1" />
+                  {uploadCV.isPending ? "Uploading..." : "Upload CV"}
+                </Button>
+                <input
+                  ref={cvInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={handleCVUpload}
+                  data-testid="input-cv-file"
+                />
+              </CardHeader>
+              <CardContent className="p-6">
+                {user?.cvUrl ? (
+                  <a href={user.cvUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium" data-testid="link-view-cv">
+                    <FileText className="w-4 h-4" />
+                    View uploaded CV
+                  </a>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No CV uploaded yet. Upload a PDF or DOC file (max 5MB).</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {user?.role === 'applicant' && (
+            <Card className="rounded-3xl border-border/40 shadow-xl shadow-black/5 overflow-hidden mt-10">
+              <CardHeader className="flex flex-row items-center justify-between gap-2 pb-4 bg-muted/30 border-b border-border/40">
+                <CardTitle className="text-lg font-display flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-primary" />
+                  Job History
+                </CardTitle>
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => { resetHistoryForm(); setShowAddHistory(true); }} data-testid="button-add-history">
+                  <PlusCircle className="w-4 h-4 mr-1" />
+                  Add
+                </Button>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                {(showAddHistory || editingHistoryId !== null) && (
+                  <div className="p-4 bg-muted/30 rounded-2xl border border-border/40 space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Job Title *</Label>
+                        <Input value={historyTitle} onChange={(e) => setHistoryTitle(e.target.value)} placeholder="e.g. Delivery Rider" className="h-10 rounded-xl" data-testid="input-history-title" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company *</Label>
+                        <Input value={historyCompany} onChange={(e) => setHistoryCompany(e.target.value)} placeholder="e.g. Jumia" className="h-10 rounded-xl" data-testid="input-history-company" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Start Date</Label>
+                        <Input type="month" value={historyStartDate} onChange={(e) => setHistoryStartDate(e.target.value)} className="h-10 rounded-xl" data-testid="input-history-start-date" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">End Date</Label>
+                        <Input type="month" value={historyEndDate} onChange={(e) => setHistoryEndDate(e.target.value)} disabled={historyIsCurrent} placeholder={historyIsCurrent ? "Present" : ""} className="h-10 rounded-xl" data-testid="input-history-end-date" />
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer" data-testid="label-is-current">
+                      <input
+                        type="checkbox"
+                        checked={historyIsCurrent}
+                        onChange={(e) => { setHistoryIsCurrent(e.target.checked); if (e.target.checked) setHistoryEndDate(""); }}
+                        className="rounded border-border"
+                        data-testid="checkbox-is-current"
+                      />
+                      <span className="text-xs text-muted-foreground">I currently work here</span>
+                    </label>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Description</Label>
+                      <Input value={historyDescription} onChange={(e) => setHistoryDescription(e.target.value)} placeholder="Brief description of your role" className="h-10 rounded-xl" data-testid="input-history-description" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="rounded-xl" onClick={handleSaveHistory} disabled={createHistory.isPending || updateHistory.isPending} data-testid="button-save-history">
+                        <Check className="w-4 h-4 mr-1" />
+                        {createHistory.isPending || updateHistory.isPending ? "Saving..." : editingHistoryId ? "Update Entry" : "Add Entry"}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="rounded-xl" onClick={resetHistoryForm} data-testid="button-cancel-history">
+                        <X className="w-4 h-4 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {historyLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2].map(i => <div key={i} className="h-16 bg-muted/40 rounded-xl animate-pulse" />)}
+                  </div>
+                ) : jobHistoryData && jobHistoryData.length > 0 ? (
+                  <div className="space-y-3">
+                    {jobHistoryData.map((entry: any) => (
+                      <div key={entry.id} className="flex items-start gap-3 p-3 bg-muted/20 rounded-xl border border-border/30" data-testid={`history-entry-${entry.id}`}>
+                        <Briefcase className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium" data-testid={`text-history-title-${entry.id}`}>{entry.jobTitle}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {entry.company}
+                            {entry.startDate && (
+                              <span className="ml-1">
+                                ({entry.startDate}{" - "}{entry.isCurrent ? <span className="text-primary font-medium">Present</span> : (entry.endDate || "N/A")})
+                              </span>
+                            )}
+                          </p>
+                          {entry.isCurrent && (
+                            <span className="inline-block mt-1 text-xs text-primary font-medium" data-testid={`badge-current-${entry.id}`}>Currently working here</span>
+                          )}
+                          {entry.description && <p className="text-xs text-muted-foreground mt-1">{entry.description}</p>}
+                        </div>
+                        <div className="flex flex-shrink-0 gap-1">
+                          <Button size="icon" variant="ghost" onClick={() => startEditHistory(entry)} data-testid={`button-edit-history-${entry.id}`}>
+                            <Pencil className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => deleteHistory.mutate(entry.id)} disabled={deleteHistory.isPending} data-testid={`button-delete-history-${entry.id}`}>
+                            <Trash2 className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No job history added yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="rounded-3xl border-border/40 shadow-xl shadow-black/5 overflow-hidden mt-10">
+            <CardHeader className="bg-muted/30 border-b border-border/40">
+              <CardTitle className="text-lg font-display flex items-center gap-2">
+                <Lock className="w-5 h-5 text-primary" />
+                Change Password
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {!showChangePassword ? (
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => setShowChangePassword(true)}
+                  data-testid="button-toggle-change-password"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Change Password
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Current Password</Label>
+                      <Input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Current password"
+                        className="h-10 rounded-xl"
+                        data-testid="input-current-password"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">New Password</Label>
+                      <Input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="New password (min 6 chars)"
+                        className="h-10 rounded-xl"
+                        data-testid="input-new-password"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Confirm New Password</Label>
+                      <Input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        className="h-10 rounded-xl"
+                        data-testid="input-confirm-password"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={handleChangePassword}
+                      disabled={changePasswordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
+                      data-testid="button-save-password"
+                    >
+                      {changePasswordMutation.isPending ? "Changing..." : "Update Password"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="rounded-xl"
+                      onClick={() => {
+                        setShowChangePassword(false);
+                        setCurrentPassword("");
+                        setNewPassword("");
+                        setConfirmPassword("");
+                      }}
+                      data-testid="button-cancel-password"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

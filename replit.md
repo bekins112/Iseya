@@ -59,6 +59,13 @@ Preferred communication style: Simple, everyday language.
 - All emails use branded HTML templates.
 - Email verification is currently disabled but infrastructure remains.
 
+### Profile Page (`/profile`)
+- Central location for ALL user profile management (both applicants and employers).
+- **All users**: First name, last name, role, location, bio, profile photo upload.
+- **Applicants**: Gender, age, phone, email, expected salary range (min/max), preferred job types, preferred job categories, CV/resume upload, job history (add/edit/delete entries).
+- **Employers**: Company name, business category, company email, company phone, company address, city, state (Nigerian states), CAC registration.
+- Dashboard no longer contains profile editing — the "Complete your profile" prompt links to `/profile` for both roles.
+
 ### Preferred Job Types (Applicant Profile)
 - Applicants can select multiple preferred job types (Full-time, Part-time, Contract) from their profile page.
 - Stored as `preferredJobTypes` text array column on the `users` table.
