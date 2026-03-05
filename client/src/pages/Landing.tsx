@@ -919,6 +919,35 @@ export default function Landing() {
                 ))}
               </div>
 
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mb-14"
+              >
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold mb-1">
+                    {howItWorksTab === "seeker" ? "Watch: How to Find Jobs on Iṣéyá" : "Watch: How to Hire on Iṣéyá"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {howItWorksTab === "seeker" ? "See how easy it is to find and apply for casual jobs near you." : "See how quickly you can post a job and start receiving applicants."}
+                  </p>
+                </div>
+                <div className="max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-xl shadow-black/10 border border-border/40 bg-black aspect-video">
+                  <iframe
+                    className="w-full h-full"
+                    src={howItWorksTab === "seeker"
+                      ? "https://www.youtube.com/embed/dQw4w9WgXcQ"
+                      : "https://www.youtube.com/embed/dQw4w9WgXcQ"
+                    }
+                    title={howItWorksTab === "seeker" ? "Iṣéyá Job Seeker Demo" : "Iṣéyá Employer Demo"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    data-testid={`video-demo-${howItWorksTab}`}
+                  />
+                </div>
+              </motion.div>
+
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link href={howItWorksTab === "seeker" ? "/register" : "/register"}>
                   <Button size="lg" className="gap-2 px-8 shadow-md" data-testid="button-how-get-started">
