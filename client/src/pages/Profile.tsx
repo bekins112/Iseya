@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUpdateUser, useUploadProfilePicture, useUploadCompanyLogo } from "@/hooks/use-casual";
 import { useForm } from "react-hook-form";
@@ -9,12 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion } from "framer-motion";
-import { Settings, Shield, Crown, Camera } from "lucide-react";
+import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+const JOB_TYPE_OPTIONS = [
+  "Full-time",
+  "Part-time",
+  "Contract",
+];
 
 const profileSchema = insertUserSchema.pick({
   firstName: true,
@@ -36,6 +45,7 @@ const profileSchema = insertUserSchema.pick({
   cvUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   email: z.string().email("Must be a valid email").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
+  preferredJobTypes: z.array(z.string()).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -70,6 +80,7 @@ export default function Profile() {
       phone: user?.phone || "",
       profileImageUrl: user?.profileImageUrl || "",
       cvUrl: user?.cvUrl || "",
+      preferredJobTypes: (user as any)?.preferredJobTypes || [],
     }
   });
 
@@ -303,6 +314,89 @@ export default function Profile() {
                           <FormMessage />
                         </FormItem>
                       )}
+                    />
+                  )}
+
+                  {user?.role === 'applicant' && (
+                    <FormField
+                      control={form.control}
+                      name="preferredJobTypes"
+                      render={({ field }) => {
+                        const selected: string[] = field.value || [];
+                        const toggleType = (type: string) => {
+                          const updated = selected.includes(type)
+                            ? selected.filter((t) => t !== type)
+                            : [...selected, type];
+                          field.onChange(updated);
+                        };
+                        return (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                              <span className="flex items-center gap-1.5">
+                                <Briefcase className="w-3.5 h-3.5" />
+                                Preferred Job Types
+                              </span>
+                            </FormLabel>
+                            <p className="text-xs text-muted-foreground -mt-1">Select the types of jobs you're interested in. We'll send you alerts when matching jobs are posted.</p>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full h-12 rounded-2xl border-border/60 bg-muted/20 hover:bg-muted/30 justify-between font-normal"
+                                    data-testid="button-preferred-job-types"
+                                  >
+                                    {selected.length === 0 ? (
+                                      <span className="text-muted-foreground">Select job types...</span>
+                                    ) : (
+                                      <span className="flex flex-wrap gap-1 overflow-hidden">
+                                        {selected.map((type) => (
+                                          <Badge key={type} variant="secondary" className="text-xs px-2 py-0.5">
+                                            {type}
+                                          </Badge>
+                                        ))}
+                                      </span>
+                                    )}
+                                    <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2" align="start">
+                                <div className="space-y-1">
+                                  {JOB_TYPE_OPTIONS.map((type) => (
+                                    <label
+                                      key={type}
+                                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/60 cursor-pointer transition-colors"
+                                      data-testid={`checkbox-job-type-${type.toLowerCase().replace(/\s+/g, "-")}`}
+                                    >
+                                      <Checkbox
+                                        checked={selected.includes(type)}
+                                        onCheckedChange={() => toggleType(type)}
+                                      />
+                                      <span className="text-sm font-medium">{type}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                                {selected.length > 0 && (
+                                  <div className="border-t mt-2 pt-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="w-full text-xs text-muted-foreground"
+                                      onClick={() => field.onChange([])}
+                                      data-testid="button-clear-job-types"
+                                    >
+                                      <X className="w-3 h-3 mr-1" />
+                                      Clear all
+                                    </Button>
+                                  </div>
+                                )}
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                   )}
 

@@ -59,6 +59,12 @@ Preferred communication style: Simple, everyday language.
 - All emails use branded HTML templates.
 - Email verification is currently disabled but infrastructure remains.
 
+### Preferred Job Types (Applicant Profile)
+- Applicants can select multiple preferred job types (Full-time, Part-time, Contract) from their profile page.
+- Stored as `preferredJobTypes` text array column on the `users` table.
+- Multi-select dropdown with checkboxes in the Profile page, shown only for applicants.
+- Intended for future job alert mailing when matching jobs are posted.
+
 ### Applicant Verification System
 - Applicants can submit government-issued ID and pay a fee for verification.
 - Verification is valid for 30 days and provides benefits like a verified badge, priority in application listings, and background checks.
