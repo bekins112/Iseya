@@ -44,6 +44,7 @@ Preferred communication style: Simple, everyday language.
 - Employer subscription plans determine job posting limits and access to features.
 - Prices are dynamic, configurable by admin, with per-tier discounts.
 - Supports Paystack and Flutterwave for payments.
+- **Transaction History**: Employers see subscription transaction history on Dashboard; Applicants see verification transaction history. API: `GET /api/my-transactions` returns user's transactions. Amount stored in kobo, displayed as Naira (÷100).
 - **Interview Credits**: Premium employers get 3 interview credits per billing period, Enterprise gets 5. Standard/Free get 0. Credits are tracked via `interviewCreditsUsed` field and counted from interviews created since billing period start.
 - **Applicant Recommendations**: Premium/Enterprise employers see "Iṣéyá Recommendations" on ManageApplicants page. Applicants are scored (0-100+) based on: verification status (30pts), CV upload (15pts), bio (10pts), relevant experience (10pts), location match (10pts), profile photo (5pts), phone (5pts), location (5pts), gender match (5pts), age range match (5pts), job history (5pts each, max 15pts). Match levels: Excellent (60+), Good (40+), Fair (20+), Basic.
 - API: `GET /api/interview-credits` returns credits info, `GET /api/jobs/:jobId/recommended-applicants` returns scored applicants.

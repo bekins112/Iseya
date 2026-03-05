@@ -1386,6 +1386,16 @@ export async function registerRoutes(
     return fallback;
   }
 
+  app.get("/api/my-transactions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const txns = await storage.getTransactionsByUser(userId);
+      res.json(txns);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
   app.get("/api/interview-credits", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     const user = await storage.getUser(userId);

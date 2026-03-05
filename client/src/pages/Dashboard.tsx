@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail, MapPin, ShieldCheck, Home } from "lucide-react";
+import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail, MapPin, ShieldCheck, Home, Receipt, CreditCard, ArrowUpRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import type { Transaction } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
@@ -611,6 +612,16 @@ export default function Dashboard() {
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: myApplications } = useMyApplications();
+  const { data: myTransactions } = useQuery<Transaction[]>({
+    queryKey: ["/api/my-transactions"],
+    enabled: !!user,
+  });
+
+  const filteredTransactions = (myTransactions || []).filter(t => {
+    if (isEmployer) return t.type === "subscription";
+    if (isApplicant) return t.type === "verification";
+    return true;
+  });
 
   const myJobs = jobs?.filter(j => j.employerId === user?.id) || [];
   
@@ -764,6 +775,82 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </motion.div>
+
+      {filteredTransactions.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22 }}
+        >
+          <Card className="border-border/40 shadow-md" data-testid="card-transaction-history">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-display font-bold flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-primary" />
+                  {isEmployer ? "Subscription Transaction History" : "Verification Transaction History"}
+                </CardTitle>
+                <Badge variant="outline" className="text-xs" data-testid="badge-transaction-count">
+                  {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? "s" : ""}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {filteredTransactions.slice(0, 5).map((txn) => (
+                <div
+                  key={txn.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 border border-border/30"
+                  data-testid={`row-transaction-${txn.id}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      txn.status === "success" ? "bg-green-100 dark:bg-green-900/30" :
+                      txn.status === "failed" ? "bg-red-100 dark:bg-red-900/30" :
+                      "bg-yellow-100 dark:bg-yellow-900/30"
+                    }`}>
+                      {txn.status === "success" ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      ) : txn.status === "failed" ? (
+                        <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      ) : (
+                        <CreditCard className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate" data-testid={`text-txn-desc-${txn.id}`}>
+                        {isEmployer
+                          ? `${(txn.plan || "").charAt(0).toUpperCase() + (txn.plan || "").slice(1)} Plan`
+                          : "Identity Verification"}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="capitalize">{txn.gateway}</span>
+                        <span>•</span>
+                        <span>{txn.createdAt ? new Date(txn.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "—"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-sm font-bold" data-testid={`text-txn-amount-${txn.id}`}>
+                      ₦{(txn.amount / 100).toLocaleString()}
+                    </span>
+                    <Badge
+                      variant={txn.status === "success" ? "default" : txn.status === "failed" ? "destructive" : "secondary"}
+                      className="text-[10px] px-1.5 py-0"
+                      data-testid={`badge-txn-status-${txn.id}`}
+                    >
+                      {txn.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+              {filteredTransactions.length > 5 && (
+                <p className="text-xs text-center text-muted-foreground pt-1">
+                  Showing 5 of {filteredTransactions.length} transactions
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {isEmployer && (
         <motion.div
