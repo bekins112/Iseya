@@ -16,8 +16,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion } from "framer-motion";
-import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase } from "lucide-react";
+import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+const businessCategories = [
+  "Restaurant & Food Service",
+  "Hospitality & Hotels",
+  "Retail & Sales",
+  "Construction & Labour",
+  "Cleaning & Maintenance",
+  "Logistics & Delivery",
+  "Agriculture & Farming",
+  "Event Management",
+  "Domestic & Household",
+  "Manufacturing",
+  "Security Services",
+  "Healthcare & Wellness",
+  "Education & Tutoring",
+  "Transportation",
+  "Other",
+];
+
+const nigerianStates = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
+  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
+  "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
+  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
+  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
+];
 
 const JOB_TYPE_OPTIONS = [
   "Full-time",
@@ -85,6 +111,13 @@ const profileSchema = insertUserSchema.pick({
   phone: z.string().optional().or(z.literal("")),
   preferredJobTypes: z.array(z.string()).optional(),
   preferredCategories: z.array(z.string()).optional(),
+  companyName: z.string().optional().or(z.literal("")),
+  businessCategory: z.string().optional().or(z.literal("")),
+  companyAddress: z.string().optional().or(z.literal("")),
+  companyCity: z.string().optional().or(z.literal("")),
+  companyState: z.string().optional().or(z.literal("")),
+  isRegisteredCompany: z.boolean().optional(),
+  companyRegNo: z.string().optional().or(z.literal("")),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -119,6 +152,13 @@ export default function Profile() {
       phone: user?.phone || "",
       preferredJobTypes: (user as any)?.preferredJobTypes || [],
       preferredCategories: (user as any)?.preferredCategories || [],
+      companyName: user?.companyName || "",
+      businessCategory: user?.businessCategory || "",
+      companyAddress: (user as any)?.companyAddress || "",
+      companyCity: (user as any)?.companyCity || "",
+      companyState: (user as any)?.companyState || "",
+      isRegisteredCompany: (user as any)?.isRegisteredCompany || false,
+      companyRegNo: (user as any)?.companyRegNo || "",
     }
   });
 
@@ -295,34 +335,165 @@ export default function Profile() {
                   />
 
                   {user?.role === 'employer' && (
-                    <div className="grid sm:grid-cols-2 gap-6">
+                    <>
+                      <div className="pt-4 pb-2 border-t border-border/40">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-primary" />
+                          Company Details
+                        </h3>
+                      </div>
+
                       <FormField
                         control={form.control}
-                        name="email"
+                        name="companyName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Email</FormLabel>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company / Business Name</FormLabel>
                             <FormControl>
-                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. info@company.com" {...field} value={field.value || ""} data-testid="input-company-email" />
+                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Lagos Catering Services" {...field} value={field.value || ""} data-testid="input-company-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
                       <FormField
                         control={form.control}
-                        name="phone"
+                        name="businessCategory"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Phone</FormLabel>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Business Category</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" data-testid="select-business-category">
+                                  <SelectValue placeholder="Select your business category" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="rounded-2xl">
+                                {businessCategories.map((cat) => (
+                                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Email</FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. info@company.com" {...field} value={field.value || ""} data-testid="input-company-email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Phone</FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. +234 801 234 5678" {...field} value={field.value || ""} data-testid="input-company-phone" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="companyAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Company Address</FormLabel>
                             <FormControl>
-                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. +234 801 234 5678" {...field} value={field.value || ""} data-testid="input-company-phone" />
+                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 12 Broad Street" {...field} value={field.value || ""} data-testid="input-company-address" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
+
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="companyCity"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">City</FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Lagos" {...field} value={field.value || ""} data-testid="input-company-city" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="companyState"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">State</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl>
+                                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" data-testid="select-company-state">
+                                    <SelectValue placeholder="Select state" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="rounded-2xl max-h-[200px]">
+                                  {nigerianStates.map((s) => (
+                                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="isRegisteredCompany"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value || false}
+                                onCheckedChange={field.onChange}
+                                data-testid="checkbox-registered-company"
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm cursor-pointer">This company is officially registered (CAC)</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+
+                      {form.watch("isRegisteredCompany") && (
+                        <FormField
+                          control={form.control}
+                          name="companyRegNo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">CAC Registration Number</FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. RC-123456" {...field} value={field.value || ""} data-testid="input-company-regno" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </>
                   )}
 
                   {user?.role === 'applicant' && (

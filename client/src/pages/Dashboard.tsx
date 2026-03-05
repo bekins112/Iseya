@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobHistory, useUpdateJobHistory, useDeleteJobHistory, useUploadCV, useUploadProfilePicture, useUploadCompanyLogo } from "@/hooks/use-casual";
+import { useJobs, useMyApplications, useUpdateUser, useJobHistory, useCreateJobHistory, useUpdateJobHistory, useDeleteJobHistory, useUploadCV, useUploadProfilePicture } from "@/hooks/use-casual";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Link } from "wouter";
-import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Building2, Tag, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail, MapPin, ShieldCheck, Home, Receipt, CreditCard, ArrowUpRight } from "lucide-react";
+import { PlusCircle, Calendar, Briefcase, TrendingUp, Users, CheckCircle2, Pencil, Check, X, Upload, FileText, Trash2, Camera, UserCircle, AlertCircle, Lock, Phone, Mail, MapPin, ShieldCheck, Home, Receipt, CreditCard, ArrowUpRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Transaction } from "@shared/schema";
@@ -19,31 +19,6 @@ import { useToast } from "@/hooks/use-toast";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
 
-const businessCategories = [
-  "Restaurant & Food Service",
-  "Hospitality & Hotels",
-  "Retail & Sales",
-  "Construction & Labour",
-  "Cleaning & Maintenance",
-  "Logistics & Delivery",
-  "Agriculture & Farming",
-  "Event Management",
-  "Domestic & Household",
-  "Manufacturing",
-  "Security Services",
-  "Healthcare & Wellness",
-  "Education & Tutoring",
-  "Transportation",
-  "Other",
-];
-
-const nigerianStates = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
-  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
-  "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
-  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
-  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
-];
 
 function ApplicantProfile() {
   const { user } = useAuth();
@@ -594,21 +569,6 @@ export default function Dashboard() {
   const isEmployer = user?.role === "employer";
   const isApplicant = user?.role === "applicant";
   const updateUser = useUpdateUser();
-  const uploadLogo = useUploadCompanyLogo();
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editCompanyName, setEditCompanyName] = useState(user?.companyName || "");
-  const [editBusinessCategory, setEditBusinessCategory] = useState(user?.businessCategory || "");
-  const [editCompanyAddress, setEditCompanyAddress] = useState((user as any)?.companyAddress || "");
-  const [editCompanyCity, setEditCompanyCity] = useState((user as any)?.companyCity || "");
-  const [editCompanyState, setEditCompanyState] = useState((user as any)?.companyState || "");
-  const [editIsRegistered, setEditIsRegistered] = useState((user as any)?.isRegisteredCompany || false);
-  const [editRegNo, setEditRegNo] = useState((user as any)?.companyRegNo || "");
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) uploadLogo.mutate(file);
-  };
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: myApplications } = useMyApplications();
@@ -705,11 +665,11 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </div>
-                <a href="#profile-section">
+                <Link href={isEmployer ? "/profile" : "#profile-section"}>
                   <Button size="sm" className="flex-shrink-0" data-testid="button-complete-profile">
                     Update Profile
                   </Button>
-                </a>
+                </Link>
               </CardContent>
             </Card>
           </motion.div>
@@ -861,231 +821,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {isEmployer && (
-        <motion.div
-          id="profile-section"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-        >
-          <Card className="border-border/40 shadow-md">
-            {isEditingProfile ? (
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  <h3 className="font-bold text-lg">Edit Business Profile</h3>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-company">Company / Business Name</Label>
-                  <Input
-                    id="edit-company"
-                    placeholder="e.g. Lagos Catering Services"
-                    value={editCompanyName}
-                    onChange={(e) => setEditCompanyName(e.target.value)}
-                    data-testid="input-edit-company"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-category">Business Category</Label>
-                  <Select value={editBusinessCategory} onValueChange={setEditBusinessCategory}>
-                    <SelectTrigger data-testid="select-edit-category">
-                      <SelectValue placeholder="Select your business category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {businessCategories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-address">Company Address</Label>
-                  <Input
-                    id="edit-address"
-                    placeholder="e.g. 12 Broad Street"
-                    value={editCompanyAddress}
-                    onChange={(e) => setEditCompanyAddress(e.target.value)}
-                    data-testid="input-edit-address"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-city">City</Label>
-                    <Input
-                      id="edit-city"
-                      placeholder="e.g. Lagos"
-                      value={editCompanyCity}
-                      onChange={(e) => setEditCompanyCity(e.target.value)}
-                      data-testid="input-edit-city"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-state">State</Label>
-                    <Select value={editCompanyState} onValueChange={setEditCompanyState}>
-                      <SelectTrigger data-testid="select-edit-state">
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {nigerianStates.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 pt-1">
-                  <Checkbox
-                    id="edit-registered"
-                    checked={editIsRegistered}
-                    onCheckedChange={(v) => setEditIsRegistered(!!v)}
-                    data-testid="checkbox-registered"
-                  />
-                  <Label htmlFor="edit-registered" className="text-sm cursor-pointer">
-                    This company is officially registered (CAC)
-                  </Label>
-                </div>
-                {editIsRegistered && (
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-regno">CAC Registration Number</Label>
-                    <Input
-                      id="edit-regno"
-                      placeholder="e.g. RC-123456"
-                      value={editRegNo}
-                      onChange={(e) => setEditRegNo(e.target.value)}
-                      data-testid="input-edit-regno"
-                    />
-                  </div>
-                )}
-                <div className="flex items-center gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    disabled={updateUser.isPending}
-                    data-testid="button-save-profile"
-                    onClick={() => {
-                      if (!editCompanyName.trim()) return;
-                      updateUser.mutate(
-                        {
-                          id: user!.id,
-                          companyName: editCompanyName.trim(),
-                          businessCategory: editBusinessCategory,
-                          companyAddress: editCompanyAddress.trim() || null,
-                          companyCity: editCompanyCity.trim() || null,
-                          companyState: editCompanyState || null,
-                          isRegisteredCompany: editIsRegistered,
-                          companyRegNo: editIsRegistered ? (editRegNo.trim() || null) : null,
-                        } as any,
-                        { onSuccess: () => setIsEditingProfile(false) }
-                      );
-                    }}
-                  >
-                    <Check className="w-4 h-4 mr-1" />
-                    {updateUser.isPending ? "Saving..." : "Save"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    data-testid="button-cancel-edit"
-                    onClick={() => {
-                      setEditCompanyName(user?.companyName || "");
-                      setEditBusinessCategory(user?.businessCategory || "");
-                      setEditCompanyAddress((user as any)?.companyAddress || "");
-                      setEditCompanyCity((user as any)?.companyCity || "");
-                      setEditCompanyState((user as any)?.companyState || "");
-                      setEditIsRegistered((user as any)?.isRegisteredCompany || false);
-                      setEditRegNo((user as any)?.companyRegNo || "");
-                      setIsEditingProfile(false);
-                    }}
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            ) : (
-              <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                <div className="relative group flex-shrink-0">
-                  <Avatar className="w-12 h-12 border-2 border-border">
-                    <AvatarImage src={user?.companyLogo || undefined} alt={user?.companyName || "Company"} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      <Building2 className="w-5 h-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <button
-                    onClick={() => logoInputRef.current?.click()}
-                    className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    data-testid="button-change-logo"
-                  >
-                    <Camera className="w-4 h-4 text-white" />
-                  </button>
-                  <input
-                    ref={logoInputRef}
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                    data-testid="input-company-logo"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <CardTitle className="text-lg font-bold truncate" data-testid="text-company-name">
-                      {user?.companyName || "No company name set"}
-                    </CardTitle>
-                    {(user as any)?.isRegisteredCompany && (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-md" data-testid="badge-registered">
-                        <ShieldCheck className="w-3 h-3" />
-                        Registered{(user as any)?.companyRegNo ? ` (${(user as any).companyRegNo})` : ""}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    {user?.businessCategory ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md" data-testid="text-business-category">
-                        <Tag className="w-3 h-3" />
-                        {user.businessCategory}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground italic">No category set</span>
-                    )}
-                    {((user as any)?.companyCity || (user as any)?.companyState) && (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-md" data-testid="text-company-location">
-                        <MapPin className="w-3 h-3" />
-                        {[(user as any)?.companyCity, (user as any)?.companyState].filter(Boolean).join(", ")}
-                      </span>
-                    )}
-                  </div>
-                  {(user as any)?.companyAddress && (
-                    <p className="text-xs text-muted-foreground mt-1" data-testid="text-company-address">
-                      {(user as any).companyAddress}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  data-testid="button-edit-profile"
-                  onClick={() => {
-                    setEditCompanyName(user?.companyName || "");
-                    setEditBusinessCategory(user?.businessCategory || "");
-                    setEditCompanyAddress((user as any)?.companyAddress || "");
-                    setEditCompanyCity((user as any)?.companyCity || "");
-                    setEditCompanyState((user as any)?.companyState || "");
-                    setEditIsRegistered((user as any)?.isRegisteredCompany || false);
-                    setEditRegNo((user as any)?.companyRegNo || "");
-                    setIsEditingProfile(true);
-                  }}
-                >
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </CardHeader>
-            )}
-          </Card>
-        </motion.div>
-      )}
+      
 
       {isApplicant && (
         <motion.div
