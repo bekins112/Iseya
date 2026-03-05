@@ -1282,16 +1282,25 @@ export default function ManageApplicants() {
                             )}
                           </div>
                           <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                            <Badge
-                              variant={rec.matchLevel === "Excellent" ? "default" : "secondary"}
-                              className={`text-[10px] ${rec.matchLevel === "Excellent" ? "bg-green-600" : rec.matchLevel === "Good" ? "bg-blue-500 text-white" : ""}`}
-                              data-testid={`badge-match-${rec.applicationId}`}
-                            >
-                              {rec.matchLevel === "Excellent" && <Star className="w-3 h-3 mr-0.5" />}
-                              {rec.matchLevel === "Good" && <Award className="w-3 h-3 mr-0.5" />}
-                              {rec.matchLevel}
-                            </Badge>
-                            <span className="text-[10px] text-muted-foreground">Score: {rec.score}</span>
+                            {rec.adminRating && rec.interviewStatus === "completed" ? (
+                              <>
+                                <Badge
+                                  variant={rec.matchLevel === "Excellent" ? "default" : "secondary"}
+                                  className={`text-[10px] ${rec.matchLevel === "Excellent" ? "bg-green-600" : rec.matchLevel === "Good" ? "bg-blue-500 text-white" : ""}`}
+                                  data-testid={`badge-match-${rec.applicationId}`}
+                                >
+                                  {rec.matchLevel === "Excellent" && <Star className="w-3 h-3 mr-0.5" />}
+                                  {rec.matchLevel === "Good" && <Award className="w-3 h-3 mr-0.5" />}
+                                  {rec.matchLevel}
+                                </Badge>
+                                <span className="text-[10px] text-muted-foreground">Score: {rec.score}</span>
+                              </>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] text-muted-foreground gap-1" data-testid={`badge-pending-${rec.applicationId}`}>
+                                <Clock className="w-3 h-3" />
+                                Pending Review
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       ))
