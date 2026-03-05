@@ -189,7 +189,10 @@ export default function EmployerSignup() {
                   </div>
 
                   <p className="text-xs text-center text-muted-foreground">
-                    By creating an account, you agree to our Terms of Service and Privacy Policy
+                    By creating an account, you agree to our{" "}
+                    <Link href="/terms" className="text-primary font-semibold hover:underline">Terms of Use</Link>{" "}
+                    and{" "}
+                    <Link href="/disclaimer" className="text-primary font-semibold hover:underline">Disclaimer</Link>
                   </p>
                 </CardContent>
               </Card>

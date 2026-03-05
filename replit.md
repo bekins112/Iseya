@@ -75,6 +75,13 @@ Preferred communication style: Simple, everyday language.
 - Components: `Support` (client/src/pages/Support.tsx), `AdminTickets` (client/src/pages/AdminTickets.tsx).
 - API routes: POST `/api/tickets`, GET `/api/tickets/my`, GET `/api/tickets/unread-counts`, GET/POST `/api/tickets/:id/messages`, GET/PATCH `/api/admin/tickets`, GET `/api/admin/tickets/:id`.
 
+### Terms of Use & Newsletter
+- Terms of Use page at `/terms` with comprehensive legal sections.
+- Registration form includes mandatory "agree to Terms of Use" checkbox (blocks submit if unchecked).
+- Optional newsletter subscription checkbox on registration.
+- `subscribedToNewsletter` field in users table tracks opt-in.
+- EmployerSignup page links to Terms of Use and Disclaimer.
+
 ### Login Security
 - Implements image-based CAPTCHA on the login form for bot protection.
 

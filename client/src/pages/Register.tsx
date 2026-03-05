@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus, Search, Building2 } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus, Search, Building2, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
@@ -20,6 +21,8 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"applicant" | "employer">("applicant");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [subscribedToNewsletter, setSubscribedToNewsletter] = useState(false);
   const [error, setError] = useState("");
 
   if (isAuthenticated && user) {
@@ -45,9 +48,14 @@ export default function Register() {
       return;
     }
 
+    if (!agreedToTerms) {
+      setError("You must agree to the Terms of Use to create an account");
+      return;
+    }
+
     try {
       localStorage.setItem("intended_role", selectedRole);
-      await register({ email, password, firstName, lastName });
+      await register({ email, password, firstName, lastName, subscribedToNewsletter });
       setLocation("/onboarding");
     } catch (err: any) {
       setError(err.message || "Registration failed");
@@ -227,10 +235,44 @@ export default function Register() {
                   </div>
                 </div>
 
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="terms"
+                      checked={agreedToTerms}
+                      onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                      className="mt-0.5"
+                      data-testid="checkbox-terms"
+                    />
+                    <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                      I agree to the{" "}
+                      <Link href="/terms" className="text-primary font-semibold hover:underline" target="_blank">
+                        Terms of Use
+                      </Link>{" "}
+                      and{" "}
+                      <Link href="/disclaimer" className="text-primary font-semibold hover:underline" target="_blank">
+                        Disclaimer
+                      </Link>
+                    </label>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="newsletter"
+                      checked={subscribedToNewsletter}
+                      onCheckedChange={(checked) => setSubscribedToNewsletter(checked === true)}
+                      className="mt-0.5"
+                      data-testid="checkbox-newsletter"
+                    />
+                    <label htmlFor="newsletter" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                      Subscribe to our newsletter for job alerts, tips, and platform updates
+                    </label>
+                  </div>
+                </div>
+
                 <Button
                   type="submit"
                   className="w-full font-bold group"
-                  disabled={isRegistering}
+                  disabled={isRegistering || !agreedToTerms}
                   data-testid="button-register-submit"
                 >
                   {isRegistering ? "Creating Account..." : "Create Account"}
@@ -267,10 +309,6 @@ export default function Register() {
                 <Link href="/login" className="text-primary font-semibold hover:underline" data-testid="link-login">
                   Sign In
                 </Link>
-              </p>
-
-              <p className="text-xs text-center text-muted-foreground">
-                By creating an account, you agree to our Terms of Service and Privacy Policy
               </p>
             </CardContent>
           </Card>

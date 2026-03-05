@@ -42,6 +42,7 @@ import FAQs from "@/pages/FAQs";
 import Contact from "@/pages/Contact";
 import BrowseJobs from "@/pages/BrowseJobs";
 import Disclaimer from "@/pages/Disclaimer";
+import TermsOfUse from "@/pages/TermsOfUse";
 import CopyrightPage from "@/pages/Copyright";
 import VerifyEmail from "@/pages/VerifyEmail";
 import Support from "@/pages/Support";
@@ -85,6 +86,7 @@ function Router() {
       <Route path="/faqs" component={FAQs} />
       <Route path="/contact" component={Contact} />
       <Route path="/disclaimer" component={Disclaimer} />
+      <Route path="/terms" component={TermsOfUse} />
       <Route path="/copyright" component={CopyrightPage} />
       <Route path="/browse-jobs" component={BrowseJobs} />
       

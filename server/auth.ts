@@ -51,6 +51,7 @@ const registerSchema = z.object({
   lastName: z.string().min(1),
   role: z.enum(["applicant", "employer"]).optional(),
   age: z.number().min(16).optional(),
+  subscribedToNewsletter: z.boolean().optional(),
 });
 
 const loginSchema = z.object({
@@ -104,6 +105,7 @@ export async function setupAuth(app: Express) {
           lastName: input.lastName,
           role: input.role || "applicant",
           age: input.age,
+          subscribedToNewsletter: input.subscribedToNewsletter || false,
         })
         .returning();
 
