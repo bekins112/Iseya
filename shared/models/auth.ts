@@ -46,6 +46,7 @@ export const users = pgTable("users", {
   paystackCustomerId: varchar("paystack_customer_id"),
   paystackSubscriptionCode: varchar("paystack_subscription_code"),
   subscribedToNewsletter: boolean("subscribed_to_newsletter").default(false),
+  interviewCreditsUsed: integer("interview_credits_used").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

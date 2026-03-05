@@ -57,6 +57,7 @@ const planMeta: Record<string, {
       "Limited to 5 job postings",
       "No priority listing",
       "No verified badge",
+      "No interview credits",
     ],
     icon: Zap,
     popular: false,

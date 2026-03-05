@@ -1367,12 +1367,146 @@ export async function registerRoutes(
 
   // === INTERVIEWS ===
 
+  const INTERVIEW_CREDITS: Record<string, number> = {
+    free: 0,
+    standard: 0,
+    premium: 3,
+    enterprise: 5,
+  };
+
+  function getBillingPeriodStart(user: any): Date {
+    if (user.subscriptionEndDate) {
+      const billingStart = new Date(user.subscriptionEndDate);
+      billingStart.setDate(billingStart.getDate() - 30);
+      return billingStart;
+    }
+    const fallback = new Date();
+    fallback.setDate(fallback.getDate() - 30);
+    return fallback;
+  }
+
+  app.get("/api/interview-credits", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "employer") return res.status(403).json({ message: "Only employers can view interview credits" });
+
+    const plan = user.subscriptionStatus || "free";
+    const totalCredits = INTERVIEW_CREDITS[plan] || 0;
+
+    let used = 0;
+    if (totalCredits > 0) {
+      const billingStart = getBillingPeriodStart(user);
+      used = await storage.getInterviewCountForEmployer(userId, billingStart);
+    }
+
+    res.json({ total: totalCredits, used, remaining: Math.max(totalCredits - used, 0), plan });
+  });
+
+  app.get("/api/jobs/:jobId/recommended-applicants", isAuthenticated, async (req, res) => {
+    const employerId = req.session.userId!;
+    const employer = await storage.getUser(employerId);
+    if (!employer || employer.role !== "employer") return res.status(403).json({ message: "Only employers can view recommendations" });
+    if (employer.subscriptionStatus !== "premium" && employer.subscriptionStatus !== "enterprise") {
+      return res.status(403).json({ message: "Upgrade to Premium or Enterprise to get applicant recommendations.", code: "SUBSCRIPTION_REQUIRED" });
+    }
+
+    const jobId = Number(req.params.jobId);
+    if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
+
+    const job = await storage.getJob(jobId);
+    if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+
+    const apps = await storage.getApplicationsForJob(jobId);
+
+    const scored = await Promise.all(apps.map(async (app) => {
+      const applicant = await storage.getUser(app.applicantId);
+      if (!applicant) return null;
+
+      let score = 0;
+      const reasons: string[] = [];
+
+      if (applicant.isVerified) { score += 30; reasons.push("Verified applicant"); }
+      if (applicant.bio && applicant.bio.length > 20) { score += 10; reasons.push("Detailed bio"); }
+      if (applicant.cvUrl) { score += 15; reasons.push("CV uploaded"); }
+      if (applicant.phone) { score += 5; reasons.push("Phone provided"); }
+      if (applicant.location) { score += 5; reasons.push("Location provided"); }
+      if (applicant.profileImageUrl) { score += 5; reasons.push("Profile photo"); }
+
+      const history = await storage.getJobHistoryByUser(applicant.id);
+      if (history && history.length > 0) {
+        score += Math.min(history.length * 5, 15);
+        reasons.push(`${history.length} past job${history.length > 1 ? "s" : ""}`);
+        const relevantExp = history.some(h =>
+          h.jobTitle?.toLowerCase().includes(job.category?.toLowerCase()) ||
+          job.category?.toLowerCase().includes(h.jobTitle?.toLowerCase() || "")
+        );
+        if (relevantExp) { score += 10; reasons.push("Relevant experience"); }
+      }
+
+      if (job.gender && job.gender !== "Any" && applicant.gender === job.gender) {
+        score += 5; reasons.push("Gender preference match");
+      }
+
+      if (job.ageMin && job.ageMax && applicant.age) {
+        if (applicant.age >= job.ageMin && applicant.age <= job.ageMax) {
+          score += 5; reasons.push("Age range match");
+        }
+      }
+
+      if (applicant.location && job.location) {
+        if (applicant.location.toLowerCase().includes(job.location.toLowerCase()) ||
+            job.location.toLowerCase().includes(applicant.location.toLowerCase())) {
+          score += 10; reasons.push("Location match");
+        }
+      }
+
+      const isApplicantVerified = applicant.isVerified || false;
+
+      return {
+        applicationId: app.id,
+        applicantId: applicant.id,
+        applicantName: `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant",
+        applicantEmail: isApplicantVerified ? applicant.email : null,
+        applicantPhone: isApplicantVerified ? applicant.phone : null,
+        applicantProfileImageUrl: applicant.profileImageUrl || null,
+        applicantCvUrl: isApplicantVerified ? applicant.cvUrl : null,
+        applicantGender: applicant.gender || null,
+        applicantAge: applicant.age || null,
+        applicantLocation: applicant.location || null,
+        applicantBio: applicant.bio || null,
+        applicantIsVerified: isApplicantVerified,
+        applicationStatus: app.status,
+        score,
+        reasons,
+        matchLevel: score >= 60 ? "Excellent" : score >= 40 ? "Good" : score >= 20 ? "Fair" : "Basic",
+      };
+    }));
+
+    const validScored = scored.filter(Boolean).sort((a: any, b: any) => b.score - a.score);
+    res.json(validScored);
+  });
+
   // Schedule interview (employer)
   app.post("/api/interviews", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
     if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can schedule interviews" });
-    if (employer.subscriptionStatus === "free") return res.status(403).json({ message: "Please upgrade your subscription to schedule interviews.", code: "SUBSCRIPTION_REQUIRED" });
+
+    const plan = employer.subscriptionStatus || "free";
+    const totalCredits = INTERVIEW_CREDITS[plan] || 0;
+
+    if (totalCredits === 0) {
+      return res.status(403).json({ message: "Upgrade to Premium or Enterprise to schedule interviews.", code: "SUBSCRIPTION_REQUIRED" });
+    }
+
+    const billingStart = getBillingPeriodStart(employer);
+    const used = await storage.getInterviewCountForEmployer(employerId, billingStart);
+    if (used >= totalCredits) {
+      return res.status(403).json({
+        message: `You've used all ${totalCredits} interview credits for this billing period. Upgrade your plan for more.`,
+        code: "INTERVIEW_LIMIT_REACHED",
+      });
+    }
 
     try {
       const interviewSchema = z.object({

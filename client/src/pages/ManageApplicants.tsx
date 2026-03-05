@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview } from "@/hooks/use-casual";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,10 @@ import {
   Link2,
   X,
   ShieldCheck,
+  Sparkles,
+  Star,
+  Award,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
@@ -797,6 +802,21 @@ export default function ManageApplicants() {
   const [interviewOpen, setInterviewOpen] = useState(false);
 
   const interviews = interviewsData || [];
+  const [showRecommendations, setShowRecommendations] = useState(false);
+
+  const { data: interviewCredits } = useQuery<{ total: number; used: number; remaining: number; plan: string }>({
+    queryKey: ["/api/interview-credits"],
+  });
+
+  const { data: recommendations, isLoading: recsLoading } = useQuery<any[]>({
+    queryKey: ["/api/jobs", jobId, "recommended-applicants"],
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/recommended-applicants`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: showRecommendations && !!jobId,
+  });
 
   const handleUpdateStatus = (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => {
     updateStatus.mutate({ id, status });
@@ -899,6 +919,138 @@ export default function ManageApplicants() {
           description={`${counts.all} total applications`}
         />
       </div>
+
+      {interviewCredits && interviewCredits.total > 0 && (
+        <Card className="border-primary/30 bg-primary/5" data-testid="card-interview-credits">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <CalendarClock className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold" data-testid="text-interview-credits">
+                  Interview Credits: {interviewCredits.remaining} of {interviewCredits.total} remaining
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {interviewCredits.plan === "premium" ? "Premium" : "Enterprise"} plan — {interviewCredits.used} used this billing period
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {Array.from({ length: interviewCredits.total }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-3 h-3 rounded-full ${i < interviewCredits.remaining ? "bg-primary" : "bg-muted-foreground/20"}`}
+                  />
+                ))}
+              </div>
+              {interviewCredits.remaining === 0 && (
+                <Link href="/subscription">
+                  <Button size="sm" variant="outline" className="text-xs gap-1" data-testid="button-upgrade-credits">
+                    <Zap className="w-3 h-3" /> Upgrade
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {interviewCredits && interviewCredits.total > 0 && (
+        <div>
+          <Button
+            variant={showRecommendations ? "default" : "outline"}
+            onClick={() => setShowRecommendations(!showRecommendations)}
+            className="gap-2"
+            data-testid="button-toggle-recommendations"
+          >
+            <Sparkles className="w-4 h-4" />
+            {showRecommendations ? "Hide Recommendations" : "Iṣéyá Recommendations"}
+          </Button>
+
+          <AnimatePresence>
+            {showRecommendations && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4"
+              >
+                <Card className="border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50/50 to-primary/5 dark:from-amber-950/20 dark:to-primary/5" data-testid="card-recommendations">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                      Recommended by Iṣéyá
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground">
+                      Applicants ranked by profile strength, experience, and job match. Use your interview credits on the best candidates.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {recsLoading ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="h-16 bg-muted/40 rounded-lg animate-pulse" />
+                        ))}
+                      </div>
+                    ) : !recommendations || recommendations.length === 0 ? (
+                      <div className="text-center py-6 text-muted-foreground text-sm">
+                        No applicants to recommend yet. Recommendations appear when candidates apply.
+                      </div>
+                    ) : (
+                      recommendations.slice(0, 5).map((rec: any, index: number) => (
+                        <div
+                          key={rec.applicationId}
+                          className="flex items-center gap-3 p-3 rounded-lg bg-card border hover:border-primary/30 transition-colors"
+                          data-testid={`card-recommendation-${rec.applicationId}`}
+                        >
+                          <div className="relative">
+                            <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center z-10">
+                              {index + 1}
+                            </span>
+                            <Avatar className="w-10 h-10">
+                              <AvatarImage src={rec.applicantProfileImageUrl || ""} />
+                              <AvatarFallback className="text-xs bg-muted">
+                                {rec.applicantName?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm truncate">{rec.applicantName}</span>
+                              {rec.applicantIsVerified && (
+                                <ShieldCheck className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              {rec.reasons.slice(0, 3).map((reason: string, i: number) => (
+                                <span key={i} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{reason}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            <Badge
+                              variant={rec.matchLevel === "Excellent" ? "default" : "secondary"}
+                              className={`text-[10px] ${rec.matchLevel === "Excellent" ? "bg-green-600" : rec.matchLevel === "Good" ? "bg-blue-500 text-white" : ""}`}
+                              data-testid={`badge-match-${rec.applicationId}`}
+                            >
+                              {rec.matchLevel === "Excellent" && <Star className="w-3 h-3 mr-0.5" />}
+                              {rec.matchLevel === "Good" && <Award className="w-3 h-3 mr-0.5" />}
+                              {rec.matchLevel}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground">Score: {rec.score}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {(['all', 'pending', 'offered', 'accepted', 'rejected'] as StatusFilter[]).map((status) => (

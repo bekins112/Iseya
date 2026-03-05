@@ -89,6 +89,7 @@ export interface IStorage {
   getInterviewByApplication(applicationId: number): Promise<Interview | undefined>;
   getInterviewsForJob(jobId: number): Promise<Interview[]>;
   getInterviewsForApplicant(applicantId: string): Promise<Interview[]>;
+  getInterviewCountForEmployer(employerId: string, since: Date): Promise<number>;
   updateInterview(id: number, updates: Partial<Interview>): Promise<Interview>;
 
   // Verification request methods
@@ -637,6 +638,14 @@ export class DatabaseStorage implements IStorage {
 
   async getInterviewsForApplicant(applicantId: string): Promise<Interview[]> {
     return await db.select().from(interviews).where(eq(interviews.applicantId, applicantId)).orderBy(desc(interviews.createdAt));
+  }
+
+  async getInterviewCountForEmployer(employerId: string, since: Date): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(interviews)
+      .where(and(eq(interviews.employerId, employerId), sql`${interviews.createdAt} >= ${since}`));
+    return result[0]?.count || 0;
   }
 
   async updateInterview(id: number, updates: Partial<Interview>): Promise<Interview> {
