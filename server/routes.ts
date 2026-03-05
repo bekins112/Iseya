@@ -1512,6 +1512,11 @@ export async function registerRoutes(
 
       const isApplicantVerified = applicant.isVerified || false;
 
+      const interviewRecord = await storage.getInterviewByApplication(app.id);
+      const interviewStatus = interviewRecord ? interviewRecord.status : null;
+      const interviewDate = interviewRecord ? interviewRecord.interviewDate : null;
+      const interviewType = interviewRecord ? interviewRecord.interviewType : null;
+
       return {
         applicationId: app.id,
         applicantId: applicant.id,
@@ -1532,6 +1537,9 @@ export async function registerRoutes(
         adminRating: app.adminRating || null,
         adminNote: app.adminNote || null,
         adminReviewedAt: app.adminReviewedAt || null,
+        interviewStatus,
+        interviewDate,
+        interviewType,
       };
     }));
 
@@ -1616,14 +1624,25 @@ export async function registerRoutes(
         }
 
         if (isAdminScheduling && jobEmployer) {
+          const employerDisplayName = `${jobEmployer.firstName || ""} ${jobEmployer.lastName || ""}`.trim() || "Employer";
+
           storage.createNotification({
             title: "Interview Scheduled by Iṣéyá Team",
-            message: `The Iṣéyá team has scheduled a ${input.interviewType} interview with ${applicantName} for your job "${job.title}" on ${input.interviewDate} at ${input.interviewTime}.`,
+            message: `The Iṣéyá team has scheduled a ${input.interviewType} interview with ${applicantName} for your job "${job.title}" on ${input.interviewDate} at ${input.interviewTime}. We will recommend shortly after assessment.`,
             type: "individual",
             targetRole: null,
             targetUserId: actualEmployerId,
             createdBy: employerId,
           }).catch(() => {});
+
+          if (jobEmployer.email) {
+            sendInterviewScheduledEmail(
+              jobEmployer.email, employerDisplayName, job.title, "Iṣéyá Team (on your behalf)",
+              input.interviewDate, input.interviewTime, input.interviewType,
+              input.location, input.meetingLink,
+              `The Iṣéyá team has scheduled this interview with applicant ${applicantName} for your job posting. We will provide our recommendation shortly after the assessment.`
+            ).catch(() => {});
+          }
         }
       }
     } catch (err) {
