@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Briefcase, MapPin, MoreVertical, Trash2, Eye, EyeOff, Building2 } from "lucide-react";
+import { Search, Briefcase, MapPin, MoreVertical, Trash2, Eye, EyeOff, Building2, Users } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link } from "wouter";
@@ -132,6 +132,12 @@ export default function AdminJobs() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Link href={`/jobs/${job.id}/applications`}>
+                      <Button variant="outline" size="sm" className="gap-1" data-testid={`button-manage-applicants-${job.id}`}>
+                        <Users className="w-3.5 h-3.5" />
+                        Applicants
+                      </Button>
+                    </Link>
                     <Link href={`/jobs/${job.id}`}>
                       <Button variant="outline" size="sm" data-testid={`button-view-job-${job.id}`}>
                         View

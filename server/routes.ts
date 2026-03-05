@@ -356,10 +356,10 @@ export async function registerRoutes(
     const userId = req.session.userId!;
 
     if (!job) return res.status(404).json({ message: "Job not found" });
-    if (job.employerId !== userId) return res.status(403).json({ message: "Forbidden" });
+    const user = await storage.getUser(userId);
+    if (job.employerId !== userId && user?.role !== 'admin') return res.status(403).json({ message: "Forbidden" });
 
-    const employer = await storage.getUser(userId);
-    if (employer && employer.subscriptionStatus === "free") {
+    if (user?.role === 'employer' && user.subscriptionStatus === "free") {
       return res.status(403).json({ message: "Please upgrade your subscription to manage job applicants.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
@@ -425,14 +425,14 @@ export async function registerRoutes(
     if (!application) return res.status(404).json({ message: "Application not found" });
 
     const userId = req.session.userId!;
+    const currentUser = await storage.getUser(userId);
     const job = await storage.getJob(application.jobId);
     
-    if (!job || job.employerId !== userId) {
+    if (!job || (job.employerId !== userId && currentUser?.role !== 'admin')) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    const employerUser = await storage.getUser(userId);
-    if (employerUser && employerUser.subscriptionStatus === "free") {
+    if (currentUser?.role === 'employer' && currentUser.subscriptionStatus === "free") {
       return res.status(403).json({ message: "Please upgrade your subscription to manage applicants.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
@@ -1211,12 +1211,12 @@ export async function registerRoutes(
 
   // === OFFERS ===
 
-  // Create offer (employer sends to applicant)
+  // Create offer (employer or admin sends to applicant)
   app.post("/api/offers", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
-    if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can send offers" });
-    if (employer.subscriptionStatus === "free") return res.status(403).json({ message: "Please upgrade your subscription to send offers.", code: "SUBSCRIPTION_REQUIRED" });
+    if (employer?.role !== "employer" && employer?.role !== "admin") return res.status(403).json({ message: "Only employers can send offers" });
+    if (employer.role === "employer" && employer.subscriptionStatus === "free") return res.status(403).json({ message: "Please upgrade your subscription to send offers.", code: "SUBSCRIPTION_REQUIRED" });
 
     try {
       const offerSchema = z.object({
@@ -1231,7 +1231,7 @@ export async function registerRoutes(
       if (!application) return res.status(404).json({ message: "Application not found" });
 
       const job = await storage.getJob(application.jobId);
-      if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+      if (!job || (job.employerId !== employerId && employer?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
       const existingOffer = await storage.getOfferByApplication(input.applicationId);
       if (existingOffer) return res.status(400).json({ message: "An offer has already been sent for this application" });
@@ -1389,7 +1389,11 @@ export async function registerRoutes(
   app.get("/api/interview-credits", isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
     const user = await storage.getUser(userId);
-    if (!user || user.role !== "employer") return res.status(403).json({ message: "Only employers can view interview credits" });
+    if (!user || (user.role !== "employer" && user.role !== "admin")) return res.status(403).json({ message: "Only employers can view interview credits" });
+
+    if (user.role === "admin") {
+      return res.json({ total: 999, used: 0, remaining: 999, plan: "admin" });
+    }
 
     const plan = user.subscriptionStatus || "free";
     const totalCredits = INTERVIEW_CREDITS[plan] || 0;
@@ -1406,8 +1410,9 @@ export async function registerRoutes(
   app.get("/api/jobs/:jobId/recommended-applicants", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
-    if (!employer || employer.role !== "employer") return res.status(403).json({ message: "Only employers can view recommendations" });
-    if (employer.subscriptionStatus !== "premium" && employer.subscriptionStatus !== "enterprise") {
+    if (!employer || (employer.role !== "employer" && employer.role !== "admin")) return res.status(403).json({ message: "Only employers can view recommendations" });
+
+    if (employer.role === "employer" && employer.subscriptionStatus !== "premium" && employer.subscriptionStatus !== "enterprise") {
       return res.status(403).json({ message: "Upgrade to Premium or Enterprise to get applicant recommendations.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
@@ -1415,7 +1420,7 @@ export async function registerRoutes(
     if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
 
     const job = await storage.getJob(jobId);
-    if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+    if (!job || (job.employerId !== employerId && employer.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
     const apps = await storage.getApplicationsForJob(jobId);
 
@@ -1487,11 +1492,11 @@ export async function registerRoutes(
     res.json(validScored);
   });
 
-  // Schedule interview (employer)
+  // Schedule interview (employer or admin)
   app.post("/api/interviews", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
-    if (employer?.role !== "employer") return res.status(403).json({ message: "Only employers can schedule interviews" });
+    if (employer?.role !== "employer" && employer?.role !== "admin") return res.status(403).json({ message: "Only employers can schedule interviews" });
 
     try {
       const interviewSchema = z.object({
@@ -1509,7 +1514,7 @@ export async function registerRoutes(
       if (!application) return res.status(404).json({ message: "Application not found" });
 
       const job = await storage.getJob(application.jobId);
-      if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+      if (!job || (job.employerId !== employerId && employer?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
       if (application.status !== "pending" && application.status !== "offered") {
         return res.status(400).json({ message: "Can only schedule interviews for pending or offered applicants" });
@@ -1565,13 +1570,14 @@ export async function registerRoutes(
     }
   });
 
-  // Get interviews for a job (employer)
+  // Get interviews for a job (employer or admin)
   app.get("/api/jobs/:jobId/interviews", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
+    const currentUser = await storage.getUser(employerId);
     const jobId = Number(req.params.jobId);
     if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     const job = await storage.getJob(jobId);
-    if (!job || job.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+    if (!job || (job.employerId !== employerId && currentUser?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
     const interviewList = await storage.getInterviewsForJob(jobId);
     const enriched = await Promise.all(interviewList.map(async (interview) => {
@@ -1624,7 +1630,8 @@ export async function registerRoutes(
 
       const interview = await storage.getInterview(interviewId);
       if (!interview) return res.status(404).json({ message: "Interview not found" });
-      if (interview.employerId !== employerId) return res.status(403).json({ message: "Not authorized" });
+      const updatingUser = await storage.getUser(employerId);
+      if (interview.employerId !== employerId && updatingUser?.role !== 'admin') return res.status(403).json({ message: "Not authorized" });
 
       const updated = await storage.updateInterview(interviewId, input);
       res.json(updated);

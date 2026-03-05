@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview } from "@/hooks/use-casual";
+import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -786,6 +787,9 @@ function ApplicantCard({
 }
 
 export default function ManageApplicants() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const backPath = isAdmin ? "/admin/jobs" : "/manage-jobs";
   const params = useParams();
   const jobId = Number(params.id);
   const { data: job, isLoading: jobLoading } = useJob(jobId);
@@ -866,11 +870,11 @@ export default function ManageApplicants() {
     );
   }
 
-  if ((appsError as any)?.code === "SUBSCRIPTION_REQUIRED") {
+  if (!isAdmin && (appsError as any)?.code === "SUBSCRIPTION_REQUIRED") {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Link href="/manage-jobs">
+          <Link href={backPath}>
             <Button variant="ghost" size="icon" data-testid="button-back-to-jobs-sub">
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -899,7 +903,7 @@ export default function ManageApplicants() {
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Job not found</h2>
-        <Link href="/manage-jobs">
+        <Link href={backPath}>
           <Button variant="outline" data-testid="button-back-to-jobs-notfound">Back to Jobs</Button>
         </Link>
       </div>
@@ -909,7 +913,7 @@ export default function ManageApplicants() {
   return (
     <div className="space-y-8 pb-10">
       <div className="flex items-center gap-4">
-        <Link href="/manage-jobs">
+        <Link href={backPath}>
           <Button variant="ghost" size="icon" data-testid="button-back-to-jobs">
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -920,7 +924,23 @@ export default function ManageApplicants() {
         />
       </div>
 
-      {interviewCredits && interviewCredits.total > 0 && (
+      {isAdmin && (
+        <Card className="border-primary/30 bg-primary/5" data-testid="card-admin-manage-banner">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Admin Management Mode</p>
+              <p className="text-xs text-muted-foreground">
+                Full access to manage applications, schedule interviews, send offers, and view recommendations.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isAdmin && interviewCredits && interviewCredits.total > 0 && (
         <Card className="border-primary/30 bg-primary/5" data-testid="card-interview-credits">
           <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -957,7 +977,7 @@ export default function ManageApplicants() {
         </Card>
       )}
 
-      {interviewCredits && interviewCredits.total > 0 && (
+      {(isAdmin || (interviewCredits && interviewCredits.total > 0)) && (
         <div>
           <Button
             variant={showRecommendations ? "default" : "outline"}
