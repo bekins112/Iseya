@@ -25,6 +25,48 @@ const JOB_TYPE_OPTIONS = [
   "Contract",
 ];
 
+const JOB_CATEGORY_OPTIONS = [
+  "Waiter / Waitress",
+  "Barman / Bartender",
+  "Housekeeper / Room Attendant",
+  "Kitchen Assistant / Steward",
+  "Cook",
+  "Porter / Luggage Handler",
+  "Spa Therapist / Attendant",
+  "Receptionist",
+  "Sales Assistant / Attendant",
+  "Cashier",
+  "Shelf Attendant / Merchandiser",
+  "Store Keeper / Inventory Officer",
+  "Line Cook / Prep Cook",
+  "Barista",
+  "Fast Food Attendant",
+  "Kitchen Manager",
+  "Server",
+  "Factory Worker / Casual Labourer",
+  "Cleaner / Janitor",
+  "Driver (Casual)",
+  "Nanny / Caregiver",
+  "Security Guard",
+  "Tailor / Fashion Designer Assistant",
+  "Box Production Worker",
+  "Stylist (Fashion)",
+  "Stylist (Unisex)",
+  "Stylist (Ladies)",
+  "Stylist (Barbing)",
+  "Stylist (Spa)",
+  "Funeral Service Worker",
+  "Tour & Travel Guide",
+  "Childcare Worker",
+  "Personal Care Aide",
+  "Recreation & Fitness Worker",
+  "Residential Advisor",
+  "Repair Technician",
+  "Maintenance Man",
+  "Office Assistant",
+  "Other",
+];
+
 const profileSchema = insertUserSchema.pick({
   firstName: true,
   lastName: true,
@@ -46,6 +88,7 @@ const profileSchema = insertUserSchema.pick({
   email: z.string().email("Must be a valid email").optional().or(z.literal("")),
   phone: z.string().optional().or(z.literal("")),
   preferredJobTypes: z.array(z.string()).optional(),
+  preferredCategories: z.array(z.string()).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -81,6 +124,7 @@ export default function Profile() {
       profileImageUrl: user?.profileImageUrl || "",
       cvUrl: user?.cvUrl || "",
       preferredJobTypes: (user as any)?.preferredJobTypes || [],
+      preferredCategories: (user as any)?.preferredCategories || [],
     }
   });
 
@@ -388,6 +432,94 @@ export default function Profile() {
                                     >
                                       <X className="w-3 h-3 mr-1" />
                                       Clear all
+                                    </Button>
+                                  </div>
+                                )}
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+                  )}
+
+                  {user?.role === 'applicant' && (
+                    <FormField
+                      control={form.control}
+                      name="preferredCategories"
+                      render={({ field }) => {
+                        const selected: string[] = field.value || [];
+                        const toggleCat = (cat: string) => {
+                          const updated = selected.includes(cat)
+                            ? selected.filter((c) => c !== cat)
+                            : [...selected, cat];
+                          field.onChange(updated);
+                        };
+                        return (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                              <span className="flex items-center gap-1.5">
+                                <Briefcase className="w-3.5 h-3.5" />
+                                Preferred Job Categories
+                              </span>
+                            </FormLabel>
+                            <p className="text-xs text-muted-foreground -mt-1">Select the job categories you're interested in for job alert notifications.</p>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="outline"
+                                    className="w-full min-h-[48px] h-auto rounded-2xl border-border/60 bg-muted/20 hover:bg-muted/30 justify-between font-normal py-2"
+                                    data-testid="button-preferred-categories"
+                                  >
+                                    {selected.length === 0 ? (
+                                      <span className="text-muted-foreground">Select job categories...</span>
+                                    ) : (
+                                      <span className="flex flex-wrap gap-1 overflow-hidden">
+                                        {selected.slice(0, 3).map((cat) => (
+                                          <Badge key={cat} variant="secondary" className="text-xs px-2 py-0.5">
+                                            {cat}
+                                          </Badge>
+                                        ))}
+                                        {selected.length > 3 && (
+                                          <Badge variant="outline" className="text-xs px-2 py-0.5">
+                                            +{selected.length - 3} more
+                                          </Badge>
+                                        )}
+                                      </span>
+                                    )}
+                                    <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                <div className="max-h-[280px] overflow-y-auto p-2 space-y-0.5">
+                                  {JOB_CATEGORY_OPTIONS.map((cat) => (
+                                    <label
+                                      key={cat}
+                                      className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted/60 cursor-pointer transition-colors"
+                                      data-testid={`checkbox-category-${cat.toLowerCase().replace(/[\s\/&()]+/g, "-")}`}
+                                    >
+                                      <Checkbox
+                                        checked={selected.includes(cat)}
+                                        onCheckedChange={() => toggleCat(cat)}
+                                      />
+                                      <span className="text-sm">{cat}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                                {selected.length > 0 && (
+                                  <div className="border-t px-2 py-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="w-full text-xs text-muted-foreground"
+                                      onClick={() => field.onChange([])}
+                                      data-testid="button-clear-categories"
+                                    >
+                                      <X className="w-3 h-3 mr-1" />
+                                      Clear all ({selected.length} selected)
                                     </Button>
                                   </div>
                                 )}

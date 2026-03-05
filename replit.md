@@ -65,6 +65,13 @@ Preferred communication style: Simple, everyday language.
 - Multi-select dropdown with checkboxes in the Profile page, shown only for applicants.
 - Intended for future job alert mailing when matching jobs are posted.
 
+### Preferred Job Categories (Applicant Profile)
+- Applicants can select multiple preferred job categories from their profile page.
+- Stored as `preferredCategories` text array column on the `users` table.
+- Multi-select dropdown with checkboxes and scrollable list (40 categories matching job posting categories).
+- Shows up to 3 badges in the trigger button with "+N more" for additional selections.
+- Intended for future job alert mailing when matching jobs are posted.
+
 ### Applicant Verification System
 - Applicants can submit government-issued ID and pay a fee for verification.
 - Verification is valid for 30 days and provides benefits like a verified badge, priority in application listings, and background checks.

@@ -48,6 +48,7 @@ export const users = pgTable("users", {
   subscribedToNewsletter: boolean("subscribed_to_newsletter").default(false),
   interviewCreditsUsed: integer("interview_credits_used").default(0),
   preferredJobTypes: text("preferred_job_types").array(),
+  preferredCategories: text("preferred_categories").array(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
