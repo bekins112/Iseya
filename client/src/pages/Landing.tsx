@@ -1007,7 +1007,9 @@ export default function Landing() {
                   "No resumes required",
                   "Chat directly with employers",
                   "Flexible working hours",
-                  "Weekly payment guarantee",
+                  "Interview Assistant",
+                  "24/7 Support",
+                  "100% Job Guarantee",
                   "16+ Age protected community"
                 ].map((item, i) => (
                   <motion.div
