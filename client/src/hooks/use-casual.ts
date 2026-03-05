@@ -72,12 +72,11 @@ export function useCreateJob() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: InsertJob) => {
-      const validated = api.jobs.create.input.parse(data);
+    mutationFn: async (data: any) => {
       const res = await fetch(api.jobs.create.path, {
         method: api.jobs.create.method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
+        body: JSON.stringify(data),
         credentials: "include",
       });
 
@@ -93,7 +92,7 @@ export function useCreateJob() {
         }
         throw new Error(err.message || "Failed to create job");
       }
-      return api.jobs.create.responses[201].parse(await res.json());
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.jobs.list.path] });

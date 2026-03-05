@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateJob } from "@/hooks/use-casual";
@@ -14,6 +14,14 @@ import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { AlertTriangle, ArrowUpCircle, CalendarClock } from "lucide-react";
+
+function formatDateDisplay(isoDate: string): string {
+  if (!isoDate) return "";
+  const d = new Date(isoDate + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${String(d.getDate()).padStart(2, "0")}, ${months[d.getMonth()]}, ${d.getFullYear()}`;
+}
 
 const categories = [
   "Waiter / Waitress",
@@ -356,23 +364,39 @@ export default function PostJob() {
                 <FormField
                   control={form.control}
                   name="deadline"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1">
-                        <CalendarClock className="w-4 h-4" />
-                        Application Deadline
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                          {...field}
-                          data-testid="input-job-deadline"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const dateRef = useRef<HTMLInputElement>(null);
+                    return (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                          <CalendarClock className="w-4 h-4" />
+                          Application Deadline
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              readOnly
+                              value={field.value ? formatDateDisplay(field.value) : ""}
+                              placeholder="Select deadline date"
+                              className="cursor-pointer"
+                              onClick={() => dateRef.current?.showPicker?.()}
+                              data-testid="input-job-deadline"
+                            />
+                            <input
+                              ref={dateRef}
+                              type="date"
+                              min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                              value={field.value || ""}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              className="absolute inset-0 opacity-0 cursor-pointer"
+                              tabIndex={-1}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
 

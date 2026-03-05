@@ -1,5 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useEmployerJobs, useUpdateJob, useDeleteJob, useJobApplications } from "@/hooks/use-casual";
+
+function formatDateDisplay(isoDate: string): string {
+  if (!isoDate) return "";
+  const d = new Date(isoDate + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${String(d.getDate()).padStart(2, "0")}, ${months[d.getMonth()]}, ${d.getFullYear()}`;
+}
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
@@ -127,7 +135,7 @@ function JobRow({ job, onToggleActive, onDelete, onEdit, onExtendDeadline, onRea
                     <CalendarClock className="w-3.5 h-3.5" />
                     {isPast(new Date(job.deadline)) 
                       ? `Expired ${formatDistanceToNow(new Date(job.deadline), { addSuffix: true })}`
-                      : `Closes ${format(new Date(job.deadline), 'MMM d, yyyy')}`
+                      : `Closes ${format(new Date(job.deadline), 'dd, MMM, yyyy')}`
                     }
                   </span>
                 )}
@@ -543,13 +551,28 @@ export default function ManageJobs() {
               </div>
               <div>
                 <Label className="flex items-center gap-1"><CalendarClock className="w-3.5 h-3.5" /> Deadline</Label>
-                <Input
-                  type="date"
-                  value={editForm.deadline}
-                  min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
-                  onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
-                  data-testid="input-edit-deadline"
-                />
+                <div className="relative">
+                  <Input
+                    readOnly
+                    value={editForm.deadline ? formatDateDisplay(editForm.deadline) : ""}
+                    placeholder="Select deadline date"
+                    className="cursor-pointer"
+                    onClick={() => {
+                      const el = document.getElementById("edit-deadline-picker") as HTMLInputElement;
+                      el?.showPicker?.();
+                    }}
+                    data-testid="input-edit-deadline"
+                  />
+                  <input
+                    id="edit-deadline-picker"
+                    type="date"
+                    min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                    value={editForm.deadline || ""}
+                    onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    tabIndex={-1}
+                  />
+                </div>
               </div>
             </div>
             <div>
