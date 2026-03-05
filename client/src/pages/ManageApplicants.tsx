@@ -1260,10 +1260,22 @@ export default function ManageApplicants() {
                                 ) : null}
                               </div>
                             )}
-                            {rec.adminNote && (
-                              <div className="mt-1.5 flex items-start gap-1">
-                                <MessageCircle className="w-3 h-3 text-amber-500 mt-0.5 flex-shrink-0" />
-                                <span className="text-[11px] text-muted-foreground line-clamp-1 italic">{rec.adminNote}</span>
+                            {(rec.adminRating || rec.adminNote) && (
+                              <div className="mt-1.5 p-2 rounded bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <ClipboardCheck className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                                  <span className="text-[10px] font-semibold text-amber-800 dark:text-amber-400">Iṣéyá Assessment</span>
+                                  {rec.adminRating && (
+                                    <div className="flex items-center gap-0.5 ml-auto">
+                                      {[1, 2, 3, 4, 5].map((s) => (
+                                        <Star key={s} className={`w-2.5 h-2.5 ${s <= rec.adminRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"}`} />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                {rec.adminNote && (
+                                  <p className="text-[11px] text-muted-foreground line-clamp-2 italic">{rec.adminNote}</p>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1278,13 +1290,6 @@ export default function ManageApplicants() {
                               {rec.matchLevel}
                             </Badge>
                             <span className="text-[10px] text-muted-foreground">Score: {rec.score}</span>
-                            {rec.adminRating && (
-                              <div className="flex items-center gap-0.5">
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                  <Star key={s} className={`w-2.5 h-2.5 ${s <= rec.adminRating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20"}`} />
-                                ))}
-                              </div>
-                            )}
                           </div>
                         </div>
                       ))
