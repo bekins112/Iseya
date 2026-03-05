@@ -820,7 +820,7 @@ export async function registerRoutes(
   // === TICKETS ===
   
   // Create a support ticket (any authenticated user)
-  app.post("/api/tickets", isAuthenticated, async (req, res) => {
+  app.post("/api/tickets", isAuthenticated, uploadTicketAttachment.single("attachment"), async (req, res) => {
     const userId = req.session.userId!;
     try {
       const input = insertTicketSchema.parse({
@@ -830,6 +830,23 @@ export async function registerRoutes(
         priority: req.body.priority || "medium",
       });
       const ticket = await storage.createTicket(input);
+
+      if (req.file) {
+        const attachmentUrl = `/uploads/tickets/${req.file.filename}`;
+        const attachmentName = req.file.originalname;
+        const user = await storage.getUser(userId);
+        const senderRole = user?.role === "admin" ? "admin" : "user";
+        await storage.createTicketMessage({
+          ticketId: ticket.id,
+          senderId: userId,
+          senderRole,
+          message: `Attached: ${attachmentName}`,
+          attachmentUrl,
+          attachmentName,
+          isRead: false,
+        });
+      }
+
       res.status(201).json(ticket);
 
       const ticketUser = await storage.getUser(userId);

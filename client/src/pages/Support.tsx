@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -131,22 +132,39 @@ export default function Support() {
 
   const createTicket = useMutation({
     mutationFn: async (data: TicketFormValues) => {
-      const res = await apiRequest("POST", "/api/tickets", data);
+      const formData = new FormData();
+      formData.append("subject", data.subject);
+      formData.append("description", data.description);
+      formData.append("category", data.category);
+      formData.append("priority", data.priority);
+      if (ticketFile) formData.append("attachment", ticketFile);
+      const res = await fetch("/api/tickets", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed to submit ticket" }));
+        throw new Error(err.message || "Failed to submit ticket");
+      }
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tickets/my"] });
       form.reset();
+      setTicketFile(null);
       setShowForm(false);
       toast({ title: "Ticket submitted", description: "We've received your support request. You'll be notified of any updates." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to submit your ticket. Please try again.", variant: "destructive" });
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message || "Failed to submit your ticket. Please try again.", variant: "destructive" });
     },
   });
 
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [ticketFile, setTicketFile] = useState<File | null>(null);
+  const ticketFileRef = useRef<HTMLInputElement>(null);
 
   const sendReply = useMutation({
     mutationFn: async ({ text, file }: { text: string; file: File | null }) => {
@@ -412,8 +430,61 @@ export default function Support() {
                   </FormItem>
                 )}
               />
+              <div>
+                <Label className="mb-1.5 block">Attachment (optional)</Label>
+                <input
+                  type="file"
+                  ref={ticketFileRef}
+                  className="hidden"
+                  accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast({ title: "File too large", description: "Maximum file size is 10MB", variant: "destructive" });
+                        return;
+                      }
+                      setTicketFile(file);
+                    }
+                    e.target.value = "";
+                  }}
+                  data-testid="input-ticket-file"
+                />
+                {ticketFile ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm border">
+                    {/\.(jpg|jpeg|png|webp|gif)$/i.test(ticketFile.name) ? (
+                      <Image className="w-4 h-4 text-primary shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-primary shrink-0" />
+                    )}
+                    <span className="truncate flex-1">{ticketFile.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {(ticketFile.size / 1024).toFixed(0)}KB
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTicketFile(null)}
+                      className="shrink-0 hover:text-destructive"
+                      data-testid="button-remove-ticket-file"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => ticketFileRef.current?.click()}
+                    data-testid="button-attach-ticket-file"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                    Attach a file (image, PDF, or document)
+                  </Button>
+                )}
+              </div>
               <div className="flex gap-3 justify-end pt-2">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setTicketFile(null); }}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createTicket.isPending} data-testid="button-submit-ticket">
