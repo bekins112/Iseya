@@ -122,7 +122,7 @@ export interface IStorage {
   getTransaction(id: number): Promise<Transaction | undefined>;
   getAllTransactions(filters?: { type?: string; status?: string; gateway?: string }): Promise<Transaction[]>;
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
-  updateTransactionStatus(id: number, status: string): Promise<Transaction>;
+  updateTransactionStatus(id: number, status: string, metadata?: string): Promise<Transaction>;
   getTransactionStats(): Promise<{
     totalRevenue: number;
     subscriptionRevenue: number;
@@ -868,8 +868,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(transactions).where(eq(transactions.userId, userId)).orderBy(desc(transactions.createdAt));
   }
 
-  async updateTransactionStatus(id: number, status: string): Promise<Transaction> {
-    const [updated] = await db.update(transactions).set({ status }).where(eq(transactions.id, id)).returning();
+  async updateTransactionStatus(id: number, status: string, metadata?: string): Promise<Transaction> {
+    const setData: any = { status };
+    if (metadata !== undefined) setData.metadata = metadata;
+    const [updated] = await db.update(transactions).set(setData).where(eq(transactions.id, id)).returning();
     return updated;
   }
 

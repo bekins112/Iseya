@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extension";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Redirect } from "wouter";
 import {
   Search,
@@ -20,6 +25,7 @@ import {
   Crown,
   ArrowUpRight,
   ArrowDownRight,
+  RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -51,10 +57,30 @@ type TransactionStats = {
 
 export default function AdminTransactions() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [gatewayFilter, setGatewayFilter] = useState("all");
+  const [resolvingTxn, setResolvingTxn] = useState<TransactionItem | null>(null);
+  const [resolveNote, setResolveNote] = useState("");
+
+  const resolveTransaction = useMutation({
+    mutationFn: async ({ id, adminNote }: { id: number; adminNote: string }) => {
+      const res = await apiRequest("PATCH", `/api/admin/transactions/${id}/resolve`, { adminNote });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Transaction Resolved", description: "The transaction has been marked as successful and benefits applied." });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/transactions/stats"] });
+      setResolvingTxn(null);
+      setResolveNote("");
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "Failed to resolve transaction", variant: "destructive" });
+    },
+  });
 
   const { data: txns = [], isLoading } = useQuery<TransactionItem[]>({
     queryKey: ["/api/admin/transactions", typeFilter, statusFilter, gatewayFilter],
@@ -300,19 +326,23 @@ export default function AdminTransactions() {
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="hidden md:grid grid-cols-[1fr_120px_100px_100px_100px_120px_100px] gap-2 px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b">
+              <div className="hidden md:grid grid-cols-[1fr_120px_100px_100px_100px_120px_140px] gap-2 px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b">
                 <span>User / Reference</span>
                 <span>Amount</span>
                 <span>Type</span>
                 <span>Gateway</span>
                 <span>Plan</span>
                 <span>Date</span>
-                <span>Status</span>
+                <span>Status / Action</span>
               </div>
               {filteredTxns.map((t) => (
                 <div
                   key={t.id}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_120px_100px_100px_100px_120px_100px] gap-2 px-3 py-3 rounded-lg hover:bg-muted/50 border border-transparent hover:border-border transition-colors"
+                  className={`grid grid-cols-1 md:grid-cols-[1fr_120px_100px_100px_100px_120px_140px] gap-2 px-3 py-3 rounded-lg hover:bg-muted/50 border transition-colors ${
+                    t.status === "failed" ? "border-red-200 dark:border-red-900/40 bg-red-50/30 dark:bg-red-950/10" :
+                    t.status === "pending" ? "border-amber-200 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-950/10" :
+                    "border-transparent hover:border-border"
+                  }`}
                   data-testid={`row-transaction-${t.id}`}
                 >
                   <div className="min-w-0">
@@ -349,9 +379,23 @@ export default function AdminTransactions() {
                       {t.createdAt ? format(new Date(t.createdAt), "MMM d, yyyy HH:mm") : "-"}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    {statusIcon(t.status)}
-                    {statusBadge(t.status)}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
+                      {statusIcon(t.status)}
+                      {statusBadge(t.status)}
+                    </div>
+                    {(t.status === "failed" || t.status === "pending") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs gap-1"
+                        onClick={() => { setResolvingTxn(t); setResolveNote(""); }}
+                        data-testid={`button-resolve-${t.id}`}
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Resolve
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -359,6 +403,95 @@ export default function AdminTransactions() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!resolvingTxn} onOpenChange={(open) => { if (!open) { setResolvingTxn(null); setResolveNote(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-green-600" />
+              Resolve Transaction
+            </DialogTitle>
+            <DialogDescription>
+              Confirm that this payment was received and apply the associated benefits to the user.
+            </DialogDescription>
+          </DialogHeader>
+          {resolvingTxn && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted/50 border p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">User</span>
+                  <span className="font-medium" data-testid="text-resolve-user">{resolvingTxn.userName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-bold" data-testid="text-resolve-amount">₦{resolvingTxn.amount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="capitalize">{resolvingTxn.type}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Gateway</span>
+                  <span className="capitalize">{resolvingTxn.gateway}</span>
+                </div>
+                {resolvingTxn.plan && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Plan</span>
+                    <span className="capitalize">{resolvingTxn.plan}</span>
+                  </div>
+                )}
+                {resolvingTxn.reference && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Reference</span>
+                    <span className="font-mono text-xs">{resolvingTxn.reference}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Current Status</span>
+                  <Badge variant="destructive" className="text-xs">{resolvingTxn.status}</Badge>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/40 p-3 text-sm">
+                <p className="font-medium text-green-800 dark:text-green-300 mb-1">What will happen:</p>
+                <ul className="text-green-700 dark:text-green-400 text-xs space-y-1">
+                  <li>• Transaction will be marked as successful</li>
+                  {resolvingTxn.type === "subscription" && resolvingTxn.plan && (
+                    <li>• User's {resolvingTxn.plan} plan subscription will be activated for 30 days</li>
+                  )}
+                  {resolvingTxn.type === "verification" && (
+                    <li>• User's verification request will be moved to "under review"</li>
+                  )}
+                  <li>• User will receive a notification about the resolution</li>
+                </ul>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Admin Note (optional)</label>
+                <Textarea
+                  value={resolveNote}
+                  onChange={(e) => setResolveNote(e.target.value)}
+                  placeholder="e.g. Payment confirmed via bank transfer receipt"
+                  className="min-h-[60px] resize-none text-sm"
+                  data-testid="textarea-resolve-note"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setResolvingTxn(null); setResolveNote(""); }} data-testid="button-cancel-resolve">
+              Cancel
+            </Button>
+            <Button
+              onClick={() => resolvingTxn && resolveTransaction.mutate({ id: resolvingTxn.id, adminNote: resolveNote })}
+              disabled={resolveTransaction.isPending}
+              data-testid="button-confirm-resolve"
+            >
+              {resolveTransaction.isPending ? "Resolving..." : "Confirm & Resolve"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

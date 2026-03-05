@@ -1956,6 +1956,20 @@ export async function registerRoutes(
 
       const data = await response.json();
       if (!data.status || data.data.status !== "success") {
+        const meta = data.data?.metadata || {};
+        if (meta.userId && meta.plan) {
+          await storage.createTransaction({
+            userId: meta.userId,
+            type: "subscription",
+            gateway: "paystack",
+            reference: data.data?.reference || String(reference),
+            amount: data.data?.amount || 0,
+            currency: "NGN",
+            status: "failed",
+            plan: meta.plan,
+            metadata: JSON.stringify({ reason: "Gateway reported payment not successful", gatewayStatus: data.data?.status }),
+          });
+        }
         return res.status(400).json({ message: "Payment verification failed", verified: false });
       }
 
@@ -2124,6 +2138,20 @@ export async function registerRoutes(
 
       const data = await response.json();
       if (data.status !== "success" || data.data.status !== "successful") {
+        const meta = data.data?.meta || {};
+        if (meta.userId && meta.plan) {
+          await storage.createTransaction({
+            userId: meta.userId,
+            type: "subscription",
+            gateway: "flutterwave",
+            reference: data.data?.tx_ref || data.data?.flw_ref || String(transaction_id),
+            amount: data.data?.amount ? Math.round(data.data.amount * 100) : 0,
+            currency: "NGN",
+            status: "failed",
+            plan: meta.plan,
+            metadata: JSON.stringify({ reason: "Gateway reported payment not successful", gatewayStatus: data.data?.status }),
+          });
+        }
         return res.status(400).json({ message: "Payment verification failed", verified: false });
       }
 
@@ -2377,6 +2405,19 @@ export async function registerRoutes(
       const data = await response.json();
 
       if (!data.status || data.data.status !== "success") {
+        const meta = data.data?.metadata || {};
+        if (meta.userId) {
+          await storage.createTransaction({
+            userId: meta.userId,
+            type: "verification",
+            gateway: "paystack",
+            reference: data.data?.reference || String(reference),
+            amount: data.data?.amount || 0,
+            currency: "NGN",
+            status: "failed",
+            metadata: JSON.stringify({ requestId: meta.requestId, reason: "Gateway reported payment not successful", gatewayStatus: data.data?.status }),
+          });
+        }
         return res.status(400).json({ message: "Payment verification failed", verified: false });
       }
 
@@ -2474,6 +2515,19 @@ export async function registerRoutes(
       const data = await response.json();
 
       if (data.status !== "success" || data.data.status !== "successful") {
+        const meta = data.data?.meta || {};
+        if (meta.userId) {
+          await storage.createTransaction({
+            userId: meta.userId,
+            type: "verification",
+            gateway: "flutterwave",
+            reference: data.data?.tx_ref || data.data?.flw_ref || String(transactionId),
+            amount: data.data?.amount ? Math.round(data.data.amount * 100) : 0,
+            currency: "NGN",
+            status: "failed",
+            metadata: JSON.stringify({ requestId: meta.requestId, reason: "Gateway reported payment not successful", gatewayStatus: data.data?.status }),
+          });
+        }
         return res.status(400).json({ message: "Payment verification failed", verified: false });
       }
 
@@ -2685,6 +2739,81 @@ export async function registerRoutes(
         total: m.total / 100,
       })),
     });
+  });
+
+  // Admin: Resolve a failed/pending transaction (mark as success and apply benefits)
+  app.patch("/api/admin/transactions/:id/resolve", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageTransactions) {
+      return res.status(403).json({ message: "You do not have permission to manage transactions" });
+    }
+
+    const txnId = Number(req.params.id);
+    if (isNaN(txnId)) return res.status(400).json({ message: "Invalid transaction ID" });
+
+    const txn = await storage.getTransaction(txnId);
+    if (!txn) return res.status(404).json({ message: "Transaction not found" });
+
+    if (txn.status === "success") {
+      return res.status(400).json({ message: "Transaction is already successful" });
+    }
+
+    const adminNote = req.body.adminNote || "";
+
+    try {
+      let existingMeta: any = {};
+      try { existingMeta = txn.metadata ? JSON.parse(txn.metadata) : {}; } catch {}
+      const resolvedMeta = JSON.stringify({
+        ...existingMeta,
+        resolvedBy: req.session.userId,
+        resolvedAt: new Date().toISOString(),
+        adminNote: adminNote || undefined,
+        originalStatus: txn.status,
+      });
+      const updatedTxn = await storage.updateTransactionStatus(txnId, "success", resolvedMeta);
+
+      const user = await storage.getUser(txn.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found for this transaction" });
+      }
+
+      if (txn.type === "subscription" && txn.plan) {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+        await storage.updateUser(txn.userId, {
+          subscriptionStatus: txn.plan,
+          subscriptionEndDate: endDate,
+        });
+
+        storage.createNotification({
+          title: "Subscription Activated",
+          message: `Your ${txn.plan.charAt(0).toUpperCase() + txn.plan.slice(1)} plan subscription has been activated by the admin team. Enjoy your new benefits!`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: txn.userId,
+          createdBy: req.session.userId!,
+        }).catch(() => {});
+      } else if (txn.type === "verification") {
+        let metadata: any = {};
+        try { metadata = txn.metadata ? JSON.parse(txn.metadata) : {}; } catch {}
+        if (metadata.requestId) {
+          await storage.updateVerificationRequest(Number(metadata.requestId), { status: "under_review" });
+        }
+
+        storage.createNotification({
+          title: "Verification Payment Confirmed",
+          message: "Your verification payment has been confirmed by the admin team. Your verification is now under review.",
+          type: "individual",
+          targetRole: null,
+          targetUserId: txn.userId,
+          createdBy: req.session.userId!,
+        }).catch(() => {});
+      }
+
+      res.json({ message: "Transaction resolved successfully", transaction: updatedTxn });
+    } catch (err) {
+      console.error("Failed to resolve transaction:", err);
+      res.status(500).json({ message: "Failed to resolve transaction" });
+    }
   });
 
   // ============ PLATFORM SETTINGS ROUTES ============
