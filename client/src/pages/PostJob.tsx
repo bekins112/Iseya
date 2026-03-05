@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useCreateJob } from "@/hooks/use-casual";
-import { insertJobSchema } from "@shared/schema";
 import { z } from "zod";
 import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -65,15 +64,15 @@ const categories = [
   "Other",
 ];
 
-const postJobSchema = insertJobSchema.omit({ employerId: true, isActive: true, status: true, deadline: true }).extend({
+const postJobSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters"),
+  description: z.string().min(20, "Please provide a detailed description"),
   category: z.string().min(1, "Category is required"),
   jobType: z.string().min(1, "Job type is required"),
   salaryMin: z.coerce.number().min(0, "Minimum salary must be at least 0"),
   salaryMax: z.coerce.number().min(0, "Maximum salary must be at least 0"),
   wage: z.string().min(1, "Wage information is required"),
   location: z.string().min(1, "Location is required"),
-  title: z.string().min(5, "Title must be at least 5 characters"),
-  description: z.string().min(20, "Please provide a detailed description"),
   gender: z.string().default("Any"),
   ageMin: z.coerce.number().min(16, "Minimum age must be at least 16").nullable().optional(),
   ageMax: z.coerce.number().max(100, "Maximum age cannot exceed 100").nullable().optional(),
