@@ -1570,10 +1570,13 @@ export async function registerRoutes(
       const existingInterview = await storage.getInterviewByApplication(input.applicationId);
       if (existingInterview) return res.status(400).json({ message: "An interview is already scheduled for this application" });
 
+      const isAdminScheduling = employer?.role === "admin";
+      const actualEmployerId = job.employerId;
+
       const interview = await storage.createInterview({
         applicationId: input.applicationId,
         jobId: application.jobId,
-        employerId,
+        employerId: actualEmployerId,
         applicantId: application.applicantId,
         interviewDate: input.interviewDate,
         interviewTime: input.interviewTime,
@@ -1587,14 +1590,17 @@ export async function registerRoutes(
       res.status(201).json(interview);
 
       const applicant = await storage.getUser(application.applicantId);
-      const employerUser = await storage.getUser(employerId);
+      const jobEmployer = await storage.getUser(actualEmployerId);
+      const schedulerName = isAdminScheduling
+        ? "Iṣéyá Team"
+        : (jobEmployer?.companyName || `${jobEmployer?.firstName || ""} ${jobEmployer?.lastName || ""}`.trim() || "Employer");
+
       if (applicant && job) {
         const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
-        const companyName = employerUser?.companyName || `${employerUser?.firstName || ""} ${employerUser?.lastName || ""}`.trim() || "Employer";
 
         storage.createNotification({
           title: "Interview Scheduled",
-          message: `${companyName} has scheduled a ${input.interviewType} interview for "${job.title}" on ${input.interviewDate} at ${input.interviewTime}.`,
+          message: `${schedulerName} has scheduled a ${input.interviewType} interview for "${job.title}" on ${input.interviewDate} at ${input.interviewTime}.`,
           type: "individual",
           targetRole: null,
           targetUserId: application.applicantId,
@@ -1603,10 +1609,21 @@ export async function registerRoutes(
 
         if (applicant.email) {
           sendInterviewScheduledEmail(
-            applicant.email, applicantName, job.title, companyName,
+            applicant.email, applicantName, job.title, schedulerName,
             input.interviewDate, input.interviewTime, input.interviewType,
             input.location, input.meetingLink, input.notes
           ).catch(() => {});
+        }
+
+        if (isAdminScheduling && jobEmployer) {
+          storage.createNotification({
+            title: "Interview Scheduled by Iṣéyá Team",
+            message: `The Iṣéyá team has scheduled a ${input.interviewType} interview with ${applicantName} for your job "${job.title}" on ${input.interviewDate} at ${input.interviewTime}.`,
+            type: "individual",
+            targetRole: null,
+            targetUserId: actualEmployerId,
+            createdBy: employerId,
+          }).catch(() => {});
         }
       }
     } catch (err) {
