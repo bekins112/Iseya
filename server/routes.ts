@@ -316,11 +316,23 @@ export async function registerRoutes(
       res.status(201).json(app);
 
       const jobForEmail = await storage.getJob(req.body.jobId);
-      if (jobForEmail && user.email) {
+      if (jobForEmail) {
         const employer = await storage.getUser(jobForEmail.employerId);
         const applicantName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "Applicant";
         const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
-        sendApplicationReceivedEmail(user.email!, applicantName, jobForEmail.title, companyName).catch(() => {});
+
+        storage.createNotification({
+          title: "New Application Received",
+          message: `${applicantName} applied for your job "${jobForEmail.title}".`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: jobForEmail.employerId,
+          createdBy: user.id,
+        }).catch(() => {});
+
+        if (user.email) {
+          sendApplicationReceivedEmail(user.email!, applicantName, jobForEmail.title, companyName).catch(() => {});
+        }
         if (employer?.email) {
           sendNewApplicationNotifyEmployer(employer.email, companyName, applicantName, jobForEmail.title).catch(() => {});
         }
@@ -429,11 +441,31 @@ export async function registerRoutes(
       res.json(updatedApp);
 
       const applicant = await storage.getUser(application.applicantId);
-      if (applicant?.email && job) {
+      if (applicant && job) {
         const employer = await storage.getUser(job.employerId);
         const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
         const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
-        sendApplicationStatusEmail(applicant.email, applicantName, job.title, input.status, companyName).catch(() => {});
+
+        const statusLabels: Record<string, string> = {
+          shortlisted: "Shortlisted",
+          rejected: "Rejected",
+          accepted: "Accepted",
+          pending: "Pending",
+        };
+        const statusLabel = statusLabels[input.status] || input.status;
+
+        storage.createNotification({
+          title: `Application ${statusLabel}`,
+          message: `Your application for "${job.title}" has been ${statusLabel.toLowerCase()} by ${companyName}.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: application.applicantId,
+          createdBy: userId,
+        }).catch(() => {});
+
+        if (applicant.email) {
+          sendApplicationStatusEmail(applicant.email, applicantName, job.title, input.status, companyName).catch(() => {});
+        }
       }
     } catch (err) {
       res.status(400).json({ message: "Invalid input" });
@@ -456,8 +488,22 @@ export async function registerRoutes(
     if (application.applicantId !== userId) return res.status(403).json({ message: "Not authorized" });
     if (application.status === "accepted") return res.status(400).json({ message: "Cannot cancel an accepted application" });
 
+    const jobForNotif = await storage.getJob(application.jobId);
     await storage.deleteApplication(appId, userId);
     res.status(204).send();
+
+    if (jobForNotif) {
+      const applicantUser = await storage.getUser(userId);
+      const applicantName = `${applicantUser?.firstName || ""} ${applicantUser?.lastName || ""}`.trim() || "Applicant";
+      storage.createNotification({
+        title: "Application Withdrawn",
+        message: `${applicantName} has withdrawn their application for "${jobForNotif.title}".`,
+        type: "individual",
+        targetRole: null,
+        targetUserId: jobForNotif.employerId,
+        createdBy: userId,
+      }).catch(() => {});
+    }
   });
 
   // === ADMIN ROUTES ===
@@ -1205,10 +1251,22 @@ export async function registerRoutes(
       res.status(201).json(offer);
 
       const applicant = await storage.getUser(application.applicantId);
-      if (applicant?.email && job) {
+      const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
+      if (applicant && job) {
         const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
-        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
-        sendOfferEmail(applicant.email, applicantName, job.title, companyName, input.salary, input.note).catch(() => {});
+
+        storage.createNotification({
+          title: "You Received a Job Offer!",
+          message: `${companyName} has sent you an offer for "${job.title}" with a salary of ₦${input.salary.toLocaleString()}.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: application.applicantId,
+          createdBy: employerId,
+        }).catch(() => {});
+
+        if (applicant.email) {
+          sendOfferEmail(applicant.email, applicantName, job.title, companyName, input.salary, input.note).catch(() => {});
+        }
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1281,10 +1339,23 @@ export async function registerRoutes(
       const employer = await storage.getUser(offer.employerId);
       const applicant = await storage.getUser(offer.applicantId);
       const job = await storage.getJob(offer.jobId);
-      if (employer?.email && applicant && job) {
+      if (employer && applicant && job) {
         const employerName = employer.companyName || `${employer.firstName || ""} ${employer.lastName || ""}`.trim() || "Employer";
         const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
-        sendOfferResponseEmail(employer.email, employerName, applicantName, job.title, input.status).catch(() => {});
+        const responseLabel = input.status === "accepted" ? "Accepted" : "Declined";
+
+        storage.createNotification({
+          title: `Offer ${responseLabel}`,
+          message: `${applicantName} has ${responseLabel.toLowerCase()} your offer for "${job.title}".`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: offer.employerId,
+          createdBy: userId,
+        }).catch(() => {});
+
+        if (employer.email) {
+          sendOfferResponseEmail(employer.email, employerName, applicantName, job.title, input.status).catch(() => {});
+        }
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1345,15 +1416,27 @@ export async function registerRoutes(
       res.status(201).json(interview);
 
       const applicant = await storage.getUser(application.applicantId);
-      const employer = await storage.getUser(employerId);
-      if (applicant?.email && job) {
+      const employerUser = await storage.getUser(employerId);
+      if (applicant && job) {
         const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
-        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
-        sendInterviewScheduledEmail(
-          applicant.email, applicantName, job.title, companyName,
-          input.interviewDate, input.interviewTime, input.interviewType,
-          input.location, input.meetingLink, input.notes
-        ).catch(() => {});
+        const companyName = employerUser?.companyName || `${employerUser?.firstName || ""} ${employerUser?.lastName || ""}`.trim() || "Employer";
+
+        storage.createNotification({
+          title: "Interview Scheduled",
+          message: `${companyName} has scheduled a ${input.interviewType} interview for "${job.title}" on ${input.interviewDate} at ${input.interviewTime}.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: application.applicantId,
+          createdBy: employerId,
+        }).catch(() => {});
+
+        if (applicant.email) {
+          sendInterviewScheduledEmail(
+            applicant.email, applicantName, job.title, companyName,
+            input.interviewDate, input.interviewTime, input.interviewType,
+            input.location, input.meetingLink, input.notes
+          ).catch(() => {});
+        }
       }
     } catch (err) {
       if (err instanceof z.ZodError) {

@@ -58,6 +58,13 @@ Preferred communication style: Simple, everyday language.
 - Users see a notification bell in the sidebar header with unread count badge.
 - Click bell opens dropdown with recent notifications, mark as read, mark all read.
 - Admin has dedicated "Notifications" management page at `/admin/notifications` with form to create and list to manage.
+- **Automatic job workflow notifications**:
+  - Applicant applies → employer gets "New Application Received" notification.
+  - Employer updates application status (shortlisted/rejected/accepted) → applicant gets "Application [Status]" notification.
+  - Applicant withdraws application → employer gets "Application Withdrawn" notification.
+  - Employer sends offer → applicant gets "You Received a Job Offer!" notification with salary.
+  - Applicant accepts/declines offer → employer gets "Offer Accepted/Declined" notification.
+  - Employer schedules interview → applicant gets "Interview Scheduled" notification with details.
 - Tables: `notifications` (id, title, message, type, targetRole, targetUserId, createdBy, createdAt) and `notification_reads` (id, notificationId, userId, readAt).
 - Components: `NotificationBell` (client/src/components/NotificationBell.tsx), `AdminNotifications` (client/src/pages/AdminNotifications.tsx).
 - API routes: GET/POST `/api/notifications`, GET `/api/notifications/unread-count`, POST `/api/notifications/:id/read`, POST `/api/notifications/read-all`, GET/POST/DELETE `/api/admin/notifications`.
