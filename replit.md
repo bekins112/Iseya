@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **Animations**: Framer Motion
 - **Build Tool**: Vite
 - **Architecture**: Page-based with shared components, custom hooks for API abstraction, and role-based UI rendering. Includes an onboarding flow for new users.
+- **Landing Page**: Features banner carousel, job search/filter bar (search, category, location, job type), recently posted jobs grid (up to 6 cards fetched from API), stats, "How It Works" tabs, testimonials, and footer.
 
 ### Backend
 - **Framework**: Express.js with TypeScript
