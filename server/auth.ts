@@ -156,6 +156,10 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      if (user.isSuspended) {
+        return res.status(403).json({ message: "Your account has been suspended. Please contact support for assistance." });
+      }
+
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
       res.json(safeUser);
@@ -560,6 +564,15 @@ export async function ensureAdminAccount() {
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+  const user = await storage.getUser(req.session.userId);
+  if (!user) {
+    req.session.destroy(() => {});
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (user.isSuspended) {
+    req.session.destroy(() => {});
+    return res.status(403).json({ message: "Your account has been suspended. Please contact support for assistance." });
   }
   next();
 };

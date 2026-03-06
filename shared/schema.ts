@@ -220,6 +220,20 @@ export const updateAdminPermissionsSchema = z.object({
 export const adminUpdateUserSchema = z.object({
   role: z.enum(["applicant", "employer", "admin"]).optional(),
   isVerified: z.boolean().optional(),
+  isSuspended: z.boolean().optional(),
+  suspendedReason: z.string().optional().nullable(),
+  subscriptionStatus: z.enum(["free", "standard", "premium", "enterprise"]).optional(),
+  subscriptionEndDate: z.string().optional().nullable(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional().nullable(),
+  location: z.string().optional().nullable(),
+  bio: z.string().optional().nullable(),
+  age: z.number().min(16).optional().nullable(),
+  gender: z.string().optional().nullable(),
+  companyName: z.string().optional().nullable(),
+  businessCategory: z.string().optional().nullable(),
 });
 
 // Schema for admin job updates

@@ -34,6 +34,7 @@ export interface IStorage {
   // Admin methods
   getUserByCvFilename(filename: string): Promise<User | undefined>;
   getAllUsers(filters?: { role?: string; search?: string }): Promise<User[]>;
+  deleteUser(id: string): Promise<void>;
   getAllJobs(): Promise<Job[]>;
   getAllApplications(): Promise<Application[]>;
   getAdminPermissions(userId: string): Promise<AdminPermissions | undefined>;
@@ -285,6 +286,44 @@ export class DatabaseStorage implements IStorage {
     const pattern = `%${filename}`;
     const result = await db.select().from(users).where(like(users.cvUrl, pattern)).limit(1);
     return result[0];
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const userJobs = await db.select({ id: jobs.id }).from(jobs).where(eq(jobs.employerId, id));
+    const jobIds = userJobs.map(j => j.id);
+    const userApps = await db.select({ id: applications.id }).from(applications).where(eq(applications.applicantId, id));
+    const appIds = userApps.map(a => a.id);
+
+    if (jobIds.length > 0) {
+      const jobApps = await db.select({ id: applications.id }).from(applications).where(inArray(applications.jobId, jobIds));
+      const jobAppIds = jobApps.map(a => a.id);
+      const allAppIds = [...new Set([...appIds, ...jobAppIds])];
+      if (allAppIds.length > 0) {
+        await db.delete(offers).where(inArray(offers.applicationId, allAppIds));
+        await db.delete(interviews).where(inArray(interviews.applicationId, allAppIds));
+      }
+      await db.delete(applications).where(inArray(applications.jobId, jobIds));
+    }
+
+    if (appIds.length > 0) {
+      await db.delete(offers).where(inArray(offers.applicationId, appIds));
+      await db.delete(interviews).where(inArray(interviews.applicationId, appIds));
+      await db.delete(applications).where(eq(applications.applicantId, id));
+    }
+
+    await db.delete(offers).where(eq(offers.employerId, id));
+    await db.delete(interviews).where(eq(interviews.employerId, id));
+    await db.delete(jobHistory).where(eq(jobHistory.userId, id));
+    await db.delete(notificationReads).where(eq(notificationReads.userId, id));
+    await db.delete(notifications).where(eq(notifications.createdBy, id));
+    await db.delete(ticketMessages).where(eq(ticketMessages.senderId, id));
+    await db.delete(tickets).where(eq(tickets.userId, id));
+    await db.delete(reports).where(eq(reports.reporterId, id));
+    await db.delete(transactions).where(eq(transactions.userId, id));
+    await db.delete(verificationRequests).where(eq(verificationRequests.userId, id));
+    await db.delete(adminPermissions).where(eq(adminPermissions.userId, id));
+    await db.delete(jobs).where(eq(jobs.employerId, id));
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async getAllUsers(filters?: { role?: string; search?: string }): Promise<User[]> {

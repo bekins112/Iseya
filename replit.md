@@ -37,6 +37,8 @@ Preferred communication style: Simple, everyday language.
 - New users complete an onboarding process.
 - **Gating**: Non-verified applicants have restricted application management and masked contact info. Free-tier employers have job posting limits and restricted job/applicant management.
 - **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, ads/popups, and settings. Admin can bypass ownership checks for application management.
+- **Admin User Management**: Full CRUD on `/admin/users` — view details (profile, contact, subscription, company info), edit (basic info, role, verification, subscription tier/expiry), suspend/unsuspend with reason, and permanently delete users (cascading deletion of all related records). Suspended users are blocked from login and existing sessions are invalidated.
+- **User Suspension**: `isSuspended`, `suspendedAt`, `suspendedReason` columns on users table. Suspension blocks login and destroys active sessions via `isAuthenticated` middleware check.
 
 ### Subscription System
 - Supports `free`, `standard`, `premium`, `enterprise` tiers with varying job posting limits and feature access.

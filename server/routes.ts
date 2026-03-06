@@ -613,19 +613,63 @@ export async function registerRoutes(
     res.json(users);
   });
 
+  app.get("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers && !req.adminPermissions.canViewStats) {
+      return res.status(403).json({ message: "You don't have permission to view users" });
+    }
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      const { password: _, ...safeUser } = user;
+      res.json(safeUser);
+    } catch {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
   app.patch("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
       return res.status(403).json({ message: "You don't have permission to manage users" });
     }
     try {
       const input = adminUpdateUserSchema.parse(req.body);
-      const user = await storage.updateUser(req.params.id, input);
+      const updates: Record<string, any> = { ...input };
+      if (input.isSuspended === true) {
+        updates.suspendedAt = new Date();
+      } else if (input.isSuspended === false) {
+        updates.suspendedAt = null;
+        updates.suspendedReason = null;
+      }
+      if (input.subscriptionEndDate) {
+        updates.subscriptionEndDate = new Date(input.subscriptionEndDate);
+      } else if (input.subscriptionEndDate === null) {
+        updates.subscriptionEndDate = null;
+      }
+      const user = await storage.updateUser(req.params.id, updates);
       res.json(user);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
       res.status(400).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+      return res.status(403).json({ message: "You don't have permission to manage users" });
+    }
+    try {
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) return res.status(404).json({ message: "User not found" });
+      if (targetUser.id === req.adminUser.id) {
+        return res.status(400).json({ message: "You cannot delete your own account" });
+      }
+      await storage.deleteUser(req.params.id);
+      res.json({ message: "User deleted successfully" });
+    } catch (err) {
+      console.error("Delete user error:", err);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 
