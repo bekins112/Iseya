@@ -134,6 +134,7 @@ export async function setupAuth(app: Express) {
       const input = loginSchema.parse(req.body);
 
       const storedCaptcha = req.session.captchaText;
+      console.log("[login] Session ID:", req.sessionID, "Has captcha:", !!storedCaptcha);
       if (!storedCaptcha || input.captcha.toLowerCase() !== storedCaptcha.toLowerCase()) {
         return res.status(400).json({ message: "Incorrect CAPTCHA. Please try again." });
       }
@@ -145,11 +146,13 @@ export async function setupAuth(app: Express) {
         .where(eq(users.email, input.email));
 
       if (!user || !user.password) {
+        console.log("[login] User not found or no password for:", input.email);
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       const valid = await bcrypt.compare(input.password, user.password);
       if (!valid) {
+        console.log("[login] Password mismatch for:", input.email);
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
