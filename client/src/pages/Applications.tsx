@@ -337,7 +337,7 @@ export default function Applications() {
                           )}
                         </div>
 
-                        {app.offer && (
+                        {app.offer ? (
                           <div className="mt-3 p-2.5 rounded-md bg-muted/50 border border-border/50">
                             <div className="flex items-center justify-between gap-2 flex-wrap">
                               <div className="flex items-center gap-2">
@@ -367,7 +367,14 @@ export default function Applications() {
                               </Button>
                             </div>
                           </div>
-                        )}
+                        ) : app.status === "offered" ? (
+                          <div className="mt-3 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-amber-600" />
+                              <span className="text-sm text-amber-700 dark:text-amber-400">Offer details are being processed. Please check back shortly.</span>
+                            </div>
+                          </div>
+                        ) : null}
 
                         {(() => {
                           const interview = myInterviews.find((i: any) => i.applicationId === app.id && (i.status === "scheduled" || i.status === "completed"));

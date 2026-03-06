@@ -225,7 +225,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getApplicationsForApplicant(applicantId: string): Promise<Application[]> {
-    return await db.select().from(applications).where(eq(applications.applicantId, applicantId));
+    return await db.select().from(applications).where(eq(applications.applicantId, applicantId)).orderBy(desc(applications.createdAt));
   }
 
   async getApplication(id: number): Promise<Application | undefined> {
