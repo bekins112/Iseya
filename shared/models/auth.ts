@@ -47,6 +47,8 @@ export const users = pgTable("users", {
   paystackSubscriptionCode: varchar("paystack_subscription_code"),
   subscribedToNewsletter: boolean("subscribed_to_newsletter").default(false),
   interviewCreditsUsed: integer("interview_credits_used").default(0),
+  resetToken: varchar("reset_token"),
+  resetTokenExpiry: timestamp("reset_token_expiry"),
   preferredJobTypes: text("preferred_job_types").array(),
   preferredCategories: text("preferred_categories").array(),
   createdAt: timestamp("created_at").defaultNow(),
