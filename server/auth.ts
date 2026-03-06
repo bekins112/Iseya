@@ -2,6 +2,7 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import svgCaptcha from "svg-captcha";
+import crypto from "crypto";
 import { z } from "zod";
 import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
@@ -161,6 +162,88 @@ export async function setupAuth(app: Express) {
       }
       console.error("Login error:", err);
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
+
+      if (!user || !user.password) {
+        return res.json({ message: "If an account exists with that email, a reset link has been sent." });
+      }
+
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiry = new Date(Date.now() + 60 * 60 * 1000);
+
+      await db
+        .update(users)
+        .set({ resetToken: token, resetTokenExpiry: expiry })
+        .where(eq(users.id, user.id));
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const resetLink = `${baseUrl}/reset-password?token=${token}`;
+
+      try {
+        const { sendPasswordResetEmail } = await import("./email");
+        const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
+        await sendPasswordResetEmail(user.email!, userName, resetLink);
+      } catch (emailErr) {
+        console.error("Failed to send reset email:", emailErr);
+      }
+
+      res.json({ message: "If an account exists with that email, a reset link has been sent." });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: "Please enter a valid email address." });
+      }
+      console.error("Forgot password error:", err);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { token, password } = z.object({
+        token: z.string().min(1),
+        password: z.string().min(6, "Password must be at least 6 characters"),
+      }).parse(req.body);
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.resetToken, token));
+
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset link. Please request a new one." });
+      }
+
+      if (!user.resetTokenExpiry || new Date() > user.resetTokenExpiry) {
+        await db
+          .update(users)
+          .set({ resetToken: null, resetTokenExpiry: null })
+          .where(eq(users.id, user.id));
+        return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await db
+        .update(users)
+        .set({ password: hashedPassword, resetToken: null, resetTokenExpiry: null })
+        .where(eq(users.id, user.id));
+
+      res.json({ message: "Password reset successfully. You can now sign in with your new password." });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("Reset password error:", err);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 

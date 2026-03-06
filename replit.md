@@ -31,7 +31,9 @@ Preferred communication style: Simple, everyday language.
 - **Key Tables**: `users`, `jobs`, `applications`, `sessions`, `notifications`, `notification_reads`, `platform_settings`, `verification_requests`, `tickets`, `ticket_messages`, `internal_ads`, `newsletter_subscribers`.
 
 ### Authentication & Access Control
-- Replit Auth for OAuth/OpenID Connect. Sessions are PostgreSQL-stored.
+- Custom email/password authentication with bcrypt hashing, CAPTCHA protection, and Google OAuth via Passport.js. Sessions are PostgreSQL-stored.
+- **Password Reset**: Forgot password flow with email-based reset tokens (1-hour expiry). Pages: `/forgot-password`, `/reset-password?token=...`. API: `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`.
+- **Admin Login**: Dedicated admin login page at `/admin/login` with separate email/password/CAPTCHA form. Redirects to `/admin/dashboard` on success.
 - New users complete an onboarding process.
 - **Gating**: Non-verified applicants have restricted application management and masked contact info. Free-tier employers have job posting limits and restricted job/applicant management.
 - **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, ads/popups, and settings. Admin can bypass ownership checks for application management.

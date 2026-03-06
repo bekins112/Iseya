@@ -49,6 +49,8 @@ import CookiePolicy from "@/pages/CookiePolicy";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import VerifyEmail from "@/pages/VerifyEmail";
 import Support from "@/pages/Support";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import CookieConsent from "@/components/CookieConsent";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -79,6 +81,8 @@ function Router() {
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/login" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/register" component={Register} />
       <Route path="/employer">
         <Redirect to="/register" />
