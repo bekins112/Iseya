@@ -519,6 +519,44 @@ export async function setupAuth(app: Express) {
   });
 }
 
+export async function ensureAdminAccount() {
+  const adminEmail = "bekinsmart@gmail.com";
+  const adminPassword = "Best4m&you";
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, adminEmail));
+
+    if (existing) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      const updates: Record<string, any> = {};
+      if (existing.role !== "admin") updates.role = "admin";
+      if (!existing.password) updates.password = hashedPassword;
+      if (Object.keys(updates).length > 0) {
+        await db.update(users).set(updates).where(eq(users.id, existing.id));
+        console.log("[admin] Updated admin account:", Object.keys(updates).join(", "));
+      } else {
+        console.log("[admin] Admin account verified");
+      }
+    } else {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      await db.insert(users).values({
+        email: adminEmail,
+        password: hashedPassword,
+        firstName: "Admin",
+        lastName: "User",
+        role: "admin",
+        age: 30,
+      });
+      console.log("[admin] Created admin account");
+    }
+  } catch (err) {
+    console.error("[admin] Failed to ensure admin account:", err);
+  }
+}
+
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (!req.session.userId) {
     return res.status(401).json({ message: "Unauthorized" });
