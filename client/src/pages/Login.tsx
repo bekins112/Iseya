@@ -32,12 +32,17 @@ export default function Login() {
     setCaptchaKey(Date.now());
   }, []);
 
-  if (isAuthenticated && user) {
-    if (user.role && user.age) {
-      setLocation("/dashboard");
-    } else {
-      setLocation("/onboarding");
+  const getRedirectPath = (u: typeof user) => {
+    if (!u?.role || !u?.age) return "/onboarding";
+    if (u.role === "admin") {
+      localStorage.removeItem("admin_login_redirect");
+      return "/admin/dashboard";
     }
+    return "/dashboard";
+  };
+
+  if (isAuthenticated && user) {
+    setLocation(getRedirectPath(user));
     return null;
   }
 
@@ -50,11 +55,7 @@ export default function Login() {
     }
     try {
       const loggedInUser = await login({ email, password, captcha: captchaAnswer });
-      if (loggedInUser.role && loggedInUser.age) {
-        setLocation("/dashboard");
-      } else {
-        setLocation("/onboarding");
-      }
+      setLocation(getRedirectPath(loggedInUser));
     } catch (err: any) {
       setError(err.message || "Login failed");
       refreshCaptcha();
