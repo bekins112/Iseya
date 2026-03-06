@@ -2918,10 +2918,10 @@ export async function registerRoutes(
       const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
       const ad = await storage.createAd({
         ...input,
-        linkUrl: input.linkUrl || null,
-        linkText: input.linkText || null,
-        bgColor: input.bgColor || null,
-        textColor: input.textColor || null,
+        linkUrl: input.linkUrl && input.linkUrl.trim() ? input.linkUrl : null,
+        linkText: input.linkText && input.linkText.trim() ? input.linkText : null,
+        bgColor: input.bgColor && input.bgColor.trim() ? input.bgColor : null,
+        textColor: input.textColor && input.textColor.trim() ? input.textColor : null,
         imageUrl,
         isActive: input.isActive ?? true,
         priority: input.priority ?? 0,
