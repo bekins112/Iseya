@@ -36,6 +36,7 @@ import AdminVerifications from "@/pages/AdminVerifications";
 import AdminNotifications from "@/pages/AdminNotifications";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminTransactions from "@/pages/AdminTransactions";
+import AdminAds from "@/pages/AdminAds";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
@@ -256,6 +257,12 @@ function Router() {
       <Route path="/admin/transactions">
         <AuthenticatedLayout>
           <AdminTransactions />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/ads">
+        <AuthenticatedLayout>
+          <AdminAds />
         </AuthenticatedLayout>
       </Route>
 

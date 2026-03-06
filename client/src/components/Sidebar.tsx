@@ -23,6 +23,7 @@ import {
   DollarSign,
   Bell,
   HelpCircle,
+  Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -63,6 +64,7 @@ export function Sidebar() {
     { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
     { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck, perm: "canManageVerifications" },
     { href: "/admin/notifications", label: "Notifications", icon: Bell, perm: "canManageNotifications" },
+    { href: "/admin/ads", label: "Ads & Popups", icon: Megaphone, perm: "canManageSettings" },
     { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
   ];
 

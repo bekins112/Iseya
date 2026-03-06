@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import NewsletterBar from "@/components/NewsletterBar";
+import PageAds from "@/components/PageAds";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -192,6 +193,8 @@ export default function BrowseJobs() {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Browse All Jobs</h1>
           <p className="text-muted-foreground">Find the perfect opportunity from {jobs?.length || 0} available positions</p>
         </motion.div>
+
+        <PageAds page="browse-jobs" />
 
         {/* Search and Filters */}
         <div className="space-y-4 mb-8">

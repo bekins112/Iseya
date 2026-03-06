@@ -2851,6 +2851,119 @@ export async function registerRoutes(
     return val ?? DEFAULT_SETTINGS[key] ?? "0";
   }
 
+  // === INTERNAL ADS ===
+
+  app.get("/api/ads", async (req, res) => {
+    try {
+      const page = req.query.page as string;
+      if (!page) return res.status(400).json({ message: "Page parameter is required" });
+      const ads = await storage.getActiveAdsForPage(page);
+      res.json(ads);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch ads" });
+    }
+  });
+
+  app.get("/api/admin/ads", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    const ads = await storage.getAllAds();
+    res.json(ads);
+  });
+
+  app.post("/api/admin/ads", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    try {
+      const adSchema = z.object({
+        title: z.string().min(1, "Title is required"),
+        content: z.string().min(1, "Content is required"),
+        type: z.enum(["banner", "popup"]),
+        targetPages: z.array(z.string()).min(1, "Select at least one target page"),
+        linkUrl: z.string().nullable().optional(),
+        linkText: z.string().nullable().optional(),
+        bgColor: z.string().nullable().optional(),
+        textColor: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+        priority: z.number().optional(),
+        startDate: z.string().nullable().optional(),
+        endDate: z.string().nullable().optional(),
+      });
+      const input = adSchema.parse(req.body);
+      const ad = await storage.createAd({
+        ...input,
+        linkUrl: input.linkUrl || null,
+        linkText: input.linkText || null,
+        bgColor: input.bgColor || null,
+        textColor: input.textColor || null,
+        isActive: input.isActive ?? true,
+        priority: input.priority ?? 0,
+        startDate: input.startDate ? new Date(input.startDate) : null,
+        endDate: input.endDate ? new Date(input.endDate) : null,
+        createdBy: req.session.userId!,
+      });
+      res.status(201).json(ad);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to create ad" });
+    }
+  });
+
+  app.patch("/api/admin/ads/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ad ID" });
+    try {
+      const existing = await storage.getAd(id);
+      if (!existing) return res.status(404).json({ message: "Ad not found" });
+      const updateSchema = z.object({
+        title: z.string().min(1).optional(),
+        content: z.string().min(1).optional(),
+        type: z.enum(["banner", "popup"]).optional(),
+        targetPages: z.array(z.string()).min(1).optional(),
+        linkUrl: z.string().nullable().optional(),
+        linkText: z.string().nullable().optional(),
+        bgColor: z.string().nullable().optional(),
+        textColor: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+        priority: z.number().optional(),
+        startDate: z.string().nullable().optional(),
+        endDate: z.string().nullable().optional(),
+      });
+      const parsed = updateSchema.parse(req.body);
+      const updates: any = { ...parsed };
+      if (updates.startDate !== undefined) updates.startDate = updates.startDate ? new Date(updates.startDate) : null;
+      if (updates.endDate !== undefined) updates.endDate = updates.endDate ? new Date(updates.endDate) : null;
+      const updated = await storage.updateAd(id, updates);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to update ad" });
+    }
+  });
+
+  app.delete("/api/admin/ads/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ad ID" });
+    try {
+      await storage.deleteAd(id);
+      res.json({ message: "Ad deleted" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete ad" });
+    }
+  });
+
   app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
       const { email } = req.body;

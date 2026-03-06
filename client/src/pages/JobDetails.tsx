@@ -1,4 +1,5 @@
 import { useRoute, Link, useLocation } from "wouter";
+import PageAds from "@/components/PageAds";
 import { useQuery } from "@tanstack/react-query";
 import { useJob, useCreateApplication, useUploadCV } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
@@ -196,6 +197,7 @@ export default function JobDetails() {
       </nav>
 
       <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
+        <PageAds page="job-details" />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

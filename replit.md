@@ -28,13 +28,13 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Storage
 - **Database**: PostgreSQL
-- **Key Tables**: `users`, `jobs`, `applications`, `sessions`, `notifications`, `notification_reads`, `platform_settings`, `verification_requests`, `tickets`, `ticket_messages`.
+- **Key Tables**: `users`, `jobs`, `applications`, `sessions`, `notifications`, `notification_reads`, `platform_settings`, `verification_requests`, `tickets`, `ticket_messages`, `internal_ads`, `newsletter_subscribers`.
 
 ### Authentication & Access Control
 - Replit Auth for OAuth/OpenID Connect. Sessions are PostgreSQL-stored.
 - New users complete an onboarding process.
 - **Gating**: Non-verified applicants have restricted application management and masked contact info. Free-tier employers have job posting limits and restricted job/applicant management.
-- **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, and settings. Admin can bypass ownership checks for application management.
+- **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, ads/popups, and settings. Admin can bypass ownership checks for application management.
 
 ### Subscription System
 - Supports `free`, `standard`, `premium`, `enterprise` tiers with varying job posting limits and feature access.
@@ -74,6 +74,13 @@ Preferred communication style: Simple, everyday language.
 ### Legal & Policy Pages
 - Comprehensive legal pages: `/terms` (Terms of Use), `/cookies` (Cookie Policy), `/privacy` (Privacy Policy - NDPR compliant), `/disclaimer`, `/copyright`.
 - Registration requires agreement to Terms of Use. Optional newsletter subscription.
+
+### Internal Ads & Popups
+- Admin can create, manage, and schedule promotional banners and popups via `/admin/ads` (gated by `canManageSettings` permission).
+- Ads have: title, content, type (banner/popup), target pages (landing, browse-jobs, job-details), optional CTA link, custom colors, priority, scheduling (start/end dates), active toggle.
+- Banners display as dismissible horizontal bars at the top of page content areas. Popups display as centered modal dialogs.
+- Dismissals are tracked per-session (sessionStorage per ad ID).
+- Components: `InternalAd.tsx` (AdBanner, AdPopup), `PageAds.tsx` (fetches & renders ads for a page).
 
 ### Login Security
 - Implements image-based CAPTCHA on the login form for bot protection.

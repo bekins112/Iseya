@@ -17,6 +17,7 @@ import bannerImg1 from "@assets/file_00000000290071f4a0ad1bcee632895e_(1)_177097
 import bannerImg2 from "@assets/file_00000000290071f4a0ad1bcee632895e_1770976988300.png";
 import bannerImg3 from "@assets/file_00000000290071f4a0ad1bcee632895e_(2)_1770976988376.png";
 import NewsletterBar from "@/components/NewsletterBar";
+import PageAds from "@/components/PageAds";
 
 const bannerSlides = [
   {
@@ -446,6 +447,10 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <PageAds page="landing" />
+      </div>
 
       <section className="relative pt-16 pb-20 lg:pt-20 lg:pb-28 px-4 overflow-hidden">
         <motion.div

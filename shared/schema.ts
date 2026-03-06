@@ -397,5 +397,27 @@ export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSub
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
 export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;
 
+export const internalAds = pgTable("internal_ads", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  title: varchar("title").notNull(),
+  content: text("content").notNull(),
+  type: varchar("type").notNull().default("banner"),
+  targetPages: text("target_pages").array().notNull(),
+  linkUrl: varchar("link_url"),
+  linkText: varchar("link_text"),
+  bgColor: varchar("bg_color"),
+  textColor: varchar("text_color"),
+  isActive: boolean("is_active").default(true),
+  priority: integer("priority").default(0),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInternalAdSchema = createInsertSchema(internalAds).omit({ id: true, createdAt: true });
+export type InternalAd = typeof internalAds.$inferSelect;
+export type InsertInternalAd = z.infer<typeof insertInternalAdSchema>;
+
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;
