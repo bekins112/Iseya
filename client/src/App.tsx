@@ -184,7 +184,7 @@ function Router() {
       </Route>
 
       {/* Admin routes */}
-      <Route path="/admin">
+      <Route path="/admin/login">
         <AdminLogin />
       </Route>
 
@@ -264,6 +264,10 @@ function Router() {
         <AuthenticatedLayout>
           <AdminAds />
         </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin">
+        <AdminLogin />
       </Route>
 
       <Route component={NotFound} />
