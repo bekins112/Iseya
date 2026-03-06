@@ -27,7 +27,7 @@ import {
   sendTicketAdminNotifyEmail,
 } from "./email";
 
-for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets"]) {
+for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets", "uploads/ads"]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -123,6 +123,25 @@ const uploadTicketAttachment = multer({
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) cb(null, true);
     else cb(new Error("Only images (JPG, PNG, WEBP, GIF), PDF, and DOC files are allowed"));
+  },
+});
+
+const adMediaStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/ads"),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `ad_${Date.now()}${ext}`);
+  },
+});
+
+const uploadAdMedia = multer({
+  storage: adMediaStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only image files (JPG, PNG, WEBP, GIF, SVG) are allowed"));
   },
 });
 
@@ -2872,11 +2891,15 @@ export async function registerRoutes(
     res.json(ads);
   });
 
-  app.post("/api/admin/ads", isAuthenticated, isAdmin, async (req: any, res) => {
+  app.post("/api/admin/ads", isAuthenticated, isAdmin, uploadAdMedia.single("image"), async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     try {
+      let targetPages = req.body.targetPages;
+      if (typeof targetPages === "string") {
+        try { targetPages = JSON.parse(targetPages); } catch { targetPages = [targetPages]; }
+      }
       const adSchema = z.object({
         title: z.string().min(1, "Title is required"),
         content: z.string().min(1, "Content is required"),
@@ -2886,18 +2909,20 @@ export async function registerRoutes(
         linkText: z.string().nullable().optional(),
         bgColor: z.string().nullable().optional(),
         textColor: z.string().nullable().optional(),
-        isActive: z.boolean().optional(),
-        priority: z.number().optional(),
+        isActive: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional(),
+        priority: z.preprocess((v) => typeof v === "string" ? parseInt(v) || 0 : v, z.number()).optional(),
         startDate: z.string().nullable().optional(),
         endDate: z.string().nullable().optional(),
       });
-      const input = adSchema.parse(req.body);
+      const input = adSchema.parse({ ...req.body, targetPages });
+      const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
       const ad = await storage.createAd({
         ...input,
         linkUrl: input.linkUrl || null,
         linkText: input.linkText || null,
         bgColor: input.bgColor || null,
         textColor: input.textColor || null,
+        imageUrl,
         isActive: input.isActive ?? true,
         priority: input.priority ?? 0,
         startDate: input.startDate ? new Date(input.startDate) : null,
@@ -2913,7 +2938,7 @@ export async function registerRoutes(
     }
   });
 
-  app.patch("/api/admin/ads/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+  app.patch("/api/admin/ads/:id", isAuthenticated, isAdmin, uploadAdMedia.single("image"), async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
@@ -2922,6 +2947,12 @@ export async function registerRoutes(
     try {
       const existing = await storage.getAd(id);
       if (!existing) return res.status(404).json({ message: "Ad not found" });
+      let targetPages = req.body.targetPages;
+      if (targetPages !== undefined) {
+        if (typeof targetPages === "string") {
+          try { targetPages = JSON.parse(targetPages); } catch { targetPages = [targetPages]; }
+        }
+      }
       const updateSchema = z.object({
         title: z.string().min(1).optional(),
         content: z.string().min(1).optional(),
@@ -2931,15 +2962,22 @@ export async function registerRoutes(
         linkText: z.string().nullable().optional(),
         bgColor: z.string().nullable().optional(),
         textColor: z.string().nullable().optional(),
-        isActive: z.boolean().optional(),
-        priority: z.number().optional(),
+        isActive: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional(),
+        priority: z.preprocess((v) => typeof v === "string" ? parseInt(v) || 0 : v, z.number()).optional(),
         startDate: z.string().nullable().optional(),
         endDate: z.string().nullable().optional(),
+        removeImage: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional(),
       });
-      const parsed = updateSchema.parse(req.body);
+      const parsed = updateSchema.parse({ ...req.body, ...(targetPages !== undefined ? { targetPages } : {}) });
       const updates: any = { ...parsed };
+      delete updates.removeImage;
       if (updates.startDate !== undefined) updates.startDate = updates.startDate ? new Date(updates.startDate) : null;
       if (updates.endDate !== undefined) updates.endDate = updates.endDate ? new Date(updates.endDate) : null;
+      if (req.file) {
+        updates.imageUrl = `/uploads/ads/${req.file.filename}`;
+      } else if (parsed.removeImage) {
+        updates.imageUrl = null;
+      }
       const updated = await storage.updateAd(id, updates);
       res.json(updated);
     } catch (err) {

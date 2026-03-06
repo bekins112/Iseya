@@ -77,7 +77,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Internal Ads & Popups
 - Admin can create, manage, and schedule promotional banners and popups via `/admin/ads` (gated by `canManageSettings` permission).
-- Ads have: title, content, type (banner/popup), target pages (landing, browse-jobs, job-details), optional CTA link, custom colors, priority, scheduling (start/end dates), active toggle.
+- Ads have: title, content, type (banner/popup), target pages (landing, browse-jobs, job-details), optional CTA link, custom colors, priority, scheduling (start/end dates), active toggle, optional artwork/media image upload (stored in `uploads/ads/`).
 - Banners display as dismissible horizontal bars at the top of page content areas. Popups display as centered modal dialogs.
 - Dismissals are tracked per-session (sessionStorage per ad ID).
 - Components: `InternalAd.tsx` (AdBanner, AdPopup), `PageAds.tsx` (fetches & renders ads for a page).

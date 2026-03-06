@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/ui-extension";
-import { Megaphone, Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, Calendar } from "lucide-react";
+import { Megaphone, Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, Calendar, Upload, X, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -68,6 +68,9 @@ export default function AdminAds() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<InternalAd | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [removeExistingImage, setRemoveExistingImage] = useState(false);
 
   if (user?.role !== "admin") {
     setLocation("/dashboard");
@@ -86,6 +89,9 @@ export default function AdminAds() {
   const openCreateDialog = () => {
     setEditingAd(null);
     form.reset(defaultFormValues);
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveExistingImage(false);
     setDialogOpen(true);
   };
 
@@ -105,55 +111,86 @@ export default function AdminAds() {
       startDate: ad.startDate ? format(new Date(ad.startDate), "yyyy-MM-dd'T'HH:mm") : "",
       endDate: ad.endDate ? format(new Date(ad.endDate), "yyyy-MM-dd'T'HH:mm") : "",
     });
+    setImageFile(null);
+    setImagePreview(ad.imageUrl || null);
+    setRemoveExistingImage(false);
     setDialogOpen(true);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setRemoveExistingImage(false);
+      const reader = new FileReader();
+      reader.onload = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveExistingImage(true);
+  };
+
+  const buildFormData = (data: AdFormValues, file: File | null, removeImage: boolean) => {
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("content", data.content);
+    formData.append("type", data.type);
+    formData.append("targetPages", JSON.stringify(data.targetPages));
+    formData.append("linkUrl", data.linkUrl || "");
+    formData.append("linkText", data.linkText || "");
+    formData.append("bgColor", data.bgColor || "");
+    formData.append("textColor", data.textColor || "");
+    formData.append("isActive", String(data.isActive));
+    formData.append("priority", String(data.priority));
+    formData.append("startDate", data.startDate || "");
+    formData.append("endDate", data.endDate || "");
+    if (file) formData.append("image", file);
+    if (removeImage) formData.append("removeImage", "true");
+    return formData;
   };
 
   const createMutation = useMutation({
     mutationFn: async (data: AdFormValues) => {
-      const payload = {
-        ...data,
-        linkUrl: data.linkUrl || null,
-        linkText: data.linkText || null,
-        bgColor: data.bgColor || null,
-        textColor: data.textColor || null,
-        startDate: data.startDate || null,
-        endDate: data.endDate || null,
-      };
-      await apiRequest("POST", "/api/admin/ads", payload);
+      const formData = buildFormData(data, imageFile, false);
+      const res = await fetch("/api/admin/ads", { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) { const err = await res.json().catch(() => ({ message: "Failed" })); throw new Error(err.message); }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ads"] });
       setDialogOpen(false);
       form.reset(defaultFormValues);
+      setImageFile(null);
+      setImagePreview(null);
       toast({ title: "Ad created", description: "The ad has been created successfully." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create ad.", variant: "destructive" });
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message || "Failed to create ad.", variant: "destructive" });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<AdFormValues> }) => {
-      const payload = {
-        ...data,
-        linkUrl: data.linkUrl || null,
-        linkText: data.linkText || null,
-        bgColor: data.bgColor || null,
-        textColor: data.textColor || null,
-        startDate: data.startDate || null,
-        endDate: data.endDate || null,
-      };
-      await apiRequest("PATCH", `/api/admin/ads/${id}`, payload);
+    mutationFn: async ({ id, data }: { id: number; data: AdFormValues }) => {
+      const formData = buildFormData(data, imageFile, removeExistingImage);
+      const res = await fetch(`/api/admin/ads/${id}`, { method: "PATCH", body: formData, credentials: "include" });
+      if (!res.ok) { const err = await res.json().catch(() => ({ message: "Failed" })); throw new Error(err.message); }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/ads"] });
       setDialogOpen(false);
       setEditingAd(null);
       form.reset(defaultFormValues);
+      setImageFile(null);
+      setImagePreview(null);
       toast({ title: "Ad updated", description: "The ad has been updated successfully." });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update ad.", variant: "destructive" });
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message || "Failed to update ad.", variant: "destructive" });
     },
   });
 
@@ -185,7 +222,7 @@ export default function AdminAds() {
 
   const onSubmit = (data: AdFormValues) => {
     if (editingAd) {
-      updateMutation.mutate({ id: editingAd.id, data });
+      updateMutation.mutate({ id: editingAd.id, data: data });
     } else {
       createMutation.mutate(data);
     }
@@ -278,6 +315,14 @@ export default function AdminAds() {
                   data-testid={`ad-item-${ad.id}`}
                 >
                   <div className="flex items-start justify-between gap-3">
+                    {ad.imageUrl && (
+                      <img
+                        src={ad.imageUrl}
+                        alt={ad.title}
+                        className="w-16 h-16 rounded-lg object-cover shrink-0 border"
+                        data-testid={`img-ad-thumb-${ad.id}`}
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <p className="font-semibold text-sm" data-testid={`text-ad-title-${ad.id}`}>{ad.title}</p>
@@ -392,6 +437,43 @@ export default function AdminAds() {
                   </FormItem>
                 )}
               />
+              <div>
+                <label className="text-sm font-medium mb-2 block">Artwork / Media</label>
+                {imagePreview ? (
+                  <div className="relative rounded-lg overflow-hidden border bg-muted">
+                    <img
+                      src={imagePreview}
+                      alt="Ad media preview"
+                      className="w-full max-h-48 object-contain"
+                      data-testid="img-ad-preview"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                      data-testid="button-remove-ad-image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label
+                    className="flex flex-col items-center justify-center gap-2 p-6 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer bg-muted/30"
+                    data-testid="label-upload-ad-image"
+                  >
+                    <Upload className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Click to upload artwork or media</span>
+                    <span className="text-xs text-muted-foreground/60">JPG, PNG, WEBP, GIF, SVG — max 5MB</span>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.webp,.gif,.svg"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                      data-testid="input-ad-image"
+                    />
+                  </label>
+                )}
+              </div>
               <FormField
                 control={form.control}
                 name="type"

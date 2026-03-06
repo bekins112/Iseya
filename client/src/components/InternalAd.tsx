@@ -46,6 +46,14 @@ export function AdBanner({ ad }: { ad: InternalAd }) {
               color: ad.textColor || "hsl(var(--primary-foreground))",
             }}
           >
+            {ad.imageUrl && (
+              <img
+                src={ad.imageUrl}
+                alt=""
+                className="w-12 h-12 rounded-lg object-cover shrink-0"
+                data-testid={`ad-banner-img-${ad.id}`}
+              />
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold" data-testid={`ad-banner-title-${ad.id}`}>{ad.title}</p>
               <p className="text-sm opacity-90" data-testid={`ad-banner-content-${ad.id}`}>{ad.content}</p>
@@ -100,6 +108,14 @@ export function AdPopup({ ad }: { ad: InternalAd }) {
         className="max-w-sm rounded-2xl p-0 overflow-hidden"
         data-testid={`ad-popup-${ad.id}`}
       >
+        {ad.imageUrl && (
+          <img
+            src={ad.imageUrl}
+            alt={ad.title}
+            className="w-full max-h-48 object-cover"
+            data-testid={`ad-popup-img-${ad.id}`}
+          />
+        )}
         <div
           className="p-6"
           style={{

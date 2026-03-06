@@ -407,6 +407,7 @@ export const internalAds = pgTable("internal_ads", {
   linkText: varchar("link_text"),
   bgColor: varchar("bg_color"),
   textColor: varchar("text_color"),
+  imageUrl: varchar("image_url"),
   isActive: boolean("is_active").default(true),
   priority: integer("priority").default(0),
   startDate: timestamp("start_date"),
