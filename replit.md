@@ -80,7 +80,7 @@ Preferred communication style: Simple, everyday language.
 - Registration requires agreement to Terms of Use. Optional newsletter subscription.
 
 ### Internal Ads & Popups
-- Admin can create, manage, and schedule promotional banners and popups via `/admin/ads` (gated by `canManageSettings` permission).
+- Admin can create, manage, and schedule promotional banners and popups via `/admin/ads` (gated by `canManageAds` permission, separate from Platform Settings).
 - Ads have: title, content, type (banner/popup), target pages (landing, browse-jobs, job-details), optional CTA link, custom colors, priority, scheduling (start/end dates), active toggle, optional artwork/media image upload (stored in `uploads/ads/`).
 - Banners display as dismissible horizontal bars at the top of page content areas. Popups display as centered modal dialogs.
 - Dismissals are tracked per-session (sessionStorage per ad ID).

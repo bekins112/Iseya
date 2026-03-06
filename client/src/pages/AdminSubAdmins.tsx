@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus } from "lucide-react";
+import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus, Megaphone } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -33,6 +33,7 @@ const defaultPermissions = {
   canManageReports: false,
   canManageVerifications: false,
   canManageNotifications: false,
+  canManageAds: false,
   canManageSettings: false,
 };
 
@@ -47,6 +48,7 @@ const permissionLabels = [
   { key: "canManageReports", label: "Manage Reports", icon: Flag, description: "Can review and resolve user reports" },
   { key: "canManageVerifications", label: "Manage Verifications", icon: ShieldCheck, description: "Can approve or reject verification requests" },
   { key: "canManageNotifications", label: "Send Notifications", icon: Bell, description: "Can create and manage platform notifications" },
+  { key: "canManageAds", label: "Manage Ads & Popups", icon: Megaphone, description: "Can create and manage internal ads and popups" },
   { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform configuration" },
   { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
 ];
@@ -161,6 +163,7 @@ export default function AdminSubAdmins() {
         canManageReports: admin.permissions.canManageReports || false,
         canManageVerifications: admin.permissions.canManageVerifications || false,
         canManageNotifications: admin.permissions.canManageNotifications || false,
+        canManageAds: admin.permissions.canManageAds || false,
         canManageSettings: admin.permissions.canManageSettings || false,
       });
     }
@@ -263,6 +266,7 @@ export default function AdminSubAdmins() {
                           {admin.permissions.canManageReports && <Badge variant="outline" className="text-xs">Reports</Badge>}
                           {admin.permissions.canManageVerifications && <Badge variant="outline" className="text-xs">Verify</Badge>}
                           {admin.permissions.canManageNotifications && <Badge variant="outline" className="text-xs">Notifs</Badge>}
+                          {admin.permissions.canManageAds && <Badge variant="outline" className="text-xs">Ads</Badge>}
                           {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Settings</Badge>}
                           {admin.permissions.canManageAdmins && <Badge variant="outline" className="text-xs">Admins</Badge>}
                         </>
