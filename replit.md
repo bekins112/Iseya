@@ -42,7 +42,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Subscription System
 - Supports `free`, `standard`, `premium`, `enterprise` tiers with varying job posting limits and feature access.
-- Dynamic, admin-configurable pricing with per-tier discounts.
+- Dynamic, admin-configurable pricing with per-tier discounts, job posting limits, and interview credits (all managed from Platform Settings).
 - Payment gateways: Paystack and Flutterwave.
 - **Transaction History**: Users can view their transaction history. Failed/pending transactions are recorded and can be resolved by admins.
 - **Interview Credits**: Premium/Enterprise employers receive interview credits, tracked against billing periods. Admin-scheduled interviews count against employer credits.

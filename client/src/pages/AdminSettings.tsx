@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui-extension";
-import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign } from "lucide-react";
+import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -23,6 +23,14 @@ const settingsSchema = z.object({
   subscription_enterprise_discount: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "Must be 0-100"),
   verification_fee: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0, "Must be a valid amount"),
   verification_discount: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "Must be 0-100"),
+  job_limit_free: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)), "Must be a whole number"),
+  job_limit_standard: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)), "Must be a whole number"),
+  job_limit_premium: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)), "Must be a whole number"),
+  job_limit_enterprise: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)), "Must be a whole number (-1 = unlimited)"),
+  interview_credits_free: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
+  interview_credits_standard: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
+  interview_credits_premium: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
+  interview_credits_enterprise: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -57,6 +65,14 @@ export default function AdminSettings() {
       subscription_enterprise_discount: "0",
       verification_fee: "9999",
       verification_discount: "0",
+      job_limit_free: "1",
+      job_limit_standard: "5",
+      job_limit_premium: "10",
+      job_limit_enterprise: "-1",
+      interview_credits_free: "0",
+      interview_credits_standard: "0",
+      interview_credits_premium: "3",
+      interview_credits_enterprise: "5",
     },
   });
 
@@ -71,6 +87,14 @@ export default function AdminSettings() {
         subscription_enterprise_discount: settings.subscription_enterprise_discount || "0",
         verification_fee: settings.verification_fee || "9999",
         verification_discount: settings.verification_discount || "0",
+        job_limit_free: settings.job_limit_free || "1",
+        job_limit_standard: settings.job_limit_standard || "5",
+        job_limit_premium: settings.job_limit_premium || "10",
+        job_limit_enterprise: settings.job_limit_enterprise || "-1",
+        interview_credits_free: settings.interview_credits_free || "0",
+        interview_credits_standard: settings.interview_credits_standard || "0",
+        interview_credits_premium: settings.interview_credits_premium || "3",
+        interview_credits_enterprise: settings.interview_credits_enterprise || "5",
       });
     }
   }, [settings, form]);
@@ -328,6 +352,150 @@ export default function AdminSettings() {
                     )}
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" data-testid="text-job-limits-title">
+                <Briefcase className="w-5 h-5 text-primary" />
+                Job Posting Limits
+              </CardTitle>
+              <CardDescription>
+                Set the maximum number of active job posts allowed per subscription tier. Use -1 for unlimited.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <FormField
+                  control={form.control}
+                  name="job_limit_free"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Basic (Free)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="1" {...field} data-testid="input-job-limit-free" />
+                      </FormControl>
+                      <FormDescription>-1 = unlimited</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="job_limit_standard"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Standard</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="1" {...field} data-testid="input-job-limit-standard" />
+                      </FormControl>
+                      <FormDescription>-1 = unlimited</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="job_limit_premium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Premium</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="1" {...field} data-testid="input-job-limit-premium" />
+                      </FormControl>
+                      <FormDescription>-1 = unlimited</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="job_limit_enterprise"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enterprise</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="1" {...field} data-testid="input-job-limit-enterprise" />
+                      </FormControl>
+                      <FormDescription>-1 = unlimited</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" data-testid="text-interview-credits-title">
+                <CalendarCheck className="w-5 h-5 text-primary" />
+                Interview Credits
+              </CardTitle>
+              <CardDescription>
+                Set the number of team interview credits per billing period for each subscription tier.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <FormField
+                  control={form.control}
+                  name="interview_credits_free"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Basic (Free)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-free" />
+                      </FormControl>
+                      <FormDescription>Per billing period</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="interview_credits_standard"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Standard</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-standard" />
+                      </FormControl>
+                      <FormDescription>Per billing period</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="interview_credits_premium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Premium</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-premium" />
+                      </FormControl>
+                      <FormDescription>Per billing period</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="interview_credits_enterprise"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Enterprise</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-enterprise" />
+                      </FormControl>
+                      <FormDescription>Per billing period</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </CardContent>
           </Card>

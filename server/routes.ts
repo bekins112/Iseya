@@ -206,9 +206,9 @@ export async function registerRoutes(
     }
 
     if (user.role === 'employer') {
-      const planLimits: Record<string, number> = { free: 1, standard: 5, premium: 10, enterprise: -1 };
+      const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
       const currentPlan = user.subscriptionStatus || "free";
-      const limit = planLimits[currentPlan] ?? 0;
+      const limit = SUBSCRIPTION_PLANS[currentPlan]?.jobLimit ?? 0;
 
       if (limit !== -1) {
         const employerJobs = await storage.getJobsByEmployer(user.id);
@@ -1497,12 +1497,14 @@ export async function registerRoutes(
 
   // === INTERVIEWS ===
 
-  const INTERVIEW_CREDITS: Record<string, number> = {
-    free: 0,
-    standard: 0,
-    premium: 3,
-    enterprise: 5,
-  };
+  async function getInterviewCredits(): Promise<Record<string, number>> {
+    return {
+      free: parseInt(await getSettingValue("interview_credits_free")) || 0,
+      standard: parseInt(await getSettingValue("interview_credits_standard")) || 0,
+      premium: parseInt(await getSettingValue("interview_credits_premium")) || 3,
+      enterprise: parseInt(await getSettingValue("interview_credits_enterprise")) || 5,
+    };
+  }
 
   function getBillingPeriodStart(user: any): Date {
     if (user.subscriptionEndDate) {
@@ -1535,7 +1537,8 @@ export async function registerRoutes(
     }
 
     const plan = user.subscriptionStatus || "free";
-    const totalCredits = INTERVIEW_CREDITS[plan] || 0;
+    const interviewCreditsMap = await getInterviewCredits();
+    const totalCredits = interviewCreditsMap[plan] || 0;
 
     let used = 0;
     if (totalCredits > 0) {
@@ -1943,13 +1946,18 @@ export async function registerRoutes(
     const premiumDiscount = parseFloat(await getSettingValue("subscription_premium_discount"));
     const enterpriseDiscount = parseFloat(await getSettingValue("subscription_enterprise_discount"));
 
+    const jobLimitFree = parseInt(await getSettingValue("job_limit_free")) || 1;
+    const jobLimitStandard = parseInt(await getSettingValue("job_limit_standard")) || 5;
+    const jobLimitPremium = parseInt(await getSettingValue("job_limit_premium")) || 10;
+    const jobLimitEnterprise = parseInt(await getSettingValue("job_limit_enterprise"));
+
     const applyDiscount = (price: number, discount: number) => Math.round(price * (1 - discount / 100));
 
     return {
-      free: { name: "Basic", amount: 0, jobLimit: 1, originalAmount: 0, discount: 0 },
-      standard: { name: "Standard", amount: applyDiscount(standardPrice, standardDiscount) * 100, jobLimit: 5, originalAmount: standardPrice * 100, discount: standardDiscount },
-      premium: { name: "Premium", amount: applyDiscount(premiumPrice, premiumDiscount) * 100, jobLimit: 10, originalAmount: premiumPrice * 100, discount: premiumDiscount },
-      enterprise: { name: "Enterprise", amount: applyDiscount(enterprisePrice, enterpriseDiscount) * 100, jobLimit: -1, originalAmount: enterprisePrice * 100, discount: enterpriseDiscount },
+      free: { name: "Basic", amount: 0, jobLimit: jobLimitFree, originalAmount: 0, discount: 0 },
+      standard: { name: "Standard", amount: applyDiscount(standardPrice, standardDiscount) * 100, jobLimit: jobLimitStandard, originalAmount: standardPrice * 100, discount: standardDiscount },
+      premium: { name: "Premium", amount: applyDiscount(premiumPrice, premiumDiscount) * 100, jobLimit: jobLimitPremium, originalAmount: premiumPrice * 100, discount: premiumDiscount },
+      enterprise: { name: "Enterprise", amount: applyDiscount(enterprisePrice, enterpriseDiscount) * 100, jobLimit: isNaN(jobLimitEnterprise) ? -1 : jobLimitEnterprise, originalAmount: enterprisePrice * 100, discount: enterpriseDiscount },
     } as Record<string, { name: string; amount: number; jobLimit: number; originalAmount: number; discount: number }>;
   }
 
@@ -2907,6 +2915,14 @@ export async function registerRoutes(
     "subscription_enterprise_discount": "0",
     "verification_fee": "9999",
     "verification_discount": "0",
+    "job_limit_free": "1",
+    "job_limit_standard": "5",
+    "job_limit_premium": "10",
+    "job_limit_enterprise": "-1",
+    "interview_credits_free": "0",
+    "interview_credits_standard": "0",
+    "interview_credits_premium": "3",
+    "interview_credits_enterprise": "5",
   };
 
   async function getSettingValue(key: string): Promise<string> {
@@ -3102,8 +3118,15 @@ export async function registerRoutes(
     for (const [key, value] of Object.entries(updates)) {
       if (!validKeys.includes(key)) continue;
       const numVal = parseFloat(value);
-      if (isNaN(numVal) || numVal < 0) continue;
-      if (key.includes("discount") && numVal > 100) continue;
+      if (isNaN(numVal)) continue;
+      if (key.startsWith("job_limit_")) {
+        if (!Number.isInteger(numVal) || numVal < -1) continue;
+      } else if (key.startsWith("interview_credits_")) {
+        if (!Number.isInteger(numVal) || numVal < 0) continue;
+      } else {
+        if (numVal < 0) continue;
+        if (key.includes("discount") && numVal > 100) continue;
+      }
       await storage.upsertSetting(key, String(numVal), userId);
     }
     const settings = await storage.getAllSettings();
