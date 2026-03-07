@@ -162,6 +162,49 @@ export default function AdminSettings() {
               <div className="grid gap-8">
                 <div className="border rounded-lg p-6 space-y-4">
                   <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg" data-testid="text-free-plan-label">Basic (Free) Plan</h3>
+                    <Badge variant="secondary">Free</Badge>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="job_limit_free"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <Briefcase className="w-3.5 h-3.5" />
+                            Job Posting Limit
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" step="1" {...field} data-testid="input-job-limit-free" />
+                          </FormControl>
+                          <FormDescription>Max active jobs (-1 = unlimited)</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="interview_credits_free"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <CalendarCheck className="w-3.5 h-3.5" />
+                            Interview Credits
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-free" />
+                          </FormControl>
+                          <FormDescription>Per billing period</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-6 space-y-4">
+                  <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-lg" data-testid="text-standard-plan-label">Standard Plan</h3>
                     <Badge variant="outline" data-testid="text-standard-final-price">
                       Final: {formatNaira(calcDiscounted(watchedValues.subscription_standard_price, watchedValues.subscription_standard_discount))}/month
@@ -198,6 +241,40 @@ export default function AdminSettings() {
                             <Input type="number" min="0" max="100" step="1" {...field} data-testid="input-standard-discount" />
                           </FormControl>
                           <FormDescription>Promotional discount</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="job_limit_standard"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <Briefcase className="w-3.5 h-3.5" />
+                            Job Posting Limit
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" step="1" {...field} data-testid="input-job-limit-standard" />
+                          </FormControl>
+                          <FormDescription>Max active jobs (-1 = unlimited)</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="interview_credits_standard"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <CalendarCheck className="w-3.5 h-3.5" />
+                            Interview Credits
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-standard" />
+                          </FormControl>
+                          <FormDescription>Per billing period</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -247,6 +324,40 @@ export default function AdminSettings() {
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="job_limit_premium"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <Briefcase className="w-3.5 h-3.5" />
+                            Job Posting Limit
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" step="1" {...field} data-testid="input-job-limit-premium" />
+                          </FormControl>
+                          <FormDescription>Max active jobs (-1 = unlimited)</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="interview_credits_premium"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <CalendarCheck className="w-3.5 h-3.5" />
+                            Interview Credits
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-premium" />
+                          </FormControl>
+                          <FormDescription>Per billing period</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </div>
 
@@ -288,6 +399,40 @@ export default function AdminSettings() {
                             <Input type="number" min="0" max="100" step="1" {...field} data-testid="input-enterprise-discount" />
                           </FormControl>
                           <FormDescription>Promotional discount</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="job_limit_enterprise"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <Briefcase className="w-3.5 h-3.5" />
+                            Job Posting Limit
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" step="1" {...field} data-testid="input-job-limit-enterprise" />
+                          </FormControl>
+                          <FormDescription>Max active jobs (-1 = unlimited)</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="interview_credits_enterprise"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-1">
+                            <CalendarCheck className="w-3.5 h-3.5" />
+                            Interview Credits
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-enterprise" />
+                          </FormControl>
+                          <FormDescription>Per billing period</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -352,150 +497,6 @@ export default function AdminSettings() {
                     )}
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2" data-testid="text-job-limits-title">
-                <Briefcase className="w-5 h-5 text-primary" />
-                Job Posting Limits
-              </CardTitle>
-              <CardDescription>
-                Set the maximum number of active job posts allowed per subscription tier. Use -1 for unlimited.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <FormField
-                  control={form.control}
-                  name="job_limit_free"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Basic (Free)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="1" {...field} data-testid="input-job-limit-free" />
-                      </FormControl>
-                      <FormDescription>-1 = unlimited</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="job_limit_standard"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Standard</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="1" {...field} data-testid="input-job-limit-standard" />
-                      </FormControl>
-                      <FormDescription>-1 = unlimited</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="job_limit_premium"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Premium</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="1" {...field} data-testid="input-job-limit-premium" />
-                      </FormControl>
-                      <FormDescription>-1 = unlimited</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="job_limit_enterprise"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Enterprise</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="1" {...field} data-testid="input-job-limit-enterprise" />
-                      </FormControl>
-                      <FormDescription>-1 = unlimited</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2" data-testid="text-interview-credits-title">
-                <CalendarCheck className="w-5 h-5 text-primary" />
-                Interview Credits
-              </CardTitle>
-              <CardDescription>
-                Set the number of team interview credits per billing period for each subscription tier.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <FormField
-                  control={form.control}
-                  name="interview_credits_free"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Basic (Free)</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-free" />
-                      </FormControl>
-                      <FormDescription>Per billing period</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="interview_credits_standard"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Standard</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-standard" />
-                      </FormControl>
-                      <FormDescription>Per billing period</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="interview_credits_premium"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Premium</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-premium" />
-                      </FormControl>
-                      <FormDescription>Per billing period</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="interview_credits_enterprise"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Enterprise</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" step="1" {...field} data-testid="input-interview-credits-enterprise" />
-                      </FormControl>
-                      <FormDescription>Per billing period</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
             </CardContent>
           </Card>
