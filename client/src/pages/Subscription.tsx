@@ -12,101 +12,21 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
 
-const planMeta: Record<string, {
-  name: string;
-  period: string;
-  description: string;
-  features: string[];
-  limitations: string[];
-  icon: any;
-  popular: boolean;
-  recommended: boolean;
-}> = {
-  free: {
-    name: "Basic",
-    period: "forever",
-    description: "Explore the platform",
-    features: [
-      "Post 1 job",
-      "Create employer profile",
-      "Browse applicant listings",
-      "Basic support",
-    ],
-    limitations: [
-      "Limited to 1 job posting",
-      "No priority listing",
-      "No verified badge",
-    ],
-    icon: Briefcase,
-    popular: false,
-    recommended: false,
-  },
-  standard: {
-    name: "Standard",
-    period: "per month",
-    description: "Start hiring talent",
-    features: [
-      "Post up to 5 jobs",
-      "View applicant profiles",
-      "Basic applicant filtering",
-      "Email support",
-      "Standard job visibility",
-      "Applicant background check report",
-    ],
-    limitations: [
-      "Limited to 5 job postings",
-      "No priority listing",
-      "No verified badge",
-      "No Iṣéyá team interview credits",
-    ],
-    icon: Zap,
-    popular: false,
-    recommended: false,
-  },
-  premium: {
-    name: "Premium",
-    period: "per month",
-    description: "Scale your hiring",
-    features: [
-      "Post up to 10 jobs",
-      "Priority job listing",
-      "Advanced applicant filtering",
-      "Direct messaging",
-      "Analytics dashboard",
-      "Priority support",
-      "Verified employer badge",
-      "Applicant background check report",
-      "3 Iṣéyá team interviews & recommendations",
-    ],
-    limitations: [
-      "Limited to 10 job postings",
-    ],
-    icon: Crown,
-    popular: true,
-    recommended: true,
-  },
-  enterprise: {
-    name: "Enterprise",
-    period: "per month",
-    description: "Unlimited hiring power",
-    features: [
-      "Unlimited job postings",
-      "Top priority listing",
-      "Advanced applicant filtering",
-      "Direct messaging",
-      "Full analytics dashboard",
-      "Dedicated support",
-      "Verified employer badge",
-      "Featured company profile",
-      "Applicant background check report",
-      "5 Iṣéyá team interviews & recommendations",
-    ],
-    limitations: [],
-    icon: Building2,
-    popular: false,
-    recommended: false,
-  },
-};
+function formatJobLimit(limit: number): string {
+  if (limit === -1) return "Unlimited job postings";
+  if (limit === 1) return "Post 1 job";
+  return `Post up to ${limit} jobs`;
+}
+
+function formatJobLimitation(limit: number): string {
+  if (limit === -1) return "";
+  return `Limited to ${limit} job posting${limit !== 1 ? "s" : ""}`;
+}
+
+function formatInterviewCredits(credits: number): string {
+  if (credits <= 0) return "";
+  return `${credits} Iṣéyá team interview${credits !== 1 ? "s" : ""} & recommendations`;
+}
 
 function buildPlans(settings: Record<string, string> | undefined) {
   const s = settings || {};
@@ -117,29 +37,105 @@ function buildPlans(settings: Record<string, string> | undefined) {
   const entPrice = Number(s.subscription_enterprise_price || "44999");
   const entDiscount = Number(s.subscription_enterprise_discount || "0");
 
+  const jobLimitFree = Number(s.job_limit_free ?? "1");
+  const jobLimitStandard = Number(s.job_limit_standard ?? "5");
+  const jobLimitPremium = Number(s.job_limit_premium ?? "10");
+  const jobLimitEnterprise = Number(s.job_limit_enterprise ?? "-1");
+
+  const interviewFree = Number(s.interview_credits_free ?? "0");
+  const interviewStandard = Number(s.interview_credits_standard ?? "0");
+  const interviewPremium = Number(s.interview_credits_premium ?? "3");
+  const interviewEnterprise = Number(s.interview_credits_enterprise ?? "5");
+
   const calc = (price: number, discount: number) => Math.round(price * (1 - discount / 100));
 
+  const freeFeatures = [
+    formatJobLimit(jobLimitFree),
+    "Create employer profile",
+    "Browse applicant listings",
+    "Basic support",
+    ...(interviewFree > 0 ? [formatInterviewCredits(interviewFree)] : []),
+  ];
+  const freeLimitations = [
+    ...(jobLimitFree !== -1 ? [formatJobLimitation(jobLimitFree)] : []),
+    "No priority listing",
+    "No verified badge",
+    ...(interviewFree <= 0 ? ["No Iṣéyá team interview credits"] : []),
+  ];
+
+  const standardFeatures = [
+    formatJobLimit(jobLimitStandard),
+    "View applicant profiles",
+    "Basic applicant filtering",
+    "Email support",
+    "Standard job visibility",
+    "Applicant background check report",
+    ...(interviewStandard > 0 ? [formatInterviewCredits(interviewStandard)] : []),
+  ];
+  const standardLimitations = [
+    ...(jobLimitStandard !== -1 ? [formatJobLimitation(jobLimitStandard)] : []),
+    "No priority listing",
+    "No verified badge",
+    ...(interviewStandard <= 0 ? ["No Iṣéyá team interview credits"] : []),
+  ];
+
+  const premiumFeatures = [
+    formatJobLimit(jobLimitPremium),
+    "Priority job listing",
+    "Advanced applicant filtering",
+    "Direct messaging",
+    "Analytics dashboard",
+    "Priority support",
+    "Verified employer badge",
+    "Applicant background check report",
+    ...(interviewPremium > 0 ? [formatInterviewCredits(interviewPremium)] : []),
+  ];
+  const premiumLimitations = [
+    ...(jobLimitPremium !== -1 ? [formatJobLimitation(jobLimitPremium)] : []),
+  ];
+
+  const enterpriseFeatures = [
+    formatJobLimit(jobLimitEnterprise),
+    "Top priority listing",
+    "Advanced applicant filtering",
+    "Direct messaging",
+    "Full analytics dashboard",
+    "Dedicated support",
+    "Verified employer badge",
+    "Featured company profile",
+    "Applicant background check report",
+    ...(interviewEnterprise > 0 ? [formatInterviewCredits(interviewEnterprise)] : []),
+  ];
+  const enterpriseLimitations = [
+    ...(jobLimitEnterprise !== -1 ? [formatJobLimitation(jobLimitEnterprise)] : []),
+  ];
+
   return [
-    { id: "free", ...planMeta.free, price: 0, originalPrice: 0, discount: 0, priceFormatted: "₦0" },
     {
-      id: "standard", ...planMeta.standard,
-      price: calc(stdPrice, stdDiscount),
-      originalPrice: stdPrice,
-      discount: stdDiscount,
+      id: "free", name: "Basic", period: "forever", description: "Explore the platform",
+      features: freeFeatures, limitations: freeLimitations,
+      icon: Briefcase, popular: false, recommended: false,
+      price: 0, originalPrice: 0, discount: 0, priceFormatted: "₦0",
+    },
+    {
+      id: "standard", name: "Standard", period: "per month", description: "Start hiring talent",
+      features: standardFeatures, limitations: standardLimitations,
+      icon: Zap, popular: false, recommended: false,
+      price: calc(stdPrice, stdDiscount), originalPrice: stdPrice, discount: stdDiscount,
       priceFormatted: `₦${calc(stdPrice, stdDiscount).toLocaleString()}`,
     },
     {
-      id: "premium", ...planMeta.premium,
-      price: calc(premPrice, premDiscount),
-      originalPrice: premPrice,
-      discount: premDiscount,
+      id: "premium", name: "Premium", period: "per month", description: "Scale your hiring",
+      features: premiumFeatures, limitations: premiumLimitations,
+      icon: Crown, popular: true, recommended: true,
+      price: calc(premPrice, premDiscount), originalPrice: premPrice, discount: premDiscount,
       priceFormatted: `₦${calc(premPrice, premDiscount).toLocaleString()}`,
     },
     {
-      id: "enterprise", ...planMeta.enterprise,
-      price: calc(entPrice, entDiscount),
-      originalPrice: entPrice,
-      discount: entDiscount,
+      id: "enterprise", name: "Enterprise", period: "per month", description: "Unlimited hiring power",
+      features: enterpriseFeatures, limitations: enterpriseLimitations,
+      icon: Building2, popular: false, recommended: false,
+      price: calc(entPrice, entDiscount), originalPrice: entPrice, discount: entDiscount,
       priceFormatted: `₦${calc(entPrice, entDiscount).toLocaleString()}`,
     },
   ];
