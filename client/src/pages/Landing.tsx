@@ -943,8 +943,8 @@ export default function Landing() {
                   <iframe
                     className="w-full h-full"
                     src={howItWorksTab === "seeker"
-                      ? "https://www.youtube.com/embed/dQw4w9WgXcQ"
-                      : "https://www.youtube.com/embed/dQw4w9WgXcQ"
+                      ? "https://www.youtube.com/embed/y_1k2lhK76Q"
+                      : "https://www.youtube.com/embed/y_1k2lhK76Q"
                     }
                     title={howItWorksTab === "seeker" ? "Iṣéyá Job Seeker Demo" : "Iṣéyá Employer Demo"}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
