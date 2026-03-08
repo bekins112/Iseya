@@ -25,11 +25,18 @@ import {
   ChevronRight,
   FileText,
   Upload,
-  X
+  X,
+  Share2,
+  Link2,
+  Copy
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SiWhatsapp, SiFacebook, SiLinkedin } from "react-icons/si";
+import { RiTwitterXFill } from "react-icons/ri";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { useToast } from "@/hooks/use-toast";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
   if (!date) return "Recently";
@@ -68,6 +75,7 @@ export default function JobDetails() {
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+  const { toast } = useToast();
 
   const isEmployer = user?.role === "employer";
   const isApplicant = user?.role === "applicant";
@@ -272,6 +280,85 @@ export default function JobDetails() {
                       </Button>
                     </Link>
                   )}
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="button-share-job">
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-3" align="end">
+                      <div className="flex flex-col gap-2">
+                        <p className="text-sm font-semibold mb-1">Share this job</p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 text-[#25D366] hover:bg-[#25D366]/10"
+                            data-testid="button-share-whatsapp"
+                            onClick={() => {
+                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              const text = `Check out this job on Iṣéyá: ${job.title} in ${job.location} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank");
+                            }}
+                          >
+                            <SiWhatsapp className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 hover:bg-muted"
+                            data-testid="button-share-twitter"
+                            onClick={() => {
+                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              const text = `Check out this job on Iṣéyá: ${job.title} in ${job.location}`;
+                              window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
+                            }}
+                          >
+                            <RiTwitterXFill className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 text-[#1877F2] hover:bg-[#1877F2]/10"
+                            data-testid="button-share-facebook"
+                            onClick={() => {
+                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
+                            }}
+                          >
+                            <SiFacebook className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                            data-testid="button-share-linkedin"
+                            onClick={() => {
+                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
+                            }}
+                          >
+                            <SiLinkedin className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9"
+                            data-testid="button-copy-link"
+                            onClick={() => {
+                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              navigator.clipboard.writeText(url);
+                              toast({ title: "Link copied!", description: "Job link has been copied to your clipboard." });
+                            }}
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
