@@ -298,7 +298,8 @@ export default function JobDetails() {
                             className="h-9 w-9 text-[#25D366] hover:bg-[#25D366]/10"
                             data-testid="button-share-whatsapp"
                             onClick={() => {
-                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
                               const text = `Check out this job on Iṣéyá: ${job.title} in ${job.location} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
                               window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank");
                             }}
@@ -311,7 +312,8 @@ export default function JobDetails() {
                             className="h-9 w-9 hover:bg-muted"
                             data-testid="button-share-twitter"
                             onClick={() => {
-                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
                               const text = `Check out this job on Iṣéyá: ${job.title} in ${job.location}`;
                               window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
                             }}
@@ -324,7 +326,8 @@ export default function JobDetails() {
                             className="h-9 w-9 text-[#1877F2] hover:bg-[#1877F2]/10"
                             data-testid="button-share-facebook"
                             onClick={() => {
-                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
                               window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
                             }}
                           >
@@ -336,7 +339,8 @@ export default function JobDetails() {
                             className="h-9 w-9 text-[#0A66C2] hover:bg-[#0A66C2]/10"
                             data-testid="button-share-linkedin"
                             onClick={() => {
-                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
                               window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
                             }}
                           >
@@ -348,7 +352,8 @@ export default function JobDetails() {
                             className="h-9 w-9"
                             data-testid="button-copy-link"
                             onClick={() => {
-                              const url = `${window.location.origin}/jobs/${job.id}`;
+                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
                               navigator.clipboard.writeText(url);
                               toast({ title: "Link copied!", description: "Job link has been copied to your clipboard." });
                             }}

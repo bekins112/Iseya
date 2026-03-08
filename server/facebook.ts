@@ -27,9 +27,14 @@ function formatSalary(salaryMin?: number | null, salaryMax?: number | null, wage
   return "Competitive";
 }
 
+function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 function buildJobPost(job: JobData, siteUrl: string): string {
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.wage);
-  const jobUrl = `${siteUrl}/jobs/${job.id}`;
+  const jobSlug = slugify(job.title);
+  const jobUrl = `${siteUrl}/jobs/${job.id}/${jobSlug}`;
 
   const lines = [
     `🔔 New Job Alert on Iṣéyá!`,

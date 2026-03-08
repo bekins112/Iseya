@@ -134,7 +134,7 @@ function Router() {
       </Route>
 
       {/* Public job details page - no auth required */}
-      <Route path="/jobs/:id">
+      <Route path="/jobs/:id/:slug?">
         <JobDetails />
       </Route>
 
