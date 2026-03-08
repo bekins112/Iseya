@@ -4,6 +4,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import { postJobToFacebook } from "./facebook";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { users } from "@shared/models/auth";
@@ -234,6 +235,18 @@ export async function registerRoutes(
       const input = api.jobs.create.input.parse(bodyWithDate);
       const jobData: any = { ...input, status: "active" };
       const job = await storage.createJob(jobData);
+
+      const currentPlan = user.subscriptionStatus || "free";
+      if (currentPlan === "premium" || currentPlan === "enterprise") {
+        const siteUrl = process.env.REPLIT_DOMAINS
+          ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+          : `${req.protocol}://${req.get("host")}`;
+        postJobToFacebook({
+          ...job,
+          employerName: user.companyName || `${user.firstName} ${user.lastName}`,
+        }, siteUrl).catch(err => console.error("[facebook] Background post failed:", err));
+      }
+
       res.status(201).json(job);
     } catch (err) {
       if (err instanceof z.ZodError) {

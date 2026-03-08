@@ -53,6 +53,13 @@ Preferred communication style: Simple, everyday language.
 - Uses Mailjet for transactional emails (e.g., welcome, application notifications, subscription updates).
 - All emails use branded HTML templates.
 
+### Facebook Auto-Posting
+- When premium or enterprise employers post jobs, they are automatically shared to the Iṣéyá Facebook Page via the Graph API.
+- Requires `FACEBOOK_PAGE_ACCESS_TOKEN` and `FACEBOOK_PAGE_ID` environment variables.
+- Posts include job title, location, category, type, salary, employer name, description excerpt, apply link, and hashtags.
+- Runs asynchronously (non-blocking) — job creation succeeds regardless of Facebook API result.
+- Implementation: `server/facebook.ts`, triggered from job creation route in `server/routes.ts`.
+
 ### Profile Management
 - Centralized `/profile` page for all user profile management.
 - **All users**: First name, last name, role, location, bio, profile photo.
