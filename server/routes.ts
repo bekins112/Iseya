@@ -169,6 +169,7 @@ export async function registerRoutes(
     const filters = {
       category: req.query.category as string,
       location: req.query.location as string,
+      state: req.query.state as string,
       jobType: req.query.jobType as string,
       minSalary: req.query.minSalary ? Number(req.query.minSalary) : undefined,
       maxSalary: req.query.maxSalary ? Number(req.query.maxSalary) : undefined,
@@ -2436,7 +2437,7 @@ export async function registerRoutes(
     if (user.isVerified && !verificationExpired) return res.status(400).json({ message: "You are already verified" });
 
     const existing = await storage.getVerificationRequestByUser(user.id);
-    if (existing && (existing.status === "pending" || existing.status === "under_review")) {
+    if (existing && (existing.status === "awaiting_payment" || existing.status === "pending" || existing.status === "under_review")) {
       return res.status(400).json({ message: "You already have a pending verification request" });
     }
 
@@ -2467,7 +2468,7 @@ export async function registerRoutes(
       idNumber,
       idDocumentUrl,
       selfieUrl,
-      status: "pending",
+      status: "awaiting_payment",
     });
 
     res.json(request);
@@ -2481,7 +2482,7 @@ export async function registerRoutes(
     if (user.isVerified && !paysExpired) return res.status(400).json({ message: "You are already verified" });
 
     const existing = await storage.getVerificationRequestByUser(user.id);
-    if (!existing || existing.status !== "pending") {
+    if (!existing || existing.status !== "awaiting_payment") {
       return res.status(400).json({ message: "Please submit your verification documents first" });
     }
 

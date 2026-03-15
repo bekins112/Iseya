@@ -46,9 +46,14 @@ export function JobCard({ job, isEmployer = false }: JobCardProps) {
               <div className="bg-background p-2 rounded-xl shadow-sm">
                 <MapPin className="h-4 w-4 text-primary" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase">Location</span>
-                <span className="text-sm font-semibold truncate max-w-[100px]">{job.location}</span>
+                <span className="text-sm font-semibold truncate max-w-[100px]">
+                  {job.state ? job.state : job.location}
+                </span>
+                {job.state && job.location && (
+                  <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{job.location}</span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-muted/30 group-hover:bg-primary/5 transition-colors duration-300">

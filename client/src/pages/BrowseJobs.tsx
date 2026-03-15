@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { nigerianStates } from "@/lib/nigerian-locations";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
   if (!date) return "Recently";
@@ -84,19 +85,6 @@ const categories = [
   "Other",
 ];
 
-const locations = [
-  "Lagos",
-  "Abuja",
-  "Port Harcourt",
-  "Ibadan",
-  "Kano",
-  "Kaduna",
-  "Benin City",
-  "Enugu",
-  "Owerri",
-  "Abeokuta",
-  "Other"
-];
 
 const jobTypes = ["full-time", "part-time", "contract", "temporary"];
 
@@ -105,7 +93,7 @@ export default function BrowseJobs() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     category: "",
-    location: "",
+    state: "",
     jobType: "",
   });
 
@@ -118,7 +106,7 @@ export default function BrowseJobs() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (activeFilters.category) params.append("category", activeFilters.category);
-      if (activeFilters.location) params.append("location", activeFilters.location);
+      if (activeFilters.state) params.append("state", activeFilters.state);
       if (activeFilters.jobType) params.append("jobType", activeFilters.jobType);
       
       const url = params.toString() ? `${api.jobs.list.path}?${params}` : api.jobs.list.path;
@@ -135,6 +123,7 @@ export default function BrowseJobs() {
       job.title.toLowerCase().includes(query) ||
       job.description.toLowerCase().includes(query) ||
       job.location.toLowerCase().includes(query) ||
+      (job.state || "").toLowerCase().includes(query) ||
       job.category.toLowerCase().includes(query)
     );
   }) || [];
@@ -144,7 +133,7 @@ export default function BrowseJobs() {
   };
 
   const clearFilters = () => {
-    setFilters({ category: "", location: "", jobType: "" });
+    setFilters({ category: "", state: "", jobType: "" });
     setSearchQuery("");
   };
 
@@ -263,19 +252,19 @@ export default function BrowseJobs() {
 
                       <div className="space-y-2">
                         <label className="text-sm font-medium flex items-center gap-2">
-                          <MapPin className="w-4 h-4" /> Location
+                          <MapPin className="w-4 h-4" /> State
                         </label>
                         <Select 
-                          value={filters.location} 
-                          onValueChange={(v) => handleFilterChange("location", v)}
+                          value={filters.state} 
+                          onValueChange={(v) => handleFilterChange("state", v)}
                         >
                           <SelectTrigger data-testid="select-location">
-                            <SelectValue placeholder="All Locations" />
+                            <SelectValue placeholder="All States" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">All Locations</SelectItem>
-                            {locations.map(loc => (
-                              <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                            <SelectItem value="all">All States</SelectItem>
+                            {nigerianStates.map(s => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

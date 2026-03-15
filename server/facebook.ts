@@ -9,6 +9,7 @@ interface JobData {
   title: string;
   description: string;
   location: string;
+  state?: string | null;
   category: string;
   jobType: string;
   wage?: string | null;
@@ -40,7 +41,7 @@ function buildJobPost(job: JobData, siteUrl: string): string {
     `🔔 New Job Alert on Iṣéyá!`,
     ``,
     `📌 ${job.title}`,
-    `📍 Location: ${job.location}`,
+    `📍 Location: ${job.state ? `${job.state}${job.location ? ` (${job.location})` : ""}` : job.location}`,
     `💼 Category: ${job.category}`,
     `⏰ Type: ${job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1)}`,
     `💰 Pay: ${salary}`,
@@ -56,7 +57,7 @@ function buildJobPost(job: JobData, siteUrl: string): string {
     ``,
     `👉 Apply now: ${jobUrl}`,
     ``,
-    `#IṣéyáJobs #NigeriaJobs #CasualWork #JobAlert #${job.category.replace(/[^a-zA-Z0-9]/g, "")} #${job.location.replace(/[^a-zA-Z0-9]/g, "")}`
+    `#IṣéyáJobs #NigeriaJobs #CasualWork #JobAlert #${job.category.replace(/[^a-zA-Z0-9]/g, "")} #${(job.state || job.location).replace(/[^a-zA-Z0-9]/g, "")}`
   );
 
   return lines.join("\n");

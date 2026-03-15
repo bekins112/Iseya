@@ -13,6 +13,7 @@ export interface IStorage {
   getJobs(filters?: { 
     category?: string; 
     location?: string;
+    state?: string;
     jobType?: string;
     minSalary?: number;
     maxSalary?: number;
@@ -189,6 +190,7 @@ export class DatabaseStorage implements IStorage {
   async getJobs(filters?: { 
     category?: string; 
     location?: string;
+    state?: string;
     jobType?: string;
     minSalary?: number;
     maxSalary?: number;
@@ -201,6 +203,7 @@ export class DatabaseStorage implements IStorage {
     
     if (filters?.category) conditions.push(eq(jobs.category, filters.category));
     if (filters?.location) conditions.push(sql`${jobs.location} ILIKE ${`%${filters.location}%`}`);
+    if (filters?.state) conditions.push(eq(jobs.state, filters.state));
     if (filters?.jobType) conditions.push(eq(jobs.jobType, filters.jobType));
     if (filters?.minSalary) conditions.push(sql`${jobs.salaryMin} >= ${filters.minSalary}`);
     if (filters?.maxSalary) conditions.push(sql`${jobs.salaryMax} <= ${filters.maxSalary}`);

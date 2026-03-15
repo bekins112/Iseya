@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase, Building2, FileText, Upload, PlusCircle, Pencil, Trash2, Check, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { nigerianStates } from "@/lib/nigerian-locations";
 
 const businessCategories = [
   "Restaurant & Food Service",
@@ -38,14 +39,6 @@ const businessCategories = [
   "Education & Tutoring",
   "Transportation",
   "Other",
-];
-
-const nigerianStates = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
-  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
-  "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
-  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
-  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
 ];
 
 const JOB_TYPE_OPTIONS = [

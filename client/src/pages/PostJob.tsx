@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { AlertTriangle, ArrowUpCircle, CalendarClock, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { checkEmployerProfile } from "@/lib/profile-utils";
+import { nigerianStates } from "@/lib/nigerian-locations";
 
 const categories = [
   "Waiter / Waitress",
@@ -69,7 +70,8 @@ const postJobSchema = z.object({
   salaryMin: z.coerce.number().min(0, "Minimum salary must be at least 0"),
   salaryMax: z.coerce.number().min(0, "Maximum salary must be at least 0"),
   wage: z.string().min(1, "Wage information is required"),
-  location: z.string().min(1, "Location is required"),
+  state: z.string().min(1, "State is required"),
+  location: z.string().min(1, "Specific address/area is required"),
   gender: z.string().default("Any"),
   ageMin: z.coerce.number().min(18, "Minimum age must be at least 18").nullable().optional(),
   ageMax: z.coerce.number().max(100, "Maximum age cannot exceed 100").nullable().optional(),
@@ -96,6 +98,7 @@ export default function PostJob() {
       salaryMin: 0,
       salaryMax: 0,
       wage: "",
+      state: "",
       location: "",
       gender: "Any",
       ageMin: null,
@@ -372,15 +375,38 @@ export default function PostJob() {
                 />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-job-state">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {nigerianStates.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="location"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Location</FormLabel>
+                      <FormLabel>Area / Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Downtown Cafe, Main St." {...field} data-testid="input-job-location" />
+                        <Input placeholder="e.g. Victoria Island, Lagos" {...field} data-testid="input-job-location" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

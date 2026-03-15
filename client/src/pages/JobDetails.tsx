@@ -242,7 +242,7 @@ export default function JobDetails() {
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
-                      {job.location}
+                      {job.state ? `${job.state}${job.location ? ` — ${job.location}` : ""}` : job.location}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
