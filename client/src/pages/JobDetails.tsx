@@ -37,6 +37,7 @@ import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { useToast } from "@/hooks/use-toast";
+import { checkApplicantProfile } from "@/lib/profile-utils";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
   if (!date) return "Recently";
@@ -104,12 +105,21 @@ export default function JobDetails() {
     enabled: !!user && isApplicant,
   });
 
+  const [profileIncompleteOpen, setProfileIncompleteOpen] = useState(false);
+  const [profileMissingFields, setProfileMissingFields] = useState<string[]>([]);
+
   const handleApplyClick = () => {
     if (!user) {
       setLoginPromptOpen(true);
-    } else {
-      setApplyDialogOpen(true);
+      return;
     }
+    const profileCheck = checkApplicantProfile(user as any);
+    if (!profileCheck.isComplete) {
+      setProfileMissingFields(profileCheck.missingFields);
+      setProfileIncompleteOpen(true);
+      return;
+    }
+    setApplyDialogOpen(true);
   };
 
   const handleApply = async () => {
@@ -595,6 +605,47 @@ export default function JobDetails() {
             >
               {uploadCV.isPending ? "Uploading CV..." : createApplication.isPending ? "Sending..." : "Send Application"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={profileIncompleteOpen} onOpenChange={setProfileIncompleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-amber-600" />
+              Complete Your Profile First
+            </DialogTitle>
+            <DialogDescription>
+              You need to complete your profile before you can apply for jobs.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-4">
+            <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-300 mb-2">Missing information:</p>
+              <ul className="space-y-1">
+                {profileMissingFields.map((field) => (
+                  <li key={field} className="text-sm text-amber-800 dark:text-amber-400 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                    {field}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Fill in the missing details on your profile page, then come back to apply.
+            </p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setProfileIncompleteOpen(false)} className="sm:flex-1" data-testid="button-dismiss-profile-incomplete">
+              Cancel
+            </Button>
+            <Link href="/profile" className="sm:flex-1">
+              <Button className="w-full gap-2" data-testid="button-go-to-profile">
+                <UserPlus className="w-4 h-4" />
+                Go to Profile
+              </Button>
+            </Link>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -207,6 +207,22 @@ export async function registerRoutes(
     }
 
     if (user.role === 'employer') {
+      const employerMissing: string[] = [];
+      if (!user.firstName?.trim()) employerMissing.push("First name");
+      if (!user.lastName?.trim()) employerMissing.push("Last name");
+      if (!user.companyName?.trim()) employerMissing.push("Company name");
+      if (!user.businessCategory?.trim()) employerMissing.push("Business category");
+      if (!user.companyState?.trim()) employerMissing.push("Company state");
+      if (employerMissing.length > 0) {
+        return res.status(403).json({
+          message: `Please complete your profile before posting a job. Missing: ${employerMissing.join(", ")}.`,
+          code: "PROFILE_INCOMPLETE",
+          missingFields: employerMissing,
+        });
+      }
+    }
+
+    if (user.role === 'employer') {
       const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
       const currentPlan = user.subscriptionStatus || "free";
       const limit = SUBSCRIPTION_PLANS[currentPlan]?.jobLimit ?? 0;
@@ -336,9 +352,20 @@ export async function registerRoutes(
   // === APPLICATIONS ===
   app.post(api.applications.create.path, isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
-    
-    if (!user?.age || user.age < 18) {
-       return res.status(403).json({ message: "You must be at least 18 years old to apply." });
+
+    const applicantMissing: string[] = [];
+    if (!user?.firstName?.trim()) applicantMissing.push("First name");
+    if (!user?.lastName?.trim()) applicantMissing.push("Last name");
+    if (!user?.phone?.trim()) applicantMissing.push("Phone number");
+    if (!user?.gender?.trim()) applicantMissing.push("Gender");
+    if (!user?.age || user.age < 18) applicantMissing.push("Age (must be 18+)");
+    if (!user?.state?.trim()) applicantMissing.push("State");
+    if (applicantMissing.length > 0) {
+      return res.status(403).json({
+        message: `Please complete your profile before applying for jobs. Missing: ${applicantMissing.join(", ")}.`,
+        code: "PROFILE_INCOMPLETE",
+        missingFields: applicantMissing,
+      });
     }
     try {
       const input = api.applications.create.input.parse({

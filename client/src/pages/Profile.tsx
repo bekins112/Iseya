@@ -123,6 +123,7 @@ const profileSchema = insertUserSchema.pick({
   companyRegNo: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   age: z.coerce.number().min(18, "Must be at least 18").optional().or(z.literal("")),
+  state: z.string().optional().or(z.literal("")),
   expectedSalaryMin: z.coerce.number().optional().or(z.literal("")),
   expectedSalaryMax: z.coerce.number().optional().or(z.literal("")),
 });
@@ -267,6 +268,7 @@ export default function Profile() {
       companyRegNo: (user as any)?.companyRegNo || "",
       gender: user?.gender || "",
       age: user?.age || "",
+      state: (user as any)?.state || "",
       expectedSalaryMin: user?.expectedSalaryMin || "",
       expectedSalaryMax: user?.expectedSalaryMax || "",
     }
@@ -430,19 +432,46 @@ export default function Profile() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Primary Location</FormLabel>
-                        <FormControl>
-                          <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. San Francisco, CA" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Address / Area</FormLabel>
+                          <FormControl>
+                            <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Ikeja, Lagos" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                            State <span className="text-destructive">*</span>
+                          </FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <FormControl>
+                              <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" data-testid="select-profile-state">
+                                <SelectValue placeholder="Select your state" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="rounded-2xl max-h-[200px]">
+                              {nigerianStates.map((s) => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   {user?.role === 'applicant' && (
                     <>

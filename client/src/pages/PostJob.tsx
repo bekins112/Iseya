@@ -15,8 +15,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { AlertTriangle, ArrowUpCircle, CalendarClock } from "lucide-react";
+import { AlertTriangle, ArrowUpCircle, CalendarClock, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { checkEmployerProfile } from "@/lib/profile-utils";
 
 const categories = [
   "Waiter / Waitress",
@@ -83,6 +84,8 @@ export default function PostJob() {
   const [, setLocation] = useLocation();
   const [limitMessage, setLimitMessage] = useState<string | null>(null);
 
+  const profileCheck = user ? checkEmployerProfile(user as any) : { isComplete: false, missingFields: [] };
+
   const form = useForm<JobFormValues>({
     resolver: zodResolver(postJobSchema),
     defaultValues: {
@@ -102,6 +105,7 @@ export default function PostJob() {
   });
 
   const onSubmit = (data: JobFormValues) => {
+    if (!profileCheck.isComplete) return;
     setLimitMessage(null);
     const { deadline, ...rest } = data;
     createJob.mutate({
@@ -124,6 +128,33 @@ export default function PostJob() {
   return (
     <div className="max-w-2xl mx-auto">
       <PageHeader title="Post a New Job" description="Find the perfect candidate for your needs." />
+
+      {!profileCheck.isComplete && (
+        <Card className="mb-6 border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700">
+          <CardContent className="py-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+                <UserCircle2 className="w-6 h-6 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-base mb-1 text-amber-900 dark:text-amber-300">Complete Your Profile First</h3>
+                <p className="text-sm text-amber-800 dark:text-amber-400 mb-1">
+                  You need to complete your company profile before you can post jobs.
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-500">
+                  Missing: {profileCheck.missingFields.join(", ")}
+                </p>
+              </div>
+              <Link href="/profile">
+                <Button data-testid="button-complete-profile-employer" className="bg-amber-600 hover:bg-amber-700 text-white shrink-0">
+                  <UserCircle2 className="w-4 h-4 mr-2" />
+                  Complete Profile
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {limitMessage && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5">
@@ -429,7 +460,7 @@ export default function PostJob() {
 
               <div className="flex justify-end gap-4 pt-4">
                 <Button type="button" variant="ghost" onClick={() => setLocation("/dashboard")} data-testid="button-job-cancel">Cancel</Button>
-                <Button type="submit" disabled={createJob.isPending} data-testid="button-job-submit">
+                <Button type="submit" disabled={createJob.isPending || !profileCheck.isComplete} data-testid="button-job-submit">
                   {createJob.isPending ? "Posting..." : "Publish Job"}
                 </Button>
               </div>

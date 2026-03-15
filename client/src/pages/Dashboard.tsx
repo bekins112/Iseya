@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { PlusCircle, Briefcase, TrendingUp, CheckCircle2, X, AlertCircle, Home, Receipt, CreditCard, ArrowUpRight, Calendar, Users } from "lucide-react";
+import { PlusCircle, Briefcase, TrendingUp, CheckCircle2, X, AlertCircle, Home, Receipt, CreditCard, ArrowUpRight, Calendar, Users, ShieldAlert } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Transaction } from "@shared/schema";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
+import { checkApplicantProfile, checkEmployerProfile } from "@/lib/profile-utils";
 
 
 export default function Dashboard() {
@@ -74,47 +75,40 @@ export default function Dashboard() {
       </motion.div>
 
       {(() => {
-        const missingItems: string[] = [];
-        if (isApplicant) {
-          if (!user?.gender) missingItems.push("gender");
-          if (!(user as any)?.phone) missingItems.push("phone number");
-          if (!user?.age) missingItems.push("age");
-          if (!user?.bio) missingItems.push("bio");
-          if (!user?.expectedSalaryMin && !user?.expectedSalaryMax) missingItems.push("expected salary");
-          if (!user?.cvUrl) missingItems.push("CV");
-          if (!user?.profileImageUrl) missingItems.push("profile picture");
-        }
-        if (isEmployer) {
-          if (!user?.companyName) missingItems.push("company name");
-          if (!user?.businessCategory) missingItems.push("business category");
-          if (!user?.companyLogo) missingItems.push("company logo");
-          if (!(user as any)?.companyAddress) missingItems.push("company address");
-          if (!(user as any)?.companyCity) missingItems.push("city");
-          if (!(user as any)?.companyState) missingItems.push("state");
-        }
-        if (missingItems.length === 0) return null;
+        if (!user) return null;
+        const profileCheck = isApplicant
+          ? checkApplicantProfile(user as any)
+          : isEmployer
+          ? checkEmployerProfile(user as any)
+          : { isComplete: true, missingFields: [] };
+
+        if (profileCheck.isComplete) return null;
+
+        const action = isApplicant ? "apply for jobs" : "post jobs";
         return (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <Card className="border-primary/30 bg-primary/5 shadow-md" data-testid="card-profile-prompt">
+            <Card className="border-destructive/40 bg-destructive/5 shadow-md" data-testid="card-profile-prompt">
               <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 py-4">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="rounded-full bg-primary/10 p-2 flex-shrink-0">
-                    <AlertCircle className="w-5 h-5 text-primary" />
+                  <div className="rounded-full bg-destructive/10 p-2 flex-shrink-0">
+                    <ShieldAlert className="w-5 h-5 text-destructive" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm" data-testid="text-profile-prompt-title">Complete your profile</p>
-                    <p className="text-xs text-muted-foreground" data-testid="text-profile-prompt-missing">
-                      Missing: {missingItems.join(", ")}. A complete profile helps you {isEmployer ? "attract better applicants" : "stand out to employers"}.
+                    <p className="font-semibold text-sm text-destructive" data-testid="text-profile-prompt-title">
+                      Profile incomplete — you cannot {action} yet
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5" data-testid="text-profile-prompt-missing">
+                      Required: {profileCheck.missingFields.join(", ")}
                     </p>
                   </div>
                 </div>
                 <Link href="/profile">
-                  <Button size="sm" className="flex-shrink-0" data-testid="button-complete-profile">
-                    Update Profile
+                  <Button size="sm" className="flex-shrink-0 bg-destructive hover:bg-destructive/90 text-white" data-testid="button-complete-profile">
+                    Complete Profile
                   </Button>
                 </Link>
               </CardContent>
