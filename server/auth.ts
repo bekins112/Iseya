@@ -11,6 +11,7 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { validateEmail } from "./email-validation";
 
 declare module "express-session" {
   interface SessionData {
@@ -85,6 +86,11 @@ export async function setupAuth(app: Express) {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const input = registerSchema.parse(req.body);
+
+      const emailCheck = await validateEmail(input.email);
+      if (!emailCheck.valid) {
+        return res.status(400).json({ message: emailCheck.reason });
+      }
 
       const [existing] = await db
         .select()
