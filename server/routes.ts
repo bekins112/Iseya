@@ -2555,7 +2555,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid payment metadata", verified: false });
       }
 
-      await storage.updateVerificationRequest(Number(requestId), { status: "under_review" });
+      await storage.updateVerificationRequest(Number(requestId), { status: "pending" });
 
       await storage.createTransaction({
         userId: userId || req.session.userId!,
@@ -2583,7 +2583,7 @@ export async function registerRoutes(
     if (user.isVerified && !flwExpired) return res.status(400).json({ message: "You are already verified" });
 
     const existing = await storage.getVerificationRequestByUser(user.id);
-    if (!existing || existing.status !== "pending") {
+    if (!existing || existing.status !== "awaiting_payment") {
       return res.status(400).json({ message: "Please submit your verification documents first" });
     }
 
@@ -2665,7 +2665,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid payment metadata", verified: false });
       }
 
-      await storage.updateVerificationRequest(Number(requestId), { status: "under_review" });
+      await storage.updateVerificationRequest(Number(requestId), { status: "pending" });
 
       await storage.createTransaction({
         userId: userId || req.session.userId!,
@@ -2691,7 +2691,10 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You don't have permission to manage verifications" });
     }
     const status = req.query.status as string | undefined;
-    const requests = await storage.getAllVerificationRequests(status ? { status } : undefined);
+    let requests = await storage.getAllVerificationRequests(status ? { status } : undefined);
+    if (!status) {
+      requests = requests.filter(r => r.status !== "awaiting_payment");
+    }
     const enriched = await Promise.all(requests.map(async (r) => {
       const user = await storage.getUser(r.userId);
       return {
@@ -2925,12 +2928,12 @@ export async function registerRoutes(
         let metadata: any = {};
         try { metadata = txn.metadata ? JSON.parse(txn.metadata) : {}; } catch {}
         if (metadata.requestId) {
-          await storage.updateVerificationRequest(Number(metadata.requestId), { status: "under_review" });
+          await storage.updateVerificationRequest(Number(metadata.requestId), { status: "pending" });
         }
 
         storage.createNotification({
           title: "Verification Payment Confirmed",
-          message: "Your verification payment has been confirmed by the admin team. Your verification is now under review.",
+          message: "Your verification payment has been confirmed by the admin team. Your verification is now pending review.",
           type: "individual",
           targetRole: null,
           targetUserId: txn.userId,

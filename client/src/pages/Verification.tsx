@@ -194,8 +194,8 @@ export default function Verification() {
   const isVerified = verificationStatus?.isVerified && !isExpired;
   const request = verificationStatus?.request;
   const hasSubmitted = !!request;
-  const isPending = request?.status === "pending";
-  const isUnderReview = request?.status === "under_review";
+  const isAwaitingPayment = request?.status === "awaiting_payment";
+  const isUnderReview = request?.status === "pending" || request?.status === "under_review";
   const isRejected = request?.status === "rejected" || isExpired;
   const isApproved = request?.status === "approved" && !isExpired;
 
@@ -302,10 +302,10 @@ export default function Verification() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              {isPending ? "Complete Payment" : isExpired ? "Renew Verification" : "Apply for Verification"}
+              {isAwaitingPayment ? "Complete Payment" : isExpired ? "Renew Verification" : "Apply for Verification"}
             </CardTitle>
             <CardDescription>
-              {isPending 
+              {isAwaitingPayment 
                 ? `Your documents have been submitted. Pay ${feeFormatted} to complete verification.`
                 : isExpired
                 ? `Your verification has expired. Renew for another 30 days at ${feeFormatted}.`
@@ -314,7 +314,7 @@ export default function Verification() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!isPending && !isApproved && (
+            {!isAwaitingPayment && !isApproved && (
               <>
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">ID Type</Label>
@@ -426,7 +426,7 @@ export default function Verification() {
               </>
             )}
 
-            {isPending && (
+            {isAwaitingPayment && (
               <div className="space-y-4">
                 <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-center justify-between mb-2">
