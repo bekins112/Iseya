@@ -33,9 +33,13 @@ export default function VerifyEmail() {
   const verifyCode = useMutation({
     mutationFn: (code: string) =>
       apiRequest("POST", "/api/auth/verify-email", { code }),
-    onSuccess: () => {
+    onSuccess: (verifiedUser: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      setLocation("/dashboard");
+      if (verifiedUser?.role && verifiedUser?.age) {
+        setLocation("/dashboard");
+      } else {
+        setLocation("/onboarding");
+      }
     },
     onError: (err: any) => {
       setError(err.message || "Verification failed");
@@ -49,7 +53,11 @@ export default function VerifyEmail() {
   }
 
   if ((user as any)?.emailVerified) {
-    setLocation("/dashboard");
+    if (user?.role && (user as any)?.age) {
+      setLocation("/dashboard");
+    } else {
+      setLocation("/onboarding");
+    }
     return null;
   }
 

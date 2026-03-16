@@ -26,7 +26,9 @@ export default function Register() {
   const [error, setError] = useState("");
 
   if (isAuthenticated && user) {
-    if (user.role && user.age) {
+    if (!(user as any).emailVerified) {
+      setLocation("/verify-email");
+    } else if (user.role && user.age) {
       setLocation("/dashboard");
     } else {
       setLocation("/onboarding");
@@ -56,7 +58,7 @@ export default function Register() {
     try {
       localStorage.setItem("intended_role", selectedRole);
       await register({ email, password, firstName, lastName, subscribedToNewsletter });
-      setLocation("/onboarding");
+      setLocation("/verify-email");
     } catch (err: any) {
       setError(err.message || "Registration failed");
     }

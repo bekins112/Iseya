@@ -60,6 +60,12 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 
   if (!user) return <Redirect to="/login" />;
 
+  const isAdmin = user.role === "admin" || (user as any).isAdmin;
+
+  if (!isAdmin && !(user as any).emailVerified) {
+    return <Redirect to="/verify-email" />;
+  }
+
   if ((!user.role || !user.age) && window.location.pathname !== "/onboarding") {
     return <Redirect to="/onboarding" />;
   }

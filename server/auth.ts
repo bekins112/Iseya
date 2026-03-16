@@ -116,15 +116,23 @@ export async function setupAuth(app: Express) {
         })
         .returning();
 
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000);
+      await db.update(users).set({
+        emailVerificationCode: verificationCode,
+        emailVerificationExpiry: verificationExpiry,
+      }).where(eq(users.id, user.id));
+
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
 
       res.status(201).json(safeUser);
 
       if (user.email) {
-        const { sendWelcomeEmail } = await import("./email");
-        const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
-        sendWelcomeEmail(user.email, userName, user.role || "applicant").catch(() => {});
+        const { sendVerificationEmail } = await import("./email");
+        sendVerificationEmail(user.email, verificationCode, user.firstName || "User").catch(() => {
+          console.log(`[Email Verification] Code for ${user.email}: ${verificationCode}`);
+        });
       }
     } catch (err: any) {
       if (err instanceof z.ZodError) {
