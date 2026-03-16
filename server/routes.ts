@@ -203,8 +203,8 @@ export async function registerRoutes(
 
   app.post(api.jobs.create.path, isAuthenticated, async (req, res) => {
     const user = await storage.getUser(req.session.userId!);
-    if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
-      return res.status(403).json({ message: "Only employers can post jobs" });
+    if (!user || (user.role !== 'employer' && user.role !== 'agent' && user.role !== 'admin')) {
+      return res.status(403).json({ message: "Only employers and agents can post jobs" });
     }
 
     if (user.role === 'employer') {
@@ -219,6 +219,22 @@ export async function registerRoutes(
           message: `Please complete your profile before posting a job. Missing: ${employerMissing.join(", ")}.`,
           code: "PROFILE_INCOMPLETE",
           missingFields: employerMissing,
+        });
+      }
+    }
+
+    if (user.role === 'agent') {
+      const agentMissing: string[] = [];
+      if (!user.firstName?.trim()) agentMissing.push("First name");
+      if (!user.lastName?.trim()) agentMissing.push("Last name");
+      if (!(user as any).agencyName?.trim()) agentMissing.push("Agency name");
+      if (!user.phone?.trim()) agentMissing.push("Phone number");
+      if (!user.state?.trim()) agentMissing.push("State");
+      if (agentMissing.length > 0) {
+        return res.status(403).json({
+          message: `Please complete your agent profile before posting a job. Missing: ${agentMissing.join(", ")}.`,
+          code: "PROFILE_INCOMPLETE",
+          missingFields: agentMissing,
         });
       }
     }
@@ -243,15 +259,53 @@ export async function registerRoutes(
       }
     }
 
+    if (user.role === 'agent') {
+      const currentPlan = user.subscriptionStatus || "free";
+      if (currentPlan === "free") {
+        const credits = (user as any).agentPostCredits || 0;
+        if (credits <= 0) {
+          return res.status(403).json({
+            message: "You need to purchase a job post credit or subscribe to a plan to post jobs.",
+            code: "AGENT_PAYMENT_REQUIRED",
+          });
+        }
+      } else {
+        const SUBSCRIPTION_PLANS = await getSubscriptionPlans();
+        const limit = SUBSCRIPTION_PLANS[currentPlan]?.jobLimit ?? -1;
+        if (limit !== -1) {
+          const agentJobs = await storage.getJobsByEmployer(user.id);
+          const activeJobCount = agentJobs.filter(j => j.isActive).length;
+          if (activeJobCount >= limit) {
+            const planName = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1);
+            return res.status(403).json({
+              message: `You've reached the ${limit} active job limit for your ${planName} plan. Upgrade your plan to post more jobs.`,
+              code: "JOB_LIMIT_REACHED"
+            });
+          }
+        }
+      }
+    }
+
     try {
       const bodyWithDate = {
         ...req.body,
         employerId: user.id,
         deadline: req.body.deadline ? new Date(req.body.deadline) : undefined,
       };
+      if (user.role === 'agent') {
+        bodyWithDate.agentId = user.id;
+      }
       const input = api.jobs.create.input.parse(bodyWithDate);
       const jobData: any = { ...input, status: "active" };
       const job = await storage.createJob(jobData);
+
+      if (user.role === 'agent') {
+        const currentPlan = user.subscriptionStatus || "free";
+        if (currentPlan === "free") {
+          const newCredits = Math.max(0, ((user as any).agentPostCredits || 0) - 1);
+          await storage.updateUser(user.id, { agentPostCredits: newCredits } as any);
+        }
+      }
 
       const currentPlan = user.subscriptionStatus || "free";
       if (currentPlan === "premium" || currentPlan === "enterprise") {
@@ -260,7 +314,10 @@ export async function registerRoutes(
           : `${req.protocol}://${req.get("host")}`;
         postJobToFacebook({
           ...job,
-          employerName: user.companyName || `${user.firstName} ${user.lastName}`,
+          state: job.state,
+          employerName: user.role === 'agent'
+            ? ((user as any).agencyName || `${user.firstName} ${user.lastName}`)
+            : (user.companyName || `${user.firstName} ${user.lastName}`),
         }, siteUrl).catch(err => console.error("[facebook] Background post failed:", err));
       }
 

@@ -20,7 +20,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<"applicant" | "employer">("applicant");
+  const [selectedRole, setSelectedRole] = useState<"applicant" | "employer" | "agent">("applicant");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [subscribedToNewsletter, setSubscribedToNewsletter] = useState(false);
   const [error, setError] = useState("");
@@ -108,43 +108,62 @@ export default function Register() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label>I want to:</Label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedRole("applicant")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                         selectedRole === "applicant"
                           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                           : "border-border hover:border-primary/30"
                       }`}
                       data-testid="role-select-applicant"
                     >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                         selectedRole === "applicant" ? "bg-primary/10" : "bg-muted"
                       }`}>
-                        <Search className={`w-5 h-5 ${selectedRole === "applicant" ? "text-primary" : "text-muted-foreground"}`} />
+                        <Search className={`w-4 h-4 ${selectedRole === "applicant" ? "text-primary" : "text-muted-foreground"}`} />
                       </div>
-                      <span className={`text-sm font-semibold ${selectedRole === "applicant" ? "text-primary" : "text-muted-foreground"}`}>
+                      <span className={`text-xs font-semibold ${selectedRole === "applicant" ? "text-primary" : "text-muted-foreground"}`}>
                         Find Jobs
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedRole("employer")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
                         selectedRole === "employer"
                           ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                           : "border-border hover:border-primary/30"
                       }`}
                       data-testid="role-select-employer"
                     >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                         selectedRole === "employer" ? "bg-primary/10" : "bg-muted"
                       }`}>
-                        <Building2 className={`w-5 h-5 ${selectedRole === "employer" ? "text-primary" : "text-muted-foreground"}`} />
+                        <Building2 className={`w-4 h-4 ${selectedRole === "employer" ? "text-primary" : "text-muted-foreground"}`} />
                       </div>
-                      <span className={`text-sm font-semibold ${selectedRole === "employer" ? "text-primary" : "text-muted-foreground"}`}>
+                      <span className={`text-xs font-semibold ${selectedRole === "employer" ? "text-primary" : "text-muted-foreground"}`}>
                         Hire Workers
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRole("agent")}
+                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${
+                        selectedRole === "agent"
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : "border-border hover:border-primary/30"
+                      }`}
+                      data-testid="role-select-agent"
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        selectedRole === "agent" ? "bg-primary/10" : "bg-muted"
+                      }`}>
+                        <UserPlus className={`w-4 h-4 ${selectedRole === "agent" ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <span className={`text-xs font-semibold ${selectedRole === "agent" ? "text-primary" : "text-muted-foreground"}`}>
+                        Be an Agent
                       </span>
                     </button>
                   </div>

@@ -57,6 +57,8 @@ export const users = pgTable("users", {
   suspendedReason: varchar("suspended_reason"),
   preferredJobTypes: text("preferred_job_types").array(),
   preferredCategories: text("preferred_categories").array(),
+  agencyName: varchar("agency_name"),
+  agentPostCredits: integer("agent_post_credits").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

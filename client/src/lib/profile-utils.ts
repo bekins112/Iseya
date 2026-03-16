@@ -35,3 +35,18 @@ export function checkEmployerProfile(user: User): ProfileCompletenessResult {
     missingFields,
   };
 }
+
+export function checkAgentProfile(user: User): ProfileCompletenessResult {
+  const missingFields: string[] = [];
+
+  if (!user.firstName?.trim()) missingFields.push("First name");
+  if (!user.lastName?.trim()) missingFields.push("Last name");
+  if (!(user as any).agencyName?.trim()) missingFields.push("Agency name");
+  if (!user.phone?.trim()) missingFields.push("Phone number");
+  if (!user.state?.trim()) missingFields.push("State");
+
+  return {
+    isComplete: missingFields.length === 0,
+    missingFields,
+  };
+}

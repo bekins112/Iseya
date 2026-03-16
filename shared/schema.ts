@@ -24,6 +24,8 @@ export const jobs = pgTable("jobs", {
   gender: varchar("gender").default("Any"),
   ageMin: integer("age_min"),
   ageMax: integer("age_max"),
+  agentId: varchar("agent_id").references(() => users.id),
+  onBehalfOf: varchar("on_behalf_of"),
   isActive: boolean("is_active").default(true),
   status: varchar("status").default("active"),
   deadline: timestamp("deadline"),
@@ -224,7 +226,7 @@ export const updateAdminPermissionsSchema = z.object({
 
 // Schema for admin user updates
 export const adminUpdateUserSchema = z.object({
-  role: z.enum(["applicant", "employer", "admin"]).optional(),
+  role: z.enum(["applicant", "employer", "agent", "admin"]).optional(),
   isVerified: z.boolean().optional(),
   isSuspended: z.boolean().optional(),
   suspendedReason: z.string().optional().nullable(),

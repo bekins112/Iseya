@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUpdateUser } from "@/hooks/use-casual";
-import { z } from "zod";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,16 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, Briefcase, Search, Building2, UserCheck, MapPin } from "lucide-react";
+import { AlertCircle, Briefcase, Search, Building2, UserCheck, Users } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-
-const nigerianStates = [
-  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
-  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
-  "FCT Abuja", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
-  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
-  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
-];
+import { nigerianStates } from "@/lib/nigerian-locations";
 
 const businessCategories = [
   "Restaurant & Food Service",
@@ -50,12 +42,15 @@ export default function Onboarding() {
   const [companyState, setCompanyState] = useState("");
   const [isRegisteredCompany, setIsRegisteredCompany] = useState(false);
   const [companyRegNo, setCompanyRegNo] = useState("");
+  const [agencyName, setAgencyName] = useState("");
+  const [agentState, setAgentState] = useState("");
   const [ageError, setAgeError] = useState("");
   const [formError, setFormError] = useState("");
 
-  const intendedRole = localStorage.getItem("intended_role") as "applicant" | "employer" | null;
+  const intendedRole = localStorage.getItem("intended_role") as "applicant" | "employer" | "agent" | null;
   const role = intendedRole || user?.role || "applicant";
   const isEmployer = role === "employer";
+  const isAgent = role === "agent";
 
   useEffect(() => {
     if (user?.role && user?.age) {
@@ -93,6 +88,13 @@ export default function Onboarding() {
       }
     }
 
+    if (isAgent) {
+      if (!agencyName.trim()) {
+        setFormError("Please enter your agency or business name");
+        return;
+      }
+    }
+
     const updateData: Record<string, any> = { id: user!.id, role, age: ageNum };
     if (isEmployer) {
       updateData.companyName = companyName.trim();
@@ -102,6 +104,11 @@ export default function Onboarding() {
       if (companyState) updateData.companyState = companyState;
       updateData.isRegisteredCompany = isRegisteredCompany;
       if (isRegisteredCompany && companyRegNo.trim()) updateData.companyRegNo = companyRegNo.trim();
+    }
+
+    if (isAgent) {
+      updateData.agencyName = agencyName.trim();
+      if (agentState) updateData.state = agentState;
     }
 
     updateUser.mutate(updateData as any, {
@@ -126,7 +133,7 @@ export default function Onboarding() {
             <div className="flex flex-col items-center justify-center space-y-6">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               <p className="text-muted-foreground font-medium italic">
-                {isEmployer ? "Setting up your employer dashboard..." : "Finding opportunities for you..."}
+                {isEmployer ? "Setting up your employer dashboard..." : isAgent ? "Setting up your agent dashboard..." : "Finding opportunities for you..."}
               </p>
             </div>
           </CardContent>
@@ -142,16 +149,20 @@ export default function Onboarding() {
           <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
             {isEmployer ? (
               <Building2 className="w-8 h-8 text-primary" />
+            ) : isAgent ? (
+              <Users className="w-8 h-8 text-primary" />
             ) : (
               <Search className="w-8 h-8 text-primary" />
             )}
           </div>
           <CardTitle className="text-2xl font-display">
-            {isEmployer ? "Welcome, Employer!" : "Welcome, Job Seeker!"}
+            {isEmployer ? "Welcome, Employer!" : isAgent ? "Welcome, Agent!" : "Welcome, Job Seeker!"}
           </CardTitle>
           <CardDescription>
             {isEmployer
               ? "Tell us about your business to get started."
+              : isAgent
+              ? "Tell us about your agency to start posting jobs for clients."
               : "Almost there! Just one more step to start finding work."}
           </CardDescription>
         </CardHeader>
@@ -159,15 +170,27 @@ export default function Onboarding() {
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm">
               <Briefcase className="w-5 h-5 text-primary flex-shrink-0" />
-              <span>{isEmployer ? "Post job listings and manage applicants" : "Browse and apply for jobs"}</span>
+              <span>
+                {isEmployer ? "Post job listings and manage applicants"
+                  : isAgent ? "Post jobs on behalf of your employer clients"
+                  : "Browse and apply for jobs"}
+              </span>
             </div>
             <div className="flex items-center gap-3 text-sm">
               <UserCheck className="w-5 h-5 text-primary flex-shrink-0" />
-              <span>{isEmployer ? "Access verified workers" : "Apply with one click"}</span>
+              <span>
+                {isEmployer ? "Access verified workers"
+                  : isAgent ? "Earn money by connecting employers with workers"
+                  : "Apply with one click"}
+              </span>
             </div>
             <div className="flex items-center gap-3 text-sm">
               <Search className="w-5 h-5 text-primary flex-shrink-0" />
-              <span>{isEmployer ? "Browse applicant profiles" : "Track your applications"}</span>
+              <span>
+                {isEmployer ? "Browse applicant profiles"
+                  : isAgent ? "Subscribe or pay per job post — your choice"
+                  : "Track your applications"}
+              </span>
             </div>
           </div>
 
@@ -269,6 +292,35 @@ export default function Onboarding() {
             </>
           )}
 
+          {isAgent && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="agencyName">Agency / Business Name</Label>
+                <Input
+                  id="agencyName"
+                  type="text"
+                  placeholder="e.g. Swift Recruit Agency"
+                  value={agencyName}
+                  onChange={(e) => setAgencyName(e.target.value)}
+                  data-testid="input-onboarding-agency"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="agentState">Your State <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                <Select value={agentState} onValueChange={setAgentState}>
+                  <SelectTrigger data-testid="select-onboarding-agent-state">
+                    <SelectValue placeholder="Select your state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {nigerianStates.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="age">How old are you?</Label>
             <Input
@@ -305,7 +357,7 @@ export default function Onboarding() {
             disabled={updateUser.isPending}
             data-testid="button-onboarding-continue"
           >
-            {isEmployer ? "Start Hiring" : "Start Finding Jobs"}
+            {isEmployer ? "Start Hiring" : isAgent ? "Start as Agent" : "Start Finding Jobs"}
           </Button>
         </CardContent>
       </Card>
