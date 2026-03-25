@@ -95,6 +95,9 @@ export default function TermsOfUse() {
             <img src={iseyaLogo} alt="Iseya" className="h-8 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
+            <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground" data-testid="link-home">
+              Home
+            </Link>
             <Link href="/browse-jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Browse Jobs
             </Link>

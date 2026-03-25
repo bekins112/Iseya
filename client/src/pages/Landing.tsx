@@ -1075,18 +1075,18 @@ export default function Landing() {
               viewport={{ once: true }}
             >
               <Badge className="mb-4 px-3 py-1 text-sm bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-400" data-testid="badge-become-agent">
-                <Briefcase className="w-3 h-3 mr-1.5" /> New Opportunity
+                <Briefcase className="w-3 h-3 mr-1.5" /> Earn Money on Iṣéyá
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Become a Recruitment Agent</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Earn Money as a Recruitment Agent</h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Are you a recruiter or staffing agency? Join Iṣéyá as an agent and post jobs on behalf of your employer clients. Earn by connecting businesses with verified workers.
+                Turn your network into income. Join Iṣéyá as an agent, connect employers with verified workers, and earn commission on every successful placement. No office needed — work from anywhere in Nigeria.
               </p>
               <ul className="space-y-3 mb-8">
                 {[
-                  "Post jobs for multiple employer clients",
-                  "Pay per post or subscribe for bulk access",
-                  "Access verified, background-checked workers",
-                  "Track all placements from your dashboard",
+                  "Earn commission on every job placement you make",
+                  "Build a steady income stream with multiple clients",
+                  "No startup capital needed — start earning immediately",
+                  "Grow your recruitment business on your own terms",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2.5 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
@@ -1097,7 +1097,7 @@ export default function Landing() {
               <div className="flex flex-wrap gap-3">
                 <Link href="/for-agents">
                   <Button size="lg" className="font-bold gap-2 group bg-teal-600 hover:bg-teal-700 text-white" data-testid="button-become-agent">
-                    Learn More <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    Start Earning Today <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/register">
@@ -1114,10 +1114,10 @@ export default function Landing() {
               className="grid grid-cols-2 gap-4"
             >
               {[
-                { icon: Handshake, label: "Post for Clients", value: "Multi-employer" },
-                { icon: CreditCard, label: "Flexible Payment", value: "Pay-per-post" },
-                { icon: Users, label: "Verified Talent", value: "Background checks" },
-                { icon: Star, label: "Agency Tiers", value: "Free to Enterprise" },
+                { icon: CreditCard, label: "Earn Per Placement", value: "Commission-based" },
+                { icon: Handshake, label: "Multiple Clients", value: "Unlimited earning" },
+                { icon: Users, label: "Verified Workers", value: "Ready to hire" },
+                { icon: Star, label: "Work Anywhere", value: "No office needed" },
               ].map((stat) => (
                 <div key={stat.label} className="bg-card p-5 rounded-xl border text-center" data-testid={`stat-agent-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
                   <stat.icon className="w-8 h-8 text-teal-600 dark:text-teal-400 mx-auto mb-2" />
