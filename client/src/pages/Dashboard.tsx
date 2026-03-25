@@ -27,13 +27,13 @@ export default function Dashboard() {
   });
 
   const filteredTransactions = (myTransactions || []).filter(t => {
-    if (isAgent) return t.type === "subscription" || t.type === "agent_credits";
+    if (isAgent) return t.type === "subscription" || t.type === "agent_post_credit";
     if (isEmployer) return t.type === "subscription";
     if (isApplicant) return t.type === "verification";
     return true;
   });
 
-  const myJobs = jobs?.filter(j => j.employerId === user?.id) || [];
+  const myJobs = jobs?.filter(j => isAgent ? (j as any).agentId === user?.id : j.employerId === user?.id) || [];
   
   const container = {
     hidden: { opacity: 0 },
@@ -141,7 +141,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold" data-testid="text-stat-primary">
-                {isEmployer ? (jobs?.filter(j => j.employerId === user?.id).length || 0) : (myApplications?.length || 0)}
+                {isAgent ? myJobs.length : isEmployer ? (jobs?.filter(j => j.employerId === user?.id).length || 0) : (myApplications?.length || 0)}
               </div>
             </CardContent>
           </Card>
@@ -184,7 +184,7 @@ export default function Dashboard() {
         </motion.div>
       </motion.div>
 
-      {isEmployer && (
+      {(isEmployer || isAgent) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -281,7 +281,7 @@ export default function Dashboard() {
           <h2 className="text-2xl font-display font-bold flex items-center gap-2">
             {isAgent ? "Your Client Postings" : isEmployer ? "Your Recent Postings" : "Recent Opportunities"}
           </h2>
-          <Link href={isEmployer ? "/my-jobs" : "/jobs"}>
+          <Link href={(isEmployer || isAgent) ? "/my-jobs" : "/jobs"}>
             <Button variant="ghost" className="text-primary font-bold group" data-testid="button-view-all-jobs">
               View All <TrendingUp className="ml-2 w-4 h-4 group-hover:-translate-y-1 transition-transform" />
             </Button>
@@ -294,7 +294,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-8">
-            {(isEmployer ? myJobs : jobs)?.slice(0, 3).map((job, idx) => (
+            {((isEmployer || isAgent) ? myJobs : jobs)?.slice(0, 3).map((job, idx) => (
               <motion.div
                 key={job.id}
                 initial={{ opacity: 0, scale: 0.95 }}

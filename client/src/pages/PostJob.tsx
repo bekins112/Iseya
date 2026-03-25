@@ -12,10 +12,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { AlertTriangle, ArrowUpCircle, CalendarClock, CreditCard, UserCircle2 } from "lucide-react";
+import { AlertTriangle, ArrowUpCircle, CalendarClock, CreditCard, UserCircle2, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { checkEmployerProfile, checkAgentProfile } from "@/lib/profile-utils";
 import { nigerianStates } from "@/lib/nigerian-locations";
@@ -91,6 +92,7 @@ export default function PostJob() {
   const [limitMessage, setLimitMessage] = useState<string | null>(null);
   const [paymentRequired, setPaymentRequired] = useState(false);
   const [buyingCredits, setBuyingCredits] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   const isAgent = user?.role === "agent";
   const isEmployer = user?.role === "employer";
@@ -107,7 +109,10 @@ export default function PostJob() {
     queryKey: ["/api/platform-settings"],
     enabled: isAgent,
   });
-  const postFee = platformSettings?.agent_job_post_fee ? Number(platformSettings.agent_job_post_fee) : 5000;
+  const baseFee = platformSettings?.agent_job_post_fee ? Number(platformSettings.agent_job_post_fee) : 5000;
+  const discount = platformSettings?.agent_job_post_discount ? Number(platformSettings.agent_job_post_discount) : 0;
+  const postFee = platformSettings?.agent_job_post_final ? Number(platformSettings.agent_job_post_final) : baseFee;
+  const hasDiscount = discount > 0 && postFee < baseFee;
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(postJobSchema),
@@ -221,27 +226,32 @@ export default function PostJob() {
                   <h3 className="font-bold text-base mb-1">Buy a Job Post Credit</h3>
                   <p className="text-sm text-muted-foreground mb-1">
                     You have <strong>{agentCredits}</strong> job post credit{agentCredits !== 1 ? "s" : ""} remaining.
-                    Each credit costs <strong>₦{postFee.toLocaleString()}</strong>, or you can subscribe to a plan for unlimited posting.
                   </p>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    {hasDiscount ? (
+                      <>
+                        <span className="text-lg font-bold text-primary">₦{postFee.toLocaleString()}</span>
+                        <span className="text-sm text-muted-foreground line-through">₦{baseFee.toLocaleString()}</span>
+                        <span className="text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Percent className="w-3 h-3" /> {discount}% off
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-lg font-bold text-primary">₦{postFee.toLocaleString()}</span>
+                    )}
+                    <span className="text-xs text-muted-foreground">per credit</span>
+                  </div>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
                 <Button
-                  onClick={() => handleBuyCredit("paystack")}
+                  onClick={() => setShowPaymentDialog(true)}
                   disabled={buyingCredits}
-                  data-testid="button-buy-credit-paystack"
+                  data-testid="button-buy-credit"
                   className="flex-1 min-w-[140px]"
                 >
-                  {buyingCredits ? "Processing..." : `Pay ₦${postFee.toLocaleString()} (Paystack)`}
-                </Button>
-                <Button
-                  onClick={() => handleBuyCredit("flutterwave")}
-                  disabled={buyingCredits}
-                  variant="outline"
-                  data-testid="button-buy-credit-flutterwave"
-                  className="flex-1 min-w-[140px]"
-                >
-                  {buyingCredits ? "Processing..." : `Pay ₦${postFee.toLocaleString()} (Flutterwave)`}
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  {buyingCredits ? "Processing..." : `Pay ₦${postFee.toLocaleString()} Now`}
                 </Button>
                 <Link href="/subscription" className="flex-1 min-w-[140px]">
                   <Button variant="secondary" className="w-full" data-testid="button-agent-subscribe">
@@ -258,13 +268,73 @@ export default function PostJob() {
       {isAgent && agentPlan === "free" && agentCredits > 0 && (
         <Card className="mb-6 border-green-400/50 bg-green-50 dark:bg-green-950/20 dark:border-green-700">
           <CardContent className="py-4">
-            <p className="text-sm text-green-800 dark:text-green-300">
-              You have <strong>{agentCredits}</strong> job post credit{agentCredits !== 1 ? "s" : ""} remaining.
-              One credit will be used when you publish this job.
-            </p>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <p className="text-sm text-green-800 dark:text-green-300">
+                You have <strong>{agentCredits}</strong> job post credit{agentCredits !== 1 ? "s" : ""} remaining.
+                One credit will be used when you publish this job.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPaymentDialog(true)}
+                className="text-green-700 border-green-400 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900/30"
+                data-testid="button-buy-more-credits"
+              >
+                Buy More Credits
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-primary" />
+              Buy Job Post Credit
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="p-4 rounded-xl bg-muted/30 border border-border/40 text-center">
+              <p className="text-sm text-muted-foreground mb-1">Price per credit</p>
+              <div className="flex items-baseline justify-center gap-2">
+                {hasDiscount ? (
+                  <>
+                    <span className="text-2xl font-bold text-primary">₦{postFee.toLocaleString()}</span>
+                    <span className="text-sm text-muted-foreground line-through">₦{baseFee.toLocaleString()}</span>
+                    <span className="text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
+                      {discount}% off
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-2xl font-bold text-primary">₦{postFee.toLocaleString()}</span>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground text-center">Choose your preferred payment method:</p>
+            <div className="grid gap-3">
+              <Button
+                onClick={() => { setShowPaymentDialog(false); handleBuyCredit("paystack"); }}
+                disabled={buyingCredits}
+                className="w-full h-12"
+                data-testid="button-pay-paystack"
+              >
+                {buyingCredits ? "Processing..." : "Pay with Paystack"}
+              </Button>
+              <Button
+                onClick={() => { setShowPaymentDialog(false); handleBuyCredit("flutterwave"); }}
+                disabled={buyingCredits}
+                variant="outline"
+                className="w-full h-12"
+                data-testid="button-pay-flutterwave"
+              >
+                {buyingCredits ? "Processing..." : "Pay with Flutterwave"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {limitMessage && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5">

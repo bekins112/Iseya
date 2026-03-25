@@ -882,6 +882,15 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(platformSettings).orderBy(platformSettings.key);
   }
 
+  async getAllPlatformSettings(): Promise<Record<string, string>> {
+    const settings = await db.select().from(platformSettings).orderBy(platformSettings.key);
+    const result: Record<string, string> = {};
+    for (const s of settings) {
+      result[s.key] = s.value;
+    }
+    return result;
+  }
+
   async upsertSetting(key: string, value: string, updatedBy: string): Promise<PlatformSetting> {
     const [existing] = await db.select().from(platformSettings).where(eq(platformSettings.key, key));
     if (existing) {
