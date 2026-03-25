@@ -147,6 +147,13 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
+      {/* Employer applicant management - must come before /jobs/:id/:slug? */}
+      <Route path="/jobs/:id/applications">
+        <AuthenticatedLayout>
+          <ManageApplicants />
+        </AuthenticatedLayout>
+      </Route>
+
       {/* Public job details page - no auth required */}
       <Route path="/jobs/:id/:slug?">
         <JobDetails />
@@ -167,13 +174,6 @@ function Router() {
       <Route path="/verification">
         <AuthenticatedLayout>
           <Verification />
-        </AuthenticatedLayout>
-      </Route>
-
-      {/* Employer applicant management */}
-      <Route path="/jobs/:id/applications">
-        <AuthenticatedLayout>
-          <ManageApplicants />
         </AuthenticatedLayout>
       </Route>
 
