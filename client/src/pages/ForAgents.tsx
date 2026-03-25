@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   Briefcase, Users, Shield, ArrowRight, CheckCircle2,
   CreditCard, Crown, Building2, Handshake, FileText,
-  Zap, Star, BarChart3, Clock,
+  Zap, Star, BarChart3, Clock, Play,
 } from "lucide-react";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
@@ -107,6 +107,27 @@ export default function ForAgents() {
                 </Button>
               </Link>
             </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-muted/20">
+        <div className="max-w-4xl mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
+            <Badge className="mb-4 px-3 py-1 text-xs bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-400">
+              <Play className="w-3 h-3 mr-1" /> Watch Video
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">See How Iṣéyá Works for Agents</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Watch this short video to learn how you can earn money as a recruitment agent.</p>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="relative rounded-2xl overflow-hidden shadow-2xl border bg-black aspect-video" data-testid="video-agent">
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src="https://www.youtube.com/embed/VIDEO_ID_HERE"
+              title="How Iṣéyá works for agents"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </motion.div>
         </div>
       </section>

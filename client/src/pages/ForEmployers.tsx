@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   Building2, Briefcase, Users, Search, Shield, Clock,
   Star, ArrowRight, CheckCircle2, Zap, Crown, CreditCard,
-  FileText, BarChart3, Bell, MessageSquare,
+  FileText, BarChart3, Bell, MessageSquare, Play,
 } from "lucide-react";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
@@ -123,6 +123,27 @@ export default function ForEmployers() {
                 </Button>
               </Link>
             </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-muted/20">
+        <div className="max-w-4xl mx-auto px-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
+            <Badge className="mb-4 px-3 py-1 text-xs bg-primary/10 text-primary border-primary/20">
+              <Play className="w-3 h-3 mr-1" /> Watch Video
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">See How Iṣéyá Works for Employers</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Watch this short video to learn how you can post jobs, find workers, and grow your business.</p>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="relative rounded-2xl overflow-hidden shadow-2xl border bg-black aspect-video" data-testid="video-employer">
+            <iframe
+              className="absolute inset-0 w-full h-full"
+              src="https://www.youtube.com/embed/VIDEO_ID_HERE"
+              title="How Iṣéyá works for employers"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </motion.div>
         </div>
       </section>
