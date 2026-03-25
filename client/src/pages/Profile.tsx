@@ -297,7 +297,7 @@ export default function Profile() {
             <CardContent className="pt-0 text-center relative">
               <div className="relative inline-block -mt-16 mb-6">
                 <Avatar className="w-32 h-32 border-8 border-background shadow-2xl">
-                  <AvatarImage src={(user?.role === "employer" ? user?.companyLogo : user?.profileImageUrl) || undefined} />
+                  <AvatarImage src={(user?.role === "employer" ? (user?.companyLogo || user?.profileImageUrl) : user?.profileImageUrl) || undefined} />
                   <AvatarFallback className="text-3xl bg-primary/10 text-primary font-bold">
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </AvatarFallback>
@@ -320,7 +320,11 @@ export default function Profile() {
                 />
               </div>
               <h3 className="text-2xl font-display font-bold">{user?.firstName} {user?.lastName}</h3>
-              <p className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-xs mb-6">{user?.role}</p>
+              <p className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-xs mb-6 flex items-center justify-center gap-2">
+                {user?.role === 'agent' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-700 border border-teal-500/30 dark:text-teal-400">Agent</span>}
+                {user?.role !== 'agent' && user?.role}
+                {user?.role === 'agent' && (user as any)?.agencyName && <span className="text-muted-foreground/60">• {(user as any).agencyName}</span>}
+              </p>
               <div className="flex justify-center gap-4 py-4 border-t border-border/40">
                 <div className="text-center px-4">
                   <div className="text-xl font-bold">12</div>
@@ -422,6 +426,7 @@ export default function Profile() {
                           <SelectContent className="rounded-2xl">
                             <SelectItem value="applicant">Applicant</SelectItem>
                             <SelectItem value="employer">Employer</SelectItem>
+                            <SelectItem value="agent">Agent</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -749,9 +754,10 @@ export default function Profile() {
                     <>
                       <div className="pt-4 pb-2 border-t border-border/40">
                         <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-primary" />
-                          Agent Details
+                          <Building2 className="w-4 h-4 text-teal-500" />
+                          Agent Profile
                         </h3>
+                        <p className="text-xs text-muted-foreground mt-1">Manage your agency details for posting jobs on behalf of employers.</p>
                       </div>
 
                       <FormField
@@ -759,7 +765,7 @@ export default function Profile() {
                         name="agencyName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agency / Business Name</FormLabel>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agency / Business Name <span className="text-destructive">*</span></FormLabel>
                             <FormControl>
                               <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Swift Recruit Agency" {...field} value={field.value || ""} data-testid="input-agency-name" />
                             </FormControl>
@@ -768,14 +774,83 @@ export default function Profile() {
                         )}
                       />
 
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number <span className="text-destructive">*</span></FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 08012345678" {...field} value={field.value || ""} data-testid="input-agent-phone" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Contact Email</FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. agency@example.com" {...field} value={field.value || ""} data-testid="input-agent-email" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <FormField
+                          control={form.control}
+                          name="state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">State <span className="text-destructive">*</span></FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl>
+                                  <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" data-testid="select-agent-state">
+                                    <SelectValue placeholder="Select your state" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="rounded-2xl max-h-[200px]">
+                                  {nigerianStates.map((s) => (
+                                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">City / Town</FormLabel>
+                              <FormControl>
+                                <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Ikeja" {...field} value={field.value || ""} data-testid="input-agent-city" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
                       <FormField
                         control={form.control}
-                        name="phone"
+                        name="location"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number</FormLabel>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Office Address / Area</FormLabel>
                             <FormControl>
-                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 08012345678" {...field} value={field.value || ""} data-testid="input-agent-phone" />
+                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 12 Allen Avenue, Ikeja" {...field} value={field.value || ""} data-testid="input-agent-location" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -784,33 +859,26 @@ export default function Profile() {
 
                       <FormField
                         control={form.control}
-                        name="state"
+                        name="bio"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">State</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" data-testid="select-agent-state">
-                                  <SelectValue placeholder="Select your state" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="rounded-2xl">
-                                {nigerianStates.map((s) => (
-                                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">About Your Agency</FormLabel>
+                            <FormControl>
+                              <Textarea className="rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all min-h-[100px]" placeholder="Describe your agency, services offered, and areas of specialization..." {...field} value={field.value || ""} data-testid="input-agent-bio" />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      <div className="p-4 rounded-2xl bg-muted/30 border border-border/40">
-                        <p className="text-sm text-muted-foreground">
-                          <strong>Post Credits:</strong> {(user as any)?.agentPostCredits || 0} remaining
-                        </p>
+                      <div className="p-4 rounded-2xl bg-teal-500/5 border border-teal-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Briefcase className="w-4 h-4 text-teal-600" />
+                          <p className="text-sm font-semibold text-teal-700 dark:text-teal-400">Posting Credits</p>
+                        </div>
+                        <p className="text-2xl font-bold text-teal-700 dark:text-teal-400">{(user as any)?.agentPostCredits || 0}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Buy credits or subscribe to a plan from the Post a Job page.
+                          Buy credits or subscribe to a plan from the Post a Job page to post on behalf of your clients.
                         </p>
                       </div>
                     </>
