@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Transaction } from "@shared/schema";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
-import { checkApplicantProfile, checkEmployerProfile } from "@/lib/profile-utils";
+import { checkApplicantProfile, checkEmployerProfile, checkAgentProfile } from "@/lib/profile-utils";
 
 
 export default function Dashboard() {
@@ -85,6 +85,8 @@ export default function Dashboard() {
         if (!user) return null;
         const profileCheck = isApplicant
           ? checkApplicantProfile(user as any)
+          : isAgent
+          ? checkAgentProfile(user as any)
           : isEmployer
           ? checkEmployerProfile(user as any)
           : { isComplete: true, missingFields: [] };
