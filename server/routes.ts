@@ -2750,7 +2750,9 @@ export async function registerRoutes(
     const credits = Number(req.body.credits) || 1;
     try {
       const settings = await storage.getAllPlatformSettings();
-      const feePerPost = Number(settings.agent_job_post_fee || "5000");
+      const baseFee = Number(settings.agent_job_post_fee || "5000");
+      const discount = Number(settings.agent_job_post_discount || "0");
+      const feePerPost = Math.round(baseFee * (1 - discount / 100));
       const totalAmount = feePerPost * credits * 100;
       const reference = `agent_credit_${user.id}_${Date.now()}`;
       const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -2823,7 +2825,9 @@ export async function registerRoutes(
     const credits = Number(req.body.credits) || 1;
     try {
       const settings = await storage.getAllPlatformSettings();
-      const feePerPost = Number(settings.agent_job_post_fee || "5000");
+      const baseFee = Number(settings.agent_job_post_fee || "5000");
+      const discount = Number(settings.agent_job_post_discount || "0");
+      const feePerPost = Math.round(baseFee * (1 - discount / 100));
       const totalAmount = feePerPost * credits;
       const txRef = `agent_credit_${user.id}_${Date.now()}`;
       const siteUrl = process.env.REPLIT_DOMAINS
@@ -3174,6 +3178,8 @@ export async function registerRoutes(
     "interview_credits_standard": "0",
     "interview_credits_premium": "3",
     "interview_credits_enterprise": "5",
+    "agent_job_post_fee": "5000",
+    "agent_job_post_discount": "0",
   };
 
   async function getSettingValue(key: string): Promise<string> {
@@ -3186,7 +3192,10 @@ export async function registerRoutes(
   app.get("/api/platform-settings", async (_req, res) => {
     try {
       const settings = await storage.getAllPlatformSettings();
-      res.json({ agent_job_post_fee: settings.agent_job_post_fee || "5000" });
+      const baseFee = Number(settings.agent_job_post_fee || "5000");
+      const discount = Number(settings.agent_job_post_discount || "0");
+      const discountedFee = Math.round(baseFee * (1 - discount / 100));
+      res.json({ agent_job_post_fee: String(baseFee), agent_job_post_discount: settings.agent_job_post_discount || "0", agent_job_post_final: String(discountedFee) });
     } catch (err) {
       res.status(500).json({ message: "Failed to fetch settings" });
     }

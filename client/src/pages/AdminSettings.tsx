@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui-extension";
-import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck } from "lucide-react";
+import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -31,6 +31,8 @@ const settingsSchema = z.object({
   interview_credits_standard: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
   interview_credits_premium: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
   interview_credits_enterprise: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
+  agent_job_post_fee: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0, "Must be a valid amount"),
+  agent_job_post_discount: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "Must be 0-100"),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -73,6 +75,8 @@ export default function AdminSettings() {
       interview_credits_standard: "0",
       interview_credits_premium: "3",
       interview_credits_enterprise: "5",
+      agent_job_post_fee: "5000",
+      agent_job_post_discount: "0",
     },
   });
 
@@ -95,6 +99,8 @@ export default function AdminSettings() {
         interview_credits_standard: settings.interview_credits_standard || "0",
         interview_credits_premium: settings.interview_credits_premium || "3",
         interview_credits_enterprise: settings.interview_credits_enterprise || "5",
+        agent_job_post_fee: settings.agent_job_post_fee || "5000",
+        agent_job_post_discount: settings.agent_job_post_discount || "0",
       });
     }
   }, [settings, form]);
@@ -492,6 +498,64 @@ export default function AdminSettings() {
                           <Input type="number" min="0" max="100" step="1" {...field} data-testid="input-verification-discount" />
                         </FormControl>
                         <FormDescription>Promotional discount</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" data-testid="text-agent-settings-title">
+                <UserPlus className="w-5 h-5 text-primary" />
+                Agent Pay-Per-Post Fee
+              </CardTitle>
+              <CardDescription>
+                Set the fee agents pay per job post when using pay-per-post credits instead of a subscription plan. Agents buy credits at this rate.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg" data-testid="text-agent-fee-label">Per-Post Credit Fee</h3>
+                  <Badge variant="outline" data-testid="text-agent-fee-preview">
+                    Final: {formatNaira(calcDiscounted(watchedValues.agent_job_post_fee, watchedValues.agent_job_post_discount))}/post
+                  </Badge>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="agent_job_post_fee"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                          <DollarSign className="w-3.5 h-3.5" />
+                          Fee per Post (₦)
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" step="100" {...field} data-testid="input-agent-job-post-fee" />
+                        </FormControl>
+                        <FormDescription>Base price per agent job post credit</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="agent_job_post_discount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                          <Percent className="w-3.5 h-3.5" />
+                          Discount (%)
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" max="100" step="1" {...field} data-testid="input-agent-job-post-discount" />
+                        </FormControl>
+                        <FormDescription>Promotional discount on per-post fee</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
