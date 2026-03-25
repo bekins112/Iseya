@@ -1383,16 +1383,21 @@ export async function registerRoutes(
   app.get("/api/applicant-profile/:applicantId", isAuthenticated, async (req, res) => {
     const viewerId = req.session.userId!;
     const viewer = await storage.getUser(viewerId);
-    if (!viewer || (viewer.role !== "employer" && viewer.role !== "admin")) {
-      return res.status(403).json({ message: "Only employers can view applicant profiles" });
+    if (!viewer || (viewer.role !== "employer" && viewer.role !== "agent" && viewer.role !== "admin")) {
+      return res.status(403).json({ message: "Only employers and agents can view applicant profiles" });
     }
 
     const applicantId = req.params.applicantId;
 
-    if (viewer.role === "employer") {
+    if (viewer.role === "employer" || viewer.role === "agent") {
       const employerJobs = await storage.getJobsByEmployer(viewerId);
+      let agentJobs: any[] = [];
+      if (viewer.role === "agent") {
+        agentJobs = await db.select().from(jobs).where(eq(jobs.agentId, viewerId));
+      }
+      const allJobs = [...employerJobs, ...agentJobs.filter(j => !employerJobs.some(ej => ej.id === j.id))];
       let hasApplied = false;
-      for (const job of employerJobs) {
+      for (const job of allJobs) {
         const apps = await storage.getApplicationsForJob(job.id);
         if (apps.some(a => a.applicantId === applicantId)) {
           hasApplied = true;
