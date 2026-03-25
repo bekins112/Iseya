@@ -51,6 +51,9 @@ import VerifyEmail from "@/pages/VerifyEmail";
 import Support from "@/pages/Support";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
+import ForEmployers from "@/pages/ForEmployers";
+import ForApplicants from "@/pages/ForApplicants";
+import ForAgents from "@/pages/ForAgents";
 import CookieConsent from "@/components/CookieConsent";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -96,6 +99,9 @@ function Router() {
       <Route path="/employer/signup">
         <Redirect to="/register" />
       </Route>
+      <Route path="/for-employers" component={ForEmployers} />
+      <Route path="/for-applicants" component={ForApplicants} />
+      <Route path="/for-agents" component={ForAgents} />
       <Route path="/about" component={About} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/contact" component={Contact} />

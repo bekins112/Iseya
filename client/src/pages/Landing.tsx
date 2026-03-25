@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
-import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, ClipboardList, Users, BadgeCheck, MapPin, Clock, Calendar } from "lucide-react";
+import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, ClipboardList, Users, BadgeCheck, MapPin, Clock, Calendar, ChevronDown, UserCheck, Menu, X, CreditCard } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
@@ -234,6 +234,8 @@ export default function Landing() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
   const [filterJobType, setFilterJobType] = useState("");
+  const [discoverOpen, setDiscoverOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const activeFilters = Object.fromEntries(
     Object.entries({ category: filterCategory, location: filterLocation, jobType: filterJobType })
@@ -321,6 +323,44 @@ export default function Landing() {
               <Link href="/browse-jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="link-browse-jobs">
                 Browse Jobs
               </Link>
+              <div className="relative" onMouseEnter={() => setDiscoverOpen(true)} onMouseLeave={() => setDiscoverOpen(false)}>
+                <button className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="button-discover-dropdown">
+                  Discover <ChevronDown className={`w-3.5 h-3.5 transition-transform ${discoverOpen ? "rotate-180" : ""}`} />
+                </button>
+                <AnimatePresence>
+                  {discoverOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-card border rounded-xl shadow-lg overflow-hidden z-50"
+                    >
+                      <Link href="/for-employers" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors" data-testid="link-for-employers">
+                        <Building2 className="w-4 h-4 text-primary" />
+                        <div>
+                          <div className="font-medium">For Employers</div>
+                          <div className="text-xs text-muted-foreground">Hire workers fast</div>
+                        </div>
+                      </Link>
+                      <Link href="/for-applicants" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors" data-testid="link-for-applicants">
+                        <UserCheck className="w-4 h-4 text-green-600" />
+                        <div>
+                          <div className="font-medium">For Job Seekers</div>
+                          <div className="text-xs text-muted-foreground">Find jobs near you</div>
+                        </div>
+                      </Link>
+                      <Link href="/for-agents" className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors" data-testid="link-for-agents">
+                        <Briefcase className="w-4 h-4 text-teal-600" />
+                        <div>
+                          <div className="font-medium">For Agents</div>
+                          <div className="text-xs text-muted-foreground">Recruit for clients</div>
+                        </div>
+                      </Link>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="link-about">
                 About
               </Link>
@@ -332,6 +372,9 @@ export default function Landing() {
               </Link>
             </div>
             <div className="flex items-center gap-2">
+              <button className="md:hidden p-2 text-muted-foreground hover:text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} data-testid="button-mobile-menu">
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
               {isAuthenticated ? (
                 <>
                   <Link href="/dashboard">
@@ -339,14 +382,14 @@ export default function Landing() {
                       Dashboard
                     </Button>
                   </Link>
-                  <Button variant="ghost" className="font-medium" onClick={() => logout()} data-testid="button-nav-logout">
+                  <Button variant="ghost" className="font-medium hidden sm:inline-flex" onClick={() => logout()} data-testid="button-nav-logout">
                     Logout
                   </Button>
                 </>
               ) : (
                 <>
                   <Link href="/login">
-                    <Button variant="ghost" className="font-medium" data-testid="button-nav-login">
+                    <Button variant="ghost" className="font-medium hidden sm:inline-flex" data-testid="button-nav-login">
                       Login
                     </Button>
                   </Link>
@@ -360,6 +403,30 @@ export default function Landing() {
             </div>
           </motion.div>
         </div>
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden border-t bg-background overflow-hidden"
+            >
+              <div className="px-4 py-3 space-y-1">
+                <Link href="/browse-jobs" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-browse-jobs">Browse Jobs</Link>
+                <Link href="/for-employers" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-for-employers">For Employers</Link>
+                <Link href="/for-applicants" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-for-applicants">For Job Seekers</Link>
+                <Link href="/for-agents" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-for-agents">For Agents</Link>
+                <Link href="/about" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-about">About</Link>
+                <Link href="/faqs" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-faqs">FAQs</Link>
+                <Link href="/contact" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-contact">Contact</Link>
+                {!isAuthenticated && (
+                  <Link href="/login" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-login">Login</Link>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       <section className="relative pt-16 overflow-hidden">
@@ -999,6 +1066,70 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="py-20 bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <Badge className="mb-4 px-3 py-1 text-sm bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-400" data-testid="badge-become-agent">
+                <Briefcase className="w-3 h-3 mr-1.5" /> New Opportunity
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Become a Recruitment Agent</h2>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                Are you a recruiter or staffing agency? Join Iṣéyá as an agent and post jobs on behalf of your employer clients. Earn by connecting businesses with verified workers.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  "Post jobs for multiple employer clients",
+                  "Pay per post or subscribe for bulk access",
+                  "Access verified, background-checked workers",
+                  "Track all placements from your dashboard",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/for-agents">
+                  <Button size="lg" className="font-bold gap-2 group bg-teal-600 hover:bg-teal-700 text-white" data-testid="button-become-agent">
+                    Learn More <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button size="lg" variant="outline" className="font-medium gap-2" data-testid="button-register-agent">
+                    Register as Agent
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="grid grid-cols-2 gap-4"
+            >
+              {[
+                { icon: Handshake, label: "Post for Clients", value: "Multi-employer" },
+                { icon: CreditCard, label: "Flexible Payment", value: "Pay-per-post" },
+                { icon: Users, label: "Verified Talent", value: "Background checks" },
+                { icon: Star, label: "Agency Tiers", value: "Free to Enterprise" },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-card p-5 rounded-xl border text-center" data-testid={`stat-agent-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
+                  <stat.icon className="w-8 h-8 text-teal-600 dark:text-teal-400 mx-auto mb-2" />
+                  <div className="font-bold text-sm">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       <section className="py-32 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-20 items-center">
@@ -1061,8 +1192,8 @@ export default function Landing() {
 
       <footer className="py-12 border-t">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-8">
+            <div className="col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <img src={iseyaLogo} alt="Iseya" className="h-8 w-auto" />
               </div>
@@ -1077,6 +1208,14 @@ export default function Landing() {
                 <li><Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About Us</Link></li>
                 <li><Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQs</Link></li>
                 <li><Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-bold mb-4">Discover</h4>
+              <ul className="space-y-2">
+                <li><Link href="/for-employers" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="footer-link-for-employers">For Employers</Link></li>
+                <li><Link href="/for-applicants" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="footer-link-for-applicants">For Job Seekers</Link></li>
+                <li><Link href="/for-agents" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="footer-link-for-agents">For Agents</Link></li>
               </ul>
             </div>
             <div>
