@@ -778,7 +778,20 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You don't have permission to view jobs" });
     }
     const jobs = await storage.getAllJobs();
-    res.json(jobs);
+    const enriched = await Promise.all(jobs.map(async (job) => {
+      const apps = await storage.getApplicationsForJob(job.id);
+      return {
+        ...job,
+        applicationCounts: {
+          total: apps.length,
+          pending: apps.filter(a => a.status === "pending").length,
+          offered: apps.filter(a => a.status === "offered").length,
+          accepted: apps.filter(a => a.status === "accepted").length,
+          rejected: apps.filter(a => a.status === "rejected").length,
+        },
+      };
+    }));
+    res.json(enriched);
   });
 
   app.patch("/api/admin/jobs/:id", isAuthenticated, isAdmin, async (req: any, res) => {

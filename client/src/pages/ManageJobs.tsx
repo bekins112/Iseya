@@ -29,6 +29,8 @@ import {
   RotateCcw,
   CheckCircle,
   AlertTriangle,
+  Send,
+  XCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, formatDistanceToNow, isPast } from "date-fns";
@@ -89,6 +91,9 @@ function JobRow({ job, onToggleActive, onDelete, onEdit, onExtendDeadline, onRea
   const { data: applications } = useJobApplications(job.id);
   const applicantCount = applications?.length || 0;
   const pendingCount = applications?.filter(a => a.status === 'pending').length || 0;
+  const offeredCount = applications?.filter(a => a.status === 'offered').length || 0;
+  const acceptedCount = applications?.filter(a => a.status === 'accepted').length || 0;
+  const rejectedCount = applications?.filter(a => a.status === 'rejected').length || 0;
   const statusInfo = getJobStatusInfo(job);
   const StatusIcon = statusInfo.icon;
   const isFilled = job.status === "filled";
@@ -147,10 +152,7 @@ function JobRow({ job, onToggleActive, onDelete, onEdit, onExtendDeadline, onRea
                     <Users className="w-5 h-5" />
                     <span className="text-2xl font-bold">{applicantCount}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {pendingCount > 0 && <span className="text-orange-500">{pendingCount} pending</span>}
-                    {pendingCount === 0 && "Applicants"}
-                  </span>
+                  <span className="text-xs text-muted-foreground">Applicants</span>
                 </div>
               </Link>
 
@@ -159,7 +161,7 @@ function JobRow({ job, onToggleActive, onDelete, onEdit, onExtendDeadline, onRea
                   <Link href={`/jobs/${job.id}/applications`}>
                     <Button variant="outline" size="sm" className="gap-1" data-testid={`button-view-applicants-${job.id}`}>
                       <Users className="w-4 h-4" />
-                      View
+                      Review
                     </Button>
                   </Link>
                 )}
@@ -216,6 +218,40 @@ function JobRow({ job, onToggleActive, onDelete, onEdit, onExtendDeadline, onRea
               </div>
             </div>
           </div>
+
+          {applicantCount > 0 && (
+            <div className="mt-4 pt-3 border-t" data-testid={`pipeline-${job.id}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Application Pipeline</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/jobs/${job.id}/applications`}>
+                  <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-950/20 border-orange-300 text-orange-700 dark:text-orange-400" data-testid={`badge-pending-${job.id}`}>
+                    <Clock className="w-3 h-3" />
+                    {pendingCount} Pending
+                  </Badge>
+                </Link>
+                <Link href={`/jobs/${job.id}/applications`}>
+                  <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 border-blue-300 text-blue-700 dark:text-blue-400" data-testid={`badge-offered-${job.id}`}>
+                    <Send className="w-3 h-3" />
+                    {offeredCount} Offered
+                  </Badge>
+                </Link>
+                <Link href={`/jobs/${job.id}/applications`}>
+                  <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-green-50 dark:hover:bg-green-950/20 border-green-300 text-green-700 dark:text-green-400" data-testid={`badge-accepted-${job.id}`}>
+                    <CheckCircle className="w-3 h-3" />
+                    {acceptedCount} Accepted
+                  </Badge>
+                </Link>
+                <Link href={`/jobs/${job.id}/applications`}>
+                  <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 border-red-300 text-red-700 dark:text-red-400" data-testid={`badge-rejected-${job.id}`}>
+                    <XCircle className="w-3 h-3" />
+                    {rejectedCount} Rejected
+                  </Badge>
+                </Link>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>

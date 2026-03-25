@@ -278,6 +278,7 @@ export const createSubAdminSchema = z.object({
     canManageVerifications: z.boolean().optional(),
     canManageNotifications: z.boolean().optional(),
     canManageAds: z.boolean().optional(),
+    canManageAgentCredits: z.boolean().optional(),
     canManageSettings: z.boolean().optional(),
   }),
 });
@@ -300,6 +301,7 @@ export const createNewAdminSchema = z.object({
     canManageVerifications: z.boolean().optional(),
     canManageNotifications: z.boolean().optional(),
     canManageAds: z.boolean().optional(),
+    canManageAgentCredits: z.boolean().optional(),
     canManageSettings: z.boolean().optional(),
   }),
 });

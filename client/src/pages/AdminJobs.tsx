@@ -6,13 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Briefcase, MapPin, MoreVertical, Trash2, Eye, EyeOff, Building2, Users } from "lucide-react";
+import { Search, Briefcase, MapPin, MoreVertical, Trash2, Eye, EyeOff, Building2, Users, Clock, Send, CheckCircle, XCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Job } from "@shared/schema";
+
+type AdminJob = Job & {
+  applicationCounts?: {
+    total: number;
+    pending: number;
+    offered: number;
+    accepted: number;
+    rejected: number;
+  };
+};
 import { format } from "date-fns";
 
 export default function AdminJobs() {
@@ -21,7 +31,7 @@ export default function AdminJobs() {
   const [search, setSearch] = useState("");
   const [deletingJob, setDeletingJob] = useState<Job | null>(null);
 
-  const { data: jobs = [], isLoading } = useQuery<Job[]>({
+  const { data: jobs = [], isLoading } = useQuery<AdminJob[]>({
     queryKey: ["/api/admin/jobs"],
   });
 
@@ -103,12 +113,15 @@ export default function AdminJobs() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredJobs.map((job) => (
+              {filteredJobs.map((job) => {
+                const counts = job.applicationCounts || { total: 0, pending: 0, offered: 0, accepted: 0, rejected: 0 };
+                return (
                 <div
                   key={job.id}
-                  className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                   data-testid={`job-row-${job.id}`}
                 >
+                  <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-medium">{job.title}</h3>
@@ -143,7 +156,7 @@ export default function AdminJobs() {
                     <Link href={`/jobs/${job.id}/applications`}>
                       <Button variant="outline" size="sm" className="gap-1" data-testid={`button-manage-applicants-${job.id}`}>
                         <Users className="w-3.5 h-3.5" />
-                        Applicants
+                        {counts.total > 0 ? `${counts.total} Applicants` : "Applicants"}
                       </Button>
                     </Link>
                     <Link href={`/jobs/${job.id}`}>
@@ -183,8 +196,44 @@ export default function AdminJobs() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
+                  </div>
+
+                  {counts.total > 0 && (
+                    <div className="mt-3 pt-3 border-t" data-testid={`pipeline-${job.id}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Application Pipeline</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/jobs/${job.id}/applications`}>
+                          <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-950/20 border-orange-300 text-orange-700 dark:text-orange-400" data-testid={`badge-pending-${job.id}`}>
+                            <Clock className="w-3 h-3" />
+                            {counts.pending} Pending
+                          </Badge>
+                        </Link>
+                        <Link href={`/jobs/${job.id}/applications`}>
+                          <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 border-blue-300 text-blue-700 dark:text-blue-400" data-testid={`badge-offered-${job.id}`}>
+                            <Send className="w-3 h-3" />
+                            {counts.offered} Offered
+                          </Badge>
+                        </Link>
+                        <Link href={`/jobs/${job.id}/applications`}>
+                          <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-green-50 dark:hover:bg-green-950/20 border-green-300 text-green-700 dark:text-green-400" data-testid={`badge-accepted-${job.id}`}>
+                            <CheckCircle className="w-3 h-3" />
+                            {counts.accepted} Accepted
+                          </Badge>
+                        </Link>
+                        <Link href={`/jobs/${job.id}/applications`}>
+                          <Badge variant="outline" className="gap-1 cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/20 border-red-300 text-red-700 dark:text-red-400" data-testid={`badge-rejected-${job.id}`}>
+                            <XCircle className="w-3 h-3" />
+                            {counts.rejected} Rejected
+                          </Badge>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
