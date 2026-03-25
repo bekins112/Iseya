@@ -10,6 +10,7 @@ interface JobData {
   description: string;
   location: string;
   state?: string | null;
+  city?: string | null;
   category: string;
   jobType: string;
   wage?: string | null;
@@ -41,7 +42,7 @@ function buildJobPost(job: JobData, siteUrl: string): string {
     `🔔 New Job Alert on Iṣéyá!`,
     ``,
     `📌 ${job.title}`,
-    `📍 Location: ${job.state ? `${job.state}${job.location ? ` (${job.location})` : ""}` : job.location}`,
+    `📍 Location: ${[job.state, job.city, job.location].filter(Boolean).join(", ") || job.location}`,
     `💼 Category: ${job.category}`,
     `⏰ Type: ${job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1)}`,
     `💰 Pay: ${salary}`,

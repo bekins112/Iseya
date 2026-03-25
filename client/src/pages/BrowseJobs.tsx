@@ -124,6 +124,7 @@ export default function BrowseJobs() {
       job.description.toLowerCase().includes(query) ||
       job.location.toLowerCase().includes(query) ||
       (job.state || "").toLowerCase().includes(query) ||
+      (job.city || "").toLowerCase().includes(query) ||
       job.category.toLowerCase().includes(query)
     );
   }) || [];

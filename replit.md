@@ -37,7 +37,7 @@ Preferred communication style: Simple, everyday language.
 - New users complete an onboarding process.
 - **Agent Role**: Agents can post jobs on behalf of employers. They use either a subscription (same tiers as employers) or pay-per-post credits (`agentPostCredits`). The per-post fee is configured via `agent_job_post_fee` in platform_settings (default ₦5,000). Free-tier agents with credits > 0 can post; credits decrement on successful post. Payment routes: `/api/agent/buy-post-credits/paystack`, `/api/agent/buy-post-credits/flutterwave`, and corresponding verify routes. Agent profile requires: first name, last name, agency name, phone, state.
 - **Gating**: Non-verified applicants have restricted application management and masked contact info. Free-tier employers have job posting limits and restricted job/applicant management.
-- **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, ads/popups, and settings. Admin can bypass ownership checks for application management.
+- **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, ads/popups, and settings. Admin can bypass ownership checks for application management. Dashboard stats include totalAgents. AdminUsers supports agent role filter/icon/color. AdminJobs shows "Via Agent" badge for agent-posted jobs. AdminSubscriptions includes agents alongside employers. AdminStatistics includes agent count card. AdminVerifications supports "awaiting_payment" status filter with proper styling.
 - **Admin User Management**: Full CRUD on `/admin/users` — view details (profile, contact, subscription, company info), edit (basic info, role, verification, subscription tier/expiry), suspend/unsuspend with reason, and permanently delete users (cascading deletion of all related records). Suspended users are blocked from login and existing sessions are invalidated.
 - **User Suspension**: `isSuspended`, `suspendedAt`, `suspendedReason` columns on users table. Suspension blocks login and destroys active sessions via `isAuthenticated` middleware check.
 
@@ -57,13 +57,19 @@ Preferred communication style: Simple, everyday language.
 ### Facebook Auto-Posting
 - When premium or enterprise employers post jobs, they are automatically shared to the Iṣéyá Facebook Page via the Graph API.
 - Requires `FACEBOOK_PAGE_ACCESS_TOKEN` and `FACEBOOK_PAGE_ID` environment variables.
-- Posts include job title, location, category, type, salary, employer name, description excerpt, apply link, and hashtags.
+- Posts include job title, state/city/location, category, type, salary, employer name, description excerpt, apply link, and hashtags.
 - Runs asynchronously (non-blocking) — job creation succeeds regardless of Facebook API result.
 - Implementation: `server/facebook.ts`, triggered from job creation route in `server/routes.ts`.
 
+### Location System
+- Jobs and user profiles use a 3-level location system: State (select from 36 states + FCT), City/Town (text input), Address/Area (text input).
+- Nigerian states list: `client/src/lib/nigerian-locations.ts`.
+- Job cards show "State, City" with address as secondary info. Job details show all three fields separately.
+- BrowseJobs search covers state, city, and location/address text.
+
 ### Profile Management
 - Centralized `/profile` page for all user profile management.
-- **All users**: First name, last name, role, location, bio, profile photo.
+- **All users**: First name, last name, role, state, city, location/address, bio, profile photo.
 - **Applicants**: Gender, age, phone, email, expected salary range, preferred job types/categories, CV upload, job history.
 - **Employers**: Company name, business category, company email, company phone, company address, CAC registration.
 - Applicants can select multiple preferred job types and categories, stored as text array columns, for future job alerts.

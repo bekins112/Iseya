@@ -12,6 +12,7 @@ interface Stats {
   totalApplications: number;
   totalEmployers: number;
   totalApplicants: number;
+  totalAgents: number;
   premiumEmployers: number;
   activeJobs: number;
   pendingApplications: number;
@@ -44,6 +45,7 @@ export default function AdminStatistics() {
     { title: "Total Users", value: stats?.totalUsers || 0, icon: Users, color: "text-blue-600", bgColor: "bg-blue-100 dark:bg-blue-900" },
     { title: "Employers", value: stats?.totalEmployers || 0, icon: Building2, color: "text-purple-600", bgColor: "bg-purple-100 dark:bg-purple-900" },
     { title: "Applicants", value: stats?.totalApplicants || 0, icon: UserCheck, color: "text-green-600", bgColor: "bg-green-100 dark:bg-green-900" },
+    { title: "Agents", value: stats?.totalAgents || 0, icon: Users, color: "text-teal-600", bgColor: "bg-teal-100 dark:bg-teal-900" },
     { title: "Job Postings", value: stats?.totalJobs || 0, icon: Briefcase, color: "text-amber-600", bgColor: "bg-amber-100 dark:bg-amber-900" },
     { title: "Active Jobs", value: stats?.activeJobs || 0, icon: TrendingUp, color: "text-teal-600", bgColor: "bg-teal-100 dark:bg-teal-900" },
     { title: "Applications", value: stats?.totalApplications || 0, icon: FileText, color: "text-rose-600", bgColor: "bg-rose-100 dark:bg-rose-900" },

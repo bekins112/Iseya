@@ -115,11 +115,19 @@ export default function AdminJobs() {
                       <Badge variant={job.isActive ? "default" : "secondary"}>
                         {job.isActive ? "Active" : "Inactive"}
                       </Badge>
+                      {job.agentId && (
+                        <Badge variant="outline" className="text-teal-700 border-teal-300 bg-teal-50 text-xs" data-testid={`badge-agent-job-${job.id}`}>
+                          Via Agent
+                        </Badge>
+                      )}
                     </div>
+                    {job.onBehalfOf && (
+                      <p className="text-xs text-muted-foreground mb-1">On behalf of: {job.onBehalfOf}</p>
+                    )}
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        {job.location}
+                        {[job.state, job.city].filter(Boolean).join(", ") || job.location}
                       </span>
                       <span>{job.category}</span>
                       <span>{job.jobType}</span>

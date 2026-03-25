@@ -242,7 +242,7 @@ export default function JobDetails() {
                     </span>
                     <span className="flex items-center gap-1">
                       <MapPin className="w-4 h-4" />
-                      {job.state ? `${job.state}${job.location ? ` — ${job.location}` : ""}` : job.location}
+                      {[job.state, job.city, job.location].filter(Boolean).join(" — ") || job.location}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
@@ -310,7 +310,7 @@ export default function JobDetails() {
                             onClick={() => {
                               const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
                               const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
-                              const text = `Check out this job on Iṣéyá: ${job.title} in ${job.location} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
+                              const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
                               window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank");
                             }}
                           >
@@ -324,7 +324,7 @@ export default function JobDetails() {
                             onClick={() => {
                               const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
                               const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
-                              const text = `Check out this job on Iṣéyá: ${job.title} in ${job.location}`;
+                              const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location}`;
                               window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
                             }}
                           >
@@ -405,8 +405,20 @@ export default function JobDetails() {
                         <span className="text-muted-foreground">Job Type</span>
                         <span className="font-medium">{job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1)}</span>
                       </div>
+                      {job.state && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">State</span>
+                          <span className="font-medium">{job.state}</span>
+                        </div>
+                      )}
+                      {job.city && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">City</span>
+                          <span className="font-medium">{job.city}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Location</span>
+                        <span className="text-muted-foreground">Address</span>
                         <span className="font-medium">{job.location}</span>
                       </div>
                     </div>
@@ -489,7 +501,7 @@ export default function JobDetails() {
                     <div className="flex flex-wrap gap-2 mb-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3" />
-                        {similarJob.location}
+                        {[similarJob.state, similarJob.city].filter(Boolean).join(", ") || similarJob.location}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />

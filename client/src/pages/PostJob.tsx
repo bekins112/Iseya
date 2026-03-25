@@ -73,6 +73,7 @@ const postJobSchema = z.object({
   salaryMax: z.coerce.number().min(0, "Maximum salary must be at least 0"),
   wage: z.string().min(1, "Wage information is required"),
   state: z.string().min(1, "State is required"),
+  city: z.string().min(1, "City/town is required"),
   location: z.string().min(1, "Specific address/area is required"),
   gender: z.string().default("Any"),
   ageMin: z.coerce.number().min(18, "Minimum age must be at least 18").nullable().optional(),
@@ -119,6 +120,7 @@ export default function PostJob() {
       salaryMax: 0,
       wage: "",
       state: "",
+      city: "",
       location: "",
       gender: "Any",
       ageMin: null,
@@ -500,7 +502,7 @@ export default function PostJob() {
                 />
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="state"
@@ -526,17 +528,32 @@ export default function PostJob() {
 
                 <FormField
                   control={form.control}
-                  name="location"
+                  name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Area / Address</FormLabel>
+                      <FormLabel>City / Town</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Victoria Island, Lagos" {...field} data-testid="input-job-location" />
+                        <Input placeholder="e.g. Ikeja, Victoria Island" {...field} data-testid="input-job-city" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Area / Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. 15 Admiralty Way, Lekki Phase 1" {...field} data-testid="input-job-location" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
                 <FormField
                   control={form.control}
@@ -588,7 +605,6 @@ export default function PostJob() {
                     );
                   }}
                 />
-              </div>
 
               <FormField
                 control={form.control}

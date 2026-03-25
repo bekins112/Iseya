@@ -54,6 +54,7 @@ const idTypeLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
+  awaiting_payment: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
   under_review: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   approved: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
@@ -126,6 +127,7 @@ export default function AdminVerifications() {
           <SelectContent>
             <SelectItem value="all">All Requests</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="awaiting_payment">Awaiting Payment</SelectItem>
             <SelectItem value="under_review">Under Review</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
@@ -164,7 +166,7 @@ export default function AdminVerifications() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-sm truncate">{request.userName || "Unknown"}</h3>
                         <Badge className={`text-xs ${statusColors[request.status] || ""}`}>
-                          {request.status === "under_review" ? "Under Review" : request.status}
+                          {request.status === "under_review" ? "Under Review" : request.status === "awaiting_payment" ? "Awaiting Payment" : request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{request.userEmail}</p>

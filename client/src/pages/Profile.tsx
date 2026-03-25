@@ -118,6 +118,7 @@ const profileSchema = insertUserSchema.pick({
   gender: z.string().optional().or(z.literal("")),
   age: z.coerce.number().min(18, "Must be at least 18").optional().or(z.literal("")),
   state: z.string().optional().or(z.literal("")),
+  city: z.string().optional().or(z.literal("")),
   expectedSalaryMin: z.coerce.number().optional().or(z.literal("")),
   expectedSalaryMax: z.coerce.number().optional().or(z.literal("")),
 });
@@ -264,6 +265,7 @@ export default function Profile() {
       gender: user?.gender || "",
       age: user?.age || "",
       state: (user as any)?.state || "",
+      city: (user as any)?.city || "",
       expectedSalaryMin: user?.expectedSalaryMin || "",
       expectedSalaryMax: user?.expectedSalaryMax || "",
     }
@@ -430,20 +432,6 @@ export default function Profile() {
                   <div className="grid sm:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Address / Area</FormLabel>
-                          <FormControl>
-                            <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Ikeja, Lagos" {...field} value={field.value || ""} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name="state"
                       render={({ field }) => (
                         <FormItem>
@@ -466,7 +454,35 @@ export default function Profile() {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">City / Town</FormLabel>
+                          <FormControl>
+                            <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Ikeja, Lekki" {...field} value={field.value || ""} data-testid="input-profile-city" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Address / Area</FormLabel>
+                        <FormControl>
+                          <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 15 Admiralty Way, Lekki Phase 1" {...field} value={field.value || ""} data-testid="input-profile-location" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   {user?.role === 'applicant' && (
                     <>

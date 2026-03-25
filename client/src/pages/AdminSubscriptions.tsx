@@ -95,7 +95,7 @@ export default function AdminSubscriptions() {
     <div className="space-y-6">
       <PageHeader
         title="Subscription Management"
-        description="Manage employer subscription plans"
+        description="Manage employer and agent subscription plans"
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -103,7 +103,7 @@ export default function AdminSubscriptions() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
               <Building2 className="w-4 h-4 text-blue-600" />
-              <span className="text-sm text-muted-foreground">Total Employers</span>
+              <span className="text-sm text-muted-foreground">Total Subscribers</span>
             </div>
             <p className="text-2xl font-bold">{employers.length}</p>
           </CardContent>
@@ -165,7 +165,7 @@ export default function AdminSubscriptions() {
           ) : filteredEmployers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No employers found</p>
+              <p>No subscribers found</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -187,7 +187,12 @@ export default function AdminSubscriptions() {
                       <p className="font-medium">
                         {employer.companyName || `${employer.firstName || ""} ${employer.lastName || ""}`.trim() || employer.email}
                       </p>
-                      <p className="text-sm text-muted-foreground">{employer.email}</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm text-muted-foreground">{employer.email}</p>
+                        {employer.role === "agent" && (
+                          <Badge variant="outline" className="text-teal-700 border-teal-300 text-[10px] px-1.5 py-0">Agent</Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

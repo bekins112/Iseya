@@ -92,6 +92,7 @@ export default function AdminUsers() {
   const getRoleIcon = (role: string | null) => {
     switch (role) {
       case "employer": return <Building2 className="w-4 h-4" />;
+      case "agent": return <Briefcase className="w-4 h-4" />;
       case "admin": return <Shield className="w-4 h-4" />;
       default: return <UserCheck className="w-4 h-4" />;
     }
@@ -100,6 +101,7 @@ export default function AdminUsers() {
   const getRoleColor = (role: string | null) => {
     switch (role) {
       case "employer": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+      case "agent": return "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200";
       case "admin": return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200";
       default: return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
     }
@@ -237,6 +239,7 @@ export default function AdminUsers() {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="applicant">Applicants</SelectItem>
                 <SelectItem value="employer">Employers</SelectItem>
+                <SelectItem value="agent">Agents</SelectItem>
                 <SelectItem value="admin">Admins</SelectItem>
               </SelectContent>
             </Select>
@@ -622,6 +625,7 @@ export default function AdminUsers() {
                   <SelectContent>
                     <SelectItem value="applicant">Applicant</SelectItem>
                     <SelectItem value="employer">Employer</SelectItem>
+                    <SelectItem value="agent">Agent</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>

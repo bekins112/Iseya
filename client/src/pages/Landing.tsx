@@ -708,7 +708,7 @@ export default function Landing() {
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{job.location}</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{[job.state, job.city].filter(Boolean).join(", ") || job.location}</span>
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{job.jobType}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs mb-3">

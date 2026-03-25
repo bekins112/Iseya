@@ -49,9 +49,9 @@ export function JobCard({ job, isEmployer = false }: JobCardProps) {
               <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase">Location</span>
                 <span className="text-sm font-semibold truncate max-w-[100px]">
-                  {job.state ? job.state : job.location}
+                  {[job.state, job.city].filter(Boolean).join(", ") || job.location}
                 </span>
-                {job.state && job.location && (
+                {job.location && job.state && (
                   <span className="text-[10px] text-muted-foreground truncate max-w-[100px]">{job.location}</span>
                 )}
               </div>
