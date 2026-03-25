@@ -284,6 +284,12 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
+      <Route path="/admin/agent-credits">
+        <AuthenticatedLayout>
+          <AdminAgentCredits />
+        </AuthenticatedLayout>
+      </Route>
+
       <Route path="/admin">
         <AdminLogin />
       </Route>
