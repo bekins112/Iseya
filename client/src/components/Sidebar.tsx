@@ -35,6 +35,7 @@ export function Sidebar() {
   const [location] = useLocation();
 
   const isEmployer = user?.role === "employer";
+  const isAgent = user?.role === "agent";
   const isAdmin = user?.role === "admin";
 
   const { data: adminPerms } = useQuery<AdminPermissions>({
@@ -72,7 +73,7 @@ export function Sidebar() {
 
   const links: { href: string; label: string; icon: any; subtitle?: string }[] = [
     ...(!isAdmin ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
-    ...(isAdmin ? filteredAdminLinks : isEmployer ? [
+    ...(isAdmin ? filteredAdminLinks : (isEmployer || isAgent) ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
       { href: "/post-job", label: "Post a Job", icon: PlusCircle },
       { href: "/subscription", label: "Subscription", icon: Crown },

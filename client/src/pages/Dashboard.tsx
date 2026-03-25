@@ -15,7 +15,7 @@ import { checkApplicantProfile, checkEmployerProfile } from "@/lib/profile-utils
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const isEmployer = user?.role === "employer";
+  const isEmployer = user?.role === "employer" || user?.role === "agent";
   const isApplicant = user?.role === "applicant";
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();

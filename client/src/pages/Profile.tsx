@@ -100,7 +100,7 @@ const profileSchema = insertUserSchema.pick({
 }).extend({
   firstName: z.string().min(1, "First Name is required"),
   lastName: z.string().min(1, "Last Name is required"),
-  role: z.enum(["applicant", "employer"]),
+  role: z.enum(["applicant", "employer", "agent"]),
   location: z.string().nullable().optional(),
   bio: z.string().optional(),
   email: z.string().email("Must be a valid email").optional().or(z.literal("")),
@@ -114,6 +114,7 @@ const profileSchema = insertUserSchema.pick({
   companyState: z.string().optional().or(z.literal("")),
   isRegisteredCompany: z.boolean().optional(),
   companyRegNo: z.string().optional().or(z.literal("")),
+  agencyName: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   age: z.coerce.number().min(18, "Must be at least 18").optional().or(z.literal("")),
   state: z.string().optional().or(z.literal("")),
@@ -247,7 +248,7 @@ export default function Profile() {
       lastName: user?.lastName || "",
       location: user?.location || "",
       bio: user?.bio || "",
-      role: user?.role as "applicant" | "employer" || "applicant",
+      role: user?.role as "applicant" | "employer" | "agent" || "applicant",
       email: user?.email || "",
       phone: user?.phone || "",
       preferredJobTypes: (user as any)?.preferredJobTypes || [],
@@ -259,6 +260,7 @@ export default function Profile() {
       companyState: (user as any)?.companyState || "",
       isRegisteredCompany: (user as any)?.isRegisteredCompany || false,
       companyRegNo: (user as any)?.companyRegNo || "",
+      agencyName: (user as any)?.agencyName || "",
       gender: user?.gender || "",
       age: user?.age || "",
       state: (user as any)?.state || "",
@@ -724,6 +726,77 @@ export default function Profile() {
                           )}
                         />
                       )}
+                    </>
+                  )}
+
+                  {user?.role === 'agent' && (
+                    <>
+                      <div className="pt-4 pb-2 border-t border-border/40">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-primary" />
+                          Agent Details
+                        </h3>
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="agencyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Agency / Business Name</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. Swift Recruit Agency" {...field} value={field.value || ""} data-testid="input-agency-name" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Phone Number</FormLabel>
+                            <FormControl>
+                              <Input className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 08012345678" {...field} value={field.value || ""} data-testid="input-agent-phone" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">State</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" data-testid="select-agent-state">
+                                  <SelectValue placeholder="Select your state" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="rounded-2xl">
+                                {nigerianStates.map((s) => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="p-4 rounded-2xl bg-muted/30 border border-border/40">
+                        <p className="text-sm text-muted-foreground">
+                          <strong>Post Credits:</strong> {(user as any)?.agentPostCredits || 0} remaining
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Buy credits or subscribe to a plan from the Post a Job page.
+                        </p>
+                      </div>
                     </>
                   )}
 

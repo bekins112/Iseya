@@ -2742,6 +2742,156 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/agent/buy-post-credits/paystack", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "agent") {
+      return res.status(403).json({ message: "Only agents can buy post credits" });
+    }
+    const credits = Number(req.body.credits) || 1;
+    try {
+      const settings = await storage.getAllPlatformSettings();
+      const feePerPost = Number(settings.agent_job_post_fee || "5000");
+      const totalAmount = feePerPost * credits * 100;
+      const reference = `agent_credit_${user.id}_${Date.now()}`;
+      const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user.email,
+          amount: totalAmount,
+          reference,
+          currency: "NGN",
+          callback_url: `${req.protocol}://${req.get("host")}/api/agent/verify-post-payment/paystack?reference=${reference}`,
+          metadata: { userId: user.id, credits, type: "agent_post_credit" },
+        }),
+      });
+      const data = await paystackRes.json();
+      if (!data.status) {
+        return res.status(400).json({ message: data.message || "Paystack init failed" });
+      }
+      res.json({ url: data.data.authorization_url, reference });
+    } catch (err) {
+      console.error("Agent credit Paystack init error:", err);
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  app.get("/api/agent/verify-post-payment/paystack", isAuthenticated, async (req, res) => {
+    const reference = req.query.reference as string;
+    if (!reference) return res.redirect("/post-job?payment=failed");
+    try {
+      const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+        headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+      });
+      const data = await verifyRes.json();
+      if (data.status && data.data.status === "success") {
+        const meta = data.data.metadata || {};
+        const userId = req.session.userId!;
+        const credits = Number(meta.credits) || 1;
+        const user = await storage.getUser(userId);
+        if (user && user.role === "agent") {
+          const current = (user as any).agentPostCredits || 0;
+          await storage.updateUser(userId, { agentPostCredits: current + credits } as any);
+        }
+        await storage.createTransaction({
+          userId,
+          type: "agent_post_credit",
+          gateway: "paystack",
+          reference,
+          amount: data.data.amount || 0,
+          currency: "NGN",
+          status: "success",
+          metadata: JSON.stringify({ credits }),
+        });
+        return res.redirect("/post-job?payment=success");
+      }
+      return res.redirect("/post-job?payment=failed");
+    } catch (err) {
+      console.error("Agent credit Paystack verify error:", err);
+      return res.redirect("/post-job?payment=failed");
+    }
+  });
+
+  app.post("/api/agent/buy-post-credits/flutterwave", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "agent") {
+      return res.status(403).json({ message: "Only agents can buy post credits" });
+    }
+    const credits = Number(req.body.credits) || 1;
+    try {
+      const settings = await storage.getAllPlatformSettings();
+      const feePerPost = Number(settings.agent_job_post_fee || "5000");
+      const totalAmount = feePerPost * credits;
+      const txRef = `agent_credit_${user.id}_${Date.now()}`;
+      const siteUrl = process.env.REPLIT_DOMAINS
+        ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+        : `${req.protocol}://${req.get("host")}`;
+      const flwRes = await fetch("https://api.flutterwave.com/v3/payments", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.FLW_SECRET_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tx_ref: txRef,
+          amount: totalAmount,
+          currency: "NGN",
+          redirect_url: `${siteUrl}/api/agent/verify-post-payment/flutterwave`,
+          customer: { email: user.email, name: `${user.firstName} ${user.lastName}` },
+          meta: { userId: user.id, credits, type: "agent_post_credit" },
+          customizations: { title: "Iṣéyá Agent Post Credit", description: `Purchase ${credits} job post credit(s)` },
+        }),
+      });
+      const data = await flwRes.json();
+      if (data.status === "success") {
+        return res.json({ url: data.data.link, reference: txRef });
+      }
+      return res.status(400).json({ message: data.message || "Flutterwave init failed" });
+    } catch (err) {
+      console.error("Agent credit Flutterwave init error:", err);
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  app.get("/api/agent/verify-post-payment/flutterwave", isAuthenticated, async (req, res) => {
+    const transactionId = req.query.transaction_id as string;
+    if (!transactionId) return res.redirect("/post-job?payment=failed");
+    try {
+      const verifyRes = await fetch(`https://api.flutterwave.com/v3/transactions/${transactionId}/verify`, {
+        headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` },
+      });
+      const data = await verifyRes.json();
+      if (data.status === "success" && data.data.status === "successful") {
+        const meta = data.data.meta || {};
+        const userId = req.session.userId!;
+        const credits = Number(meta.credits) || 1;
+        const user = await storage.getUser(userId);
+        if (user && user.role === "agent") {
+          const current = (user as any).agentPostCredits || 0;
+          await storage.updateUser(userId, { agentPostCredits: current + credits } as any);
+        }
+        await storage.createTransaction({
+          userId,
+          type: "agent_post_credit",
+          gateway: "flutterwave",
+          reference: data.data.tx_ref || data.data.flw_ref || String(transactionId),
+          amount: Math.round((data.data.amount || 0) * 100),
+          currency: "NGN",
+          status: "success",
+          metadata: JSON.stringify({ credits }),
+        });
+        return res.redirect("/post-job?payment=success");
+      }
+      return res.redirect("/post-job?payment=failed");
+    } catch (err) {
+      console.error("Agent credit Flutterwave verify error:", err);
+      return res.redirect("/post-job?payment=failed");
+    }
+  });
+
   // Admin: Get all verification requests
   app.get("/api/admin/verification-requests", isAuthenticated, isAdmin, async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageVerifications) {
@@ -3032,6 +3182,15 @@ export async function registerRoutes(
   }
 
   // === INTERNAL ADS ===
+
+  app.get("/api/platform-settings", async (_req, res) => {
+    try {
+      const settings = await storage.getAllPlatformSettings();
+      res.json({ agent_job_post_fee: settings.agent_job_post_fee || "5000" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
 
   app.get("/api/ads", async (req, res) => {
     try {

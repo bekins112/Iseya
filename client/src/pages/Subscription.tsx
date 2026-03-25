@@ -167,7 +167,7 @@ export default function Subscription() {
     subscriptionEndDate: string | null;
   }>({
     queryKey: ["/api/subscription/status"],
-    enabled: !!user && user.role === "employer",
+    enabled: !!user && (user.role === "employer" || user.role === "agent"),
   });
 
   const params = new URLSearchParams(searchString);
@@ -265,12 +265,12 @@ export default function Subscription() {
     }
   };
 
-  if (user && user.role !== "employer") {
+  if (user && user.role !== "employer" && user.role !== "agent") {
     return (
       <div className="text-center py-20">
         <Crown className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-        <h2 className="text-2xl font-bold mb-2">Employer Only</h2>
-        <p className="text-muted-foreground">Subscription plans are only available for employers.</p>
+        <h2 className="text-2xl font-bold mb-2">Employers & Agents Only</h2>
+        <p className="text-muted-foreground">Subscription plans are only available for employers and agents.</p>
       </div>
     );
   }
