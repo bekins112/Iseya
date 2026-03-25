@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function PageHeader({ title, description, actions }: { title: string, description?: string, actions?: React.ReactNode }) {
+export function PageHeader({ title, description, actions }: { title: string, description?: React.ReactNode, actions?: React.ReactNode }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 animate-enter">
       <div>

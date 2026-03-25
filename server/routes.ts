@@ -27,6 +27,7 @@ import {
   sendTicketCreatedEmail,
   sendTicketAdminNotifyEmail,
 } from "./email";
+import { storeFileInDb, getFileFromDb, migrateExistingUploads } from "./file-storage";
 
 for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets", "uploads/ads"]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -995,6 +996,7 @@ export async function registerRoutes(
       if (req.file) {
         const attachmentUrl = `/uploads/tickets/${req.file.filename}`;
         const attachmentName = req.file.originalname;
+        storeFileInDb(attachmentUrl, req.file.path).catch(() => {});
         const user = await storage.getUser(userId);
         const senderRole = user?.role === "admin" ? "admin" : "user";
         await storage.createTicketMessage({
@@ -1109,6 +1111,7 @@ export async function registerRoutes(
     const message = req.body.message?.trim() || "";
     const attachmentUrl = req.file ? `/uploads/tickets/${req.file.filename}` : null;
     const attachmentName = req.file ? req.file.originalname : null;
+    if (req.file) storeFileInDb(attachmentUrl!, req.file.path).catch(() => {});
     if (!message && !attachmentUrl) {
       return res.status(400).json({ message: "Message or attachment is required" });
     }
@@ -1272,8 +1275,21 @@ export async function registerRoutes(
   });
 
   // === FILE UPLOADS ===
-  
+
+  migrateExistingUploads().catch(err => console.error("[file-storage] Migration error:", err));
+
   app.use("/uploads", (await import("express")).default.static("uploads"));
+
+  app.get("/uploads/*", async (req, res) => {
+    const filePath = req.path;
+    const file = await getFileFromDb(filePath);
+    if (file) {
+      res.set("Content-Type", file.mimeType);
+      res.set("Cache-Control", "public, max-age=86400");
+      return res.send(file.data);
+    }
+    res.status(404).json({ message: "File not found" });
+  });
 
   app.get("/api/download/cv/:filename", isAuthenticated, async (req, res) => {
     const filename = req.params.filename;
@@ -1284,8 +1300,6 @@ export async function registerRoutes(
     if (!filePath.startsWith(path.resolve(process.cwd(), "uploads", "cv"))) {
       return res.status(403).json({ message: "Access denied" });
     }
-    if (!fs.existsSync(filePath)) return res.status(404).json({ message: "File not found" });
-
     const requestingUser = await storage.getUser(req.session.userId!);
     if (requestingUser?.role === "employer") {
       const cvOwner = await storage.getUserByCvFilename(filename);
@@ -1295,7 +1309,15 @@ export async function registerRoutes(
     }
 
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.sendFile(filePath);
+    if (fs.existsSync(filePath)) {
+      return res.sendFile(filePath);
+    }
+    const dbFile = await getFileFromDb(`/uploads/cv/${filename}`);
+    if (dbFile) {
+      res.set("Content-Type", dbFile.mimeType);
+      return res.send(dbFile.data);
+    }
+    return res.status(404).json({ message: "File not found" });
   });
 
   app.post("/api/upload/cv", isAuthenticated, uploadCV.single("cv"), async (req, res) => {
@@ -1303,6 +1325,7 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const filePath = `/uploads/cv/${req.file.filename}`;
     await storage.updateUser(userId, { cvUrl: filePath });
+    storeFileInDb(filePath, req.file.path).catch(() => {});
     res.json({ url: filePath });
   });
 
@@ -1311,6 +1334,7 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const filePath = `/uploads/profile/${req.file.filename}`;
     await storage.updateUser(userId, { profileImageUrl: filePath });
+    storeFileInDb(filePath, req.file.path).catch(() => {});
     res.json({ url: filePath });
   });
 
@@ -1321,6 +1345,7 @@ export async function registerRoutes(
     if (user?.role !== "employer") return res.status(403).json({ message: "Only employers can upload a company logo" });
     const filePath = `/uploads/logo/${req.file.filename}`;
     await storage.updateUser(userId, { companyLogo: filePath });
+    storeFileInDb(filePath, req.file.path).catch(() => {});
     res.json({ url: filePath });
   });
 
@@ -2511,6 +2536,8 @@ export async function registerRoutes(
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     const idDocumentUrl = files?.idDocument?.[0] ? `/uploads/verification/${files.idDocument[0].filename}` : null;
     const selfieUrl = files?.selfie?.[0] ? `/uploads/verification/${files.selfie[0].filename}` : null;
+    if (files?.idDocument?.[0]) storeFileInDb(idDocumentUrl!, files.idDocument[0].path).catch(() => {});
+    if (files?.selfie?.[0]) storeFileInDb(selfieUrl!, files.selfie[0].path).catch(() => {});
 
     if (!idDocumentUrl) {
       return res.status(400).json({ message: "ID document photo is required. Please upload a clear photo of your government-issued ID card." });
@@ -3245,6 +3272,7 @@ export async function registerRoutes(
       });
       const input = adSchema.parse({ ...req.body, targetPages });
       const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
+      if (req.file) storeFileInDb(imageUrl!, req.file.path).catch(() => {});
       const ad = await storage.createAd({
         ...input,
         linkUrl: input.linkUrl && input.linkUrl.trim() ? input.linkUrl : null,
@@ -3304,6 +3332,7 @@ export async function registerRoutes(
       if (updates.endDate !== undefined) updates.endDate = updates.endDate ? new Date(updates.endDate) : null;
       if (req.file) {
         updates.imageUrl = `/uploads/ads/${req.file.filename}`;
+        storeFileInDb(updates.imageUrl, req.file.path).catch(() => {});
       } else if (parsed.removeImage) {
         updates.imageUrl = null;
       }

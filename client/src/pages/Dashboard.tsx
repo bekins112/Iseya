@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { PlusCircle, Briefcase, TrendingUp, CheckCircle2, X, AlertCircle, Home, Receipt, CreditCard, ArrowUpRight, Calendar, Users, ShieldAlert } from "lucide-react";
+import { PlusCircle, Briefcase, TrendingUp, CheckCircle2, X, AlertCircle, Home, Receipt, CreditCard, ArrowUpRight, Calendar, Users, ShieldAlert, Coins } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Transaction } from "@shared/schema";
 import { JobCard } from "@/components/JobCard";
@@ -15,7 +15,8 @@ import { checkApplicantProfile, checkEmployerProfile } from "@/lib/profile-utils
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const isEmployer = user?.role === "employer" || user?.role === "agent";
+  const isAgent = user?.role === "agent";
+  const isEmployer = user?.role === "employer" || isAgent;
   const isApplicant = user?.role === "applicant";
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();
@@ -26,6 +27,7 @@ export default function Dashboard() {
   });
 
   const filteredTransactions = (myTransactions || []).filter(t => {
+    if (isAgent) return t.type === "subscription" || t.type === "agent_credits";
     if (isEmployer) return t.type === "subscription";
     if (isApplicant) return t.type === "verification";
     return true;
@@ -54,7 +56,12 @@ export default function Dashboard() {
       >
         <PageHeader 
           title={`Welcome back, ${user?.firstName || "User"}!`} 
-          description={isEmployer ? "Manage your job listings and applicants." : "Find your next casual opportunity today."}
+          description={
+            <span className="flex items-center gap-2 flex-wrap">
+              {isAgent && <Badge variant="outline" className="bg-teal-500/10 text-teal-700 border-teal-500/30 dark:text-teal-400" data-testid="badge-agent-role">Agent</Badge>}
+              {isAgent ? "Manage job postings for your clients." : isEmployer ? "Manage your job listings and applicants." : "Find your next casual opportunity today."}
+            </span>
+          }
           actions={
             <div className="flex items-center gap-2">
               <Link href="/">
@@ -128,7 +135,7 @@ export default function Dashboard() {
             <TrendingUp className="absolute right-[-10px] top-[-10px] w-24 h-24 opacity-10 group-hover:scale-110 transition-transform" />
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium uppercase tracking-wider opacity-80">
-                {isEmployer ? "Active Jobs" : "Applications Sent"}
+                {isAgent ? "Jobs Posted" : isEmployer ? "Active Jobs" : "Applications Sent"}
               </CardTitle>
               <Briefcase className="w-4 h-4 opacity-80" />
             </CardHeader>
@@ -145,16 +152,16 @@ export default function Dashboard() {
             <CheckCircle2 className="absolute right-[-10px] top-[-10px] w-24 h-24 opacity-10 group-hover:scale-110 transition-transform" />
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium uppercase tracking-wider opacity-80">
-                {isEmployer ? "Total Applicants" : "Pending Reviews"}
+                {isAgent ? "Post Credits" : isEmployer ? "Total Applicants" : "Pending Reviews"}
               </CardTitle>
-              <Users className="w-4 h-4 opacity-80" />
+              {isAgent ? <Coins className="w-4 h-4 opacity-80" /> : <Users className="w-4 h-4 opacity-80" />}
             </CardHeader>
             <CardContent>
               <div className="text-4xl font-bold" data-testid="text-stat-secondary">
-                {isEmployer ? (jobs?.filter(j => j.employerId === user?.id).reduce((acc) => acc + 1, 0) || 0) : 0}
+                {isAgent ? ((user as any)?.agentPostCredits || 0) : isEmployer ? (jobs?.filter(j => j.employerId === user?.id).reduce((acc) => acc + 1, 0) || 0) : 0}
               </div>
               <p className="text-xs opacity-70">
-                {isEmployer ? "Across all your job postings" : "Analytics coming soon"}
+                {isAgent ? "Available job post credits" : isEmployer ? "Across all your job postings" : "Analytics coming soon"}
               </p>
             </CardContent>
           </Card>
@@ -188,7 +195,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg font-display font-bold flex items-center gap-2">
                   <Receipt className="w-5 h-5 text-primary" />
-                  Subscription Transaction History
+                  {isAgent ? "Transaction History" : "Subscription Transaction History"}
                 </CardTitle>
                 <Badge variant="outline" className="text-xs" data-testid="badge-transaction-count">
                   {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? "s" : ""}
@@ -272,7 +279,7 @@ export default function Dashboard() {
       >
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h2 className="text-2xl font-display font-bold flex items-center gap-2">
-            {isEmployer ? "Your Recent Postings" : "Recent Opportunities"}
+            {isAgent ? "Your Client Postings" : isEmployer ? "Your Recent Postings" : "Recent Opportunities"}
           </h2>
           <Link href={isEmployer ? "/my-jobs" : "/jobs"}>
             <Button variant="ghost" className="text-primary font-bold group" data-testid="button-view-all-jobs">

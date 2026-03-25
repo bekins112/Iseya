@@ -444,5 +444,13 @@ export const insertInternalAdSchema = createInsertSchema(internalAds).omit({ id:
 export type InternalAd = typeof internalAds.$inferSelect;
 export type InsertInternalAd = z.infer<typeof insertInternalAdSchema>;
 
+export const fileUploads = pgTable("file_uploads", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  filePath: varchar("file_path").notNull().unique(),
+  data: text("data").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;
