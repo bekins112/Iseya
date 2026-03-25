@@ -98,3 +98,30 @@ export async function migrateExistingUploads(): Promise<void> {
     console.log(`[file-storage] Migrated ${count} existing files to database`);
   }
 }
+
+export async function restoreFilesFromDb(): Promise<void> {
+  try {
+    const allFiles = await db.select({ filePath: fileUploads.filePath, data: fileUploads.data, mimeType: fileUploads.mimeType }).from(fileUploads);
+    let restored = 0;
+
+    for (const record of allFiles) {
+      const diskPath = path.resolve(process.cwd(), record.filePath.replace(/^\//, ""));
+      if (fs.existsSync(diskPath)) continue;
+
+      const dir = path.dirname(diskPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const fileBuffer = Buffer.from(record.data, "base64");
+      fs.writeFileSync(diskPath, fileBuffer);
+      restored++;
+    }
+
+    if (restored > 0) {
+      console.log(`[file-storage] Restored ${restored} files from database to disk`);
+    }
+  } catch (err) {
+    console.error("[file-storage] Failed to restore files from DB:", err);
+  }
+}

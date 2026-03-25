@@ -27,7 +27,7 @@ import {
   sendTicketCreatedEmail,
   sendTicketAdminNotifyEmail,
 } from "./email";
-import { storeFileInDb, getFileFromDb, migrateExistingUploads } from "./file-storage";
+import { storeFileInDb, getFileFromDb, migrateExistingUploads, restoreFilesFromDb } from "./file-storage";
 
 for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets", "uploads/ads"]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -1277,6 +1277,7 @@ export async function registerRoutes(
   // === FILE UPLOADS ===
 
   migrateExistingUploads().catch(err => console.error("[file-storage] Migration error:", err));
+  restoreFilesFromDb().catch(err => console.error("[file-storage] Restore error:", err));
 
   app.use("/uploads", (await import("express")).default.static("uploads"));
 
