@@ -43,7 +43,7 @@ export interface IStorage {
   updateAdminPermissions(userId: string, permissions: Partial<AdminPermissions>): Promise<AdminPermissions>;
   deleteAdminPermissions(userId: string): Promise<void>;
   getAllAdmins(): Promise<(User & { permissions?: AdminPermissions })[]>;
-  getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }>;
+  getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }>;
   getDetailedStats(): Promise<{
     usersByRole: { role: string; count: number }[];
     jobsByCategory: { category: string; count: number }[];
@@ -393,12 +393,13 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }> {
+  async getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }> {
     const [userCount] = await db.select({ count: count() }).from(users);
     const [jobCount] = await db.select({ count: count() }).from(jobs);
     const [appCount] = await db.select({ count: count() }).from(applications);
     const [employerCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "employer"));
     const [applicantCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "applicant"));
+    const [agentCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "agent"));
     const [premiumCount] = await db.select({ count: count() }).from(users).where(and(eq(users.role, "employer"), eq(users.subscriptionStatus, "premium")));
     const [activeJobCount] = await db.select({ count: count() }).from(jobs).where(eq(jobs.isActive, true));
     const [pendingAppCount] = await db.select({ count: count() }).from(applications).where(eq(applications.status, "pending"));
@@ -409,6 +410,7 @@ export class DatabaseStorage implements IStorage {
       totalApplications: appCount.count,
       totalEmployers: employerCount.count,
       totalApplicants: applicantCount.count,
+      totalAgents: agentCount.count,
       premiumEmployers: premiumCount.count,
       activeJobs: activeJobCount.count,
       pendingApplications: pendingAppCount.count,

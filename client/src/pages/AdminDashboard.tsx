@@ -24,6 +24,7 @@ interface Stats {
   totalApplications: number;
   totalEmployers: number;
   totalApplicants: number;
+  totalAgents: number;
 }
 
 interface AdminPermissions {
@@ -80,6 +81,12 @@ export default function AdminDashboard() {
       color: "text-green-600",
     },
     {
+      title: "Agents",
+      value: stats?.totalAgents || 0,
+      icon: Users,
+      color: "text-teal-600",
+    },
+    {
       title: "Job Postings",
       value: stats?.totalJobs || 0,
       icon: Briefcase,
@@ -125,8 +132,8 @@ export default function AdminDashboard() {
       />
 
       {statsLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {[1, 2, 3, 4, 5].map((i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-4">
                 <div className="h-4 bg-muted rounded w-20 mb-2" />
@@ -136,7 +143,7 @@ export default function AdminDashboard() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {statCards.map((stat) => (
             <Card
               key={stat.title}

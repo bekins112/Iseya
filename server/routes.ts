@@ -2008,9 +2008,9 @@ export async function registerRoutes(
       const users = await storage.getUsersBySubscription(status as string);
       res.json(users);
     } else {
-      // Return all employers with subscription info
-      const users = await storage.getAllUsers({ role: "employer" });
-      res.json(users);
+      const employers = await storage.getAllUsers({ role: "employer" });
+      const agents = await storage.getAllUsers({ role: "agent" });
+      res.json([...employers, ...agents]);
     }
   });
 
