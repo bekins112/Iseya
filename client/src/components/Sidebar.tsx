@@ -60,14 +60,13 @@ export function Sidebar() {
     { href: "/admin/users", label: "Manage Users", icon: Users, perm: "canManageUsers" },
     { href: "/admin/jobs", label: "Manage Jobs", icon: Briefcase, perm: "canManageJobs" },
     { href: "/admin/subscriptions", label: "Subscriptions", icon: Crown, perm: "canManageSubscriptions" },
+    { href: "/admin/agent-credits", label: "Agent Credits", icon: Coins, perm: "canManageAgentCredits" },
+    { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck, perm: "canManageVerifications" },
     { href: "/admin/transactions", label: "Transactions", icon: DollarSign, perm: "canManageTransactions" },
     { href: "/admin/tickets", label: "Support Tickets", icon: Ticket, perm: "canManageTickets" },
-    { href: "/admin/reports", label: "Reports", icon: Flag, perm: "canManageReports" },
-    { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
-    { href: "/admin/verifications", label: "Verifications", icon: ShieldCheck, perm: "canManageVerifications" },
     { href: "/admin/notifications", label: "Notifications", icon: Bell, perm: "canManageNotifications" },
     { href: "/admin/ads", label: "Ads & Popups", icon: Megaphone, perm: "canManageAds" },
-    { href: "/admin/agent-credits", label: "Agent Credits", icon: Coins, perm: "canManageAgentCredits" },
+    { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
     { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
   ];
 
