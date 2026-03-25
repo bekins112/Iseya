@@ -140,10 +140,11 @@ export interface IStorage {
     totalRevenue: number;
     subscriptionRevenue: number;
     verificationRevenue: number;
+    agentCreditRevenue: number;
     totalTransactions: number;
     successfulTransactions: number;
     failedTransactions: number;
-    monthlyRevenue: { month: string; subscriptions: number; verifications: number; total: number }[];
+    monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; total: number }[];
   }>;
 }
 
@@ -943,10 +944,11 @@ export class DatabaseStorage implements IStorage {
     totalRevenue: number;
     subscriptionRevenue: number;
     verificationRevenue: number;
+    agentCreditRevenue: number;
     totalTransactions: number;
     successfulTransactions: number;
     failedTransactions: number;
-    monthlyRevenue: { month: string; subscriptions: number; verifications: number; total: number }[];
+    monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; total: number }[];
   }> {
     const allTxns = await db.select().from(transactions).orderBy(desc(transactions.createdAt));
 
@@ -954,14 +956,16 @@ export class DatabaseStorage implements IStorage {
     const totalRevenue = successful.reduce((sum, t) => sum + t.amount, 0);
     const subscriptionRevenue = successful.filter(t => t.type === "subscription").reduce((sum, t) => sum + t.amount, 0);
     const verificationRevenue = successful.filter(t => t.type === "verification").reduce((sum, t) => sum + t.amount, 0);
+    const agentCreditRevenue = successful.filter(t => t.type === "agent_post_credit").reduce((sum, t) => sum + t.amount, 0);
 
-    const monthlyMap = new Map<string, { subscriptions: number; verifications: number }>();
+    const monthlyMap = new Map<string, { subscriptions: number; verifications: number; agentCredits: number }>();
     for (const t of successful) {
       if (!t.createdAt) continue;
       const month = `${t.createdAt.getFullYear()}-${String(t.createdAt.getMonth() + 1).padStart(2, '0')}`;
-      const existing = monthlyMap.get(month) || { subscriptions: 0, verifications: 0 };
+      const existing = monthlyMap.get(month) || { subscriptions: 0, verifications: 0, agentCredits: 0 };
       if (t.type === "subscription") existing.subscriptions += t.amount;
       else if (t.type === "verification") existing.verifications += t.amount;
+      else if (t.type === "agent_post_credit") existing.agentCredits += t.amount;
       monthlyMap.set(month, existing);
     }
 
@@ -970,7 +974,8 @@ export class DatabaseStorage implements IStorage {
         month,
         subscriptions: data.subscriptions,
         verifications: data.verifications,
-        total: data.subscriptions + data.verifications,
+        agentCredits: data.agentCredits,
+        total: data.subscriptions + data.verifications + data.agentCredits,
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -978,6 +983,7 @@ export class DatabaseStorage implements IStorage {
       totalRevenue,
       subscriptionRevenue,
       verificationRevenue,
+      agentCreditRevenue,
       totalTransactions: allTxns.length,
       successfulTransactions: successful.length,
       failedTransactions: allTxns.filter(t => t.status === "failed").length,

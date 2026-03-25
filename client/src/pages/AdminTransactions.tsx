@@ -26,6 +26,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   RotateCcw,
+  Briefcase,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -49,10 +50,11 @@ type TransactionStats = {
   totalRevenue: number;
   subscriptionRevenue: number;
   verificationRevenue: number;
+  agentCreditRevenue: number;
   totalTransactions: number;
   successfulTransactions: number;
   failedTransactions: number;
-  monthlyRevenue: { month: string; subscriptions: number; verifications: number; total: number }[];
+  monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; total: number }[];
 };
 
 export default function AdminTransactions() {
@@ -148,7 +150,7 @@ export default function AdminTransactions() {
       />
 
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <Card data-testid="card-total-revenue">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-1">
@@ -174,6 +176,15 @@ export default function AdminTransactions() {
                 <span className="text-xs text-muted-foreground font-medium">Verifications</span>
               </div>
               <p className="text-xl font-bold" data-testid="text-verification-revenue">₦{stats.verificationRevenue.toLocaleString()}</p>
+            </CardContent>
+          </Card>
+          <Card data-testid="card-agent-credit-revenue">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Briefcase className="w-4 h-4 text-teal-500" />
+                <span className="text-xs text-muted-foreground font-medium">Agent Credits</span>
+              </div>
+              <p className="text-xl font-bold" data-testid="text-agent-credit-revenue">₦{stats.agentCreditRevenue.toLocaleString()}</p>
             </CardContent>
           </Card>
           <Card data-testid="card-total-transactions">
@@ -213,7 +224,7 @@ export default function AdminTransactions() {
               <TrendingUp className="w-5 h-5 text-primary" />
               Monthly Revenue
             </CardTitle>
-            <CardDescription>Collections from subscriptions and verifications</CardDescription>
+            <CardDescription>Collections from subscriptions, verifications, and agent credits</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -242,6 +253,15 @@ export default function AdminTransactions() {
                         {m.verifications > maxMonthly * 0.1 ? `₦${m.verifications.toLocaleString()}` : ""}
                       </div>
                     )}
+                    {m.agentCredits > 0 && (
+                      <div
+                        className="bg-teal-500/80 flex items-center justify-center text-[10px] text-white font-medium"
+                        style={{ width: `${(m.agentCredits / maxMonthly) * 100}%` }}
+                        title={`Agent Credits: ₦${m.agentCredits.toLocaleString()}`}
+                      >
+                        {m.agentCredits > maxMonthly * 0.1 ? `₦${m.agentCredits.toLocaleString()}` : ""}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -253,6 +273,10 @@ export default function AdminTransactions() {
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded bg-green-500/80" />
                   Verifications
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-teal-500/80" />
+                  Agent Credits
                 </div>
               </div>
             </div>
@@ -286,6 +310,7 @@ export default function AdminTransactions() {
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="subscription">Subscription</SelectItem>
                 <SelectItem value="verification">Verification</SelectItem>
+                <SelectItem value="agent_post_credit">Agent Post Credit</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -358,10 +383,12 @@ export default function AdminTransactions() {
                   <div className="flex items-center gap-1.5">
                     {t.type === "subscription" ? (
                       <Crown className="w-3.5 h-3.5 text-primary" />
+                    ) : t.type === "agent_post_credit" ? (
+                      <Briefcase className="w-3.5 h-3.5 text-teal-500" />
                     ) : (
                       <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
                     )}
-                    <span className="text-xs capitalize">{t.type}</span>
+                    <span className="text-xs capitalize">{t.type === "agent_post_credit" ? "Agent Credit" : t.type}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     {gatewayIcon(t.gateway)}
@@ -461,6 +488,9 @@ export default function AdminTransactions() {
                   )}
                   {resolvingTxn.type === "verification" && (
                     <li>• User's verification request will be moved to "under review"</li>
+                  )}
+                  {resolvingTxn.type === "agent_post_credit" && (
+                    <li>• Agent's job post credits will be added to their account</li>
                   )}
                   <li>• User will receive a notification about the resolution</li>
                 </ul>

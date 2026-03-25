@@ -3103,10 +3103,12 @@ export async function registerRoutes(
       totalRevenue: stats.totalRevenue / 100,
       subscriptionRevenue: stats.subscriptionRevenue / 100,
       verificationRevenue: stats.verificationRevenue / 100,
+      agentCreditRevenue: stats.agentCreditRevenue / 100,
       monthlyRevenue: stats.monthlyRevenue.map(m => ({
         ...m,
         subscriptions: m.subscriptions / 100,
         verifications: m.verifications / 100,
+        agentCredits: m.agentCredits / 100,
         total: m.total / 100,
       })),
     });
@@ -3173,6 +3175,21 @@ export async function registerRoutes(
         storage.createNotification({
           title: "Verification Payment Confirmed",
           message: "Your verification payment has been confirmed by the admin team. Your verification is now pending review.",
+          type: "individual",
+          targetRole: null,
+          targetUserId: txn.userId,
+          createdBy: req.session.userId!,
+        }).catch(() => {});
+      } else if (txn.type === "agent_post_credit") {
+        let metadata: any = {};
+        try { metadata = txn.metadata ? JSON.parse(txn.metadata) : {}; } catch {}
+        const credits = metadata.credits || 1;
+        const current = user.agentPostCredits || 0;
+        await storage.updateUser(txn.userId, { agentPostCredits: current + credits } as any);
+
+        storage.createNotification({
+          title: "Post Credits Added",
+          message: `${credits} job post credit${credits !== 1 ? "s" : ""} have been added to your account by the admin team.`,
           type: "individual",
           targetRole: null,
           targetUserId: txn.userId,
