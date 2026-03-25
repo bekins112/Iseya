@@ -8,7 +8,8 @@ import { postJobToFacebook } from "./facebook";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { users } from "@shared/models/auth";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
+import { jobs } from "@shared/schema";
 import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, createNewAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
@@ -344,8 +345,8 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const user = await storage.getUser(userId);
 
-    // Only owner or admin can delete
-    if (job.employerId !== userId && user?.role !== 'admin') {
+    const isJobOwner = job.employerId === userId || job.agentId === userId;
+    if (!isJobOwner && user?.role !== 'admin') {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -366,7 +367,8 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const user = await storage.getUser(userId);
 
-    if (job.employerId !== userId && user?.role !== 'admin') {
+    const isJobOwner = job.employerId === userId || job.agentId === userId;
+    if (!isJobOwner && user?.role !== 'admin') {
       return res.status(403).json({ message: "Forbidden" });
     }
 
@@ -399,12 +401,19 @@ export async function registerRoutes(
     const userId = req.session.userId!;
     const user = await storage.getUser(userId);
     
-    if (!user || (user.role !== 'employer' && user.role !== 'admin')) {
-      return res.status(403).json({ message: "Only employers can access this" });
+    if (!user || (user.role !== 'employer' && user.role !== 'agent' && user.role !== 'admin')) {
+      return res.status(403).json({ message: "Only employers and agents can access this" });
     }
 
     await storage.expireOverdueJobs();
-    const jobsList = await storage.getJobsByEmployer(userId);
+    let jobsList = await storage.getJobsByEmployer(userId);
+    if (user.role === 'agent') {
+      const agentJobs = await db.select().from(jobs).where(eq(jobs.agentId, userId)).orderBy(desc(jobs.createdAt));
+      const existingIds = new Set(jobsList.map(j => j.id));
+      for (const j of agentJobs) {
+        if (!existingIds.has(j.id)) jobsList.push(j);
+      }
+    }
     res.json(jobsList);
   });
 
@@ -475,7 +484,8 @@ export async function registerRoutes(
 
     if (!job) return res.status(404).json({ message: "Job not found" });
     const user = await storage.getUser(userId);
-    if (job.employerId !== userId && user?.role !== 'admin') return res.status(403).json({ message: "Forbidden" });
+    const isOwner = job.employerId === userId || job.agentId === userId;
+    if (!isOwner && user?.role !== 'admin') return res.status(403).json({ message: "Forbidden" });
 
     if (user?.role === 'employer' && user.subscriptionStatus === "free") {
       return res.status(403).json({ message: "Please upgrade your subscription to manage job applicants.", code: "SUBSCRIPTION_REQUIRED" });
@@ -546,7 +556,8 @@ export async function registerRoutes(
     const currentUser = await storage.getUser(userId);
     const job = await storage.getJob(application.jobId);
     
-    if (!job || (job.employerId !== userId && currentUser?.role !== 'admin')) {
+    const isJobOwner = job && (job.employerId === userId || job.agentId === userId);
+    if (!job || (!isJobOwner && currentUser?.role !== 'admin')) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
