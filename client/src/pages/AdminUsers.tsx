@@ -170,6 +170,7 @@ export default function AdminUsers() {
   const totalUsers = users.length;
   const applicantCount = users.filter(u => u.role === "applicant").length;
   const employerCount = users.filter(u => u.role === "employer").length;
+  const agentCount = users.filter(u => u.role === "agent").length;
   const suspendedCount = users.filter(u => u.isSuspended).length;
 
   return (
@@ -179,7 +180,7 @@ export default function AdminUsers() {
         description="View, edit, suspend, and manage all platform users"
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card className="p-3">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
@@ -193,7 +194,7 @@ export default function AdminUsers() {
           <div className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-blue-500" />
             <div>
-              <p className="text-2xl font-bold">{applicantCount}</p>
+              <p className="text-2xl font-bold" data-testid="text-total-applicants">{applicantCount}</p>
               <p className="text-xs text-muted-foreground">Applicants</p>
             </div>
           </div>
@@ -202,8 +203,17 @@ export default function AdminUsers() {
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-purple-500" />
             <div>
-              <p className="text-2xl font-bold">{employerCount}</p>
+              <p className="text-2xl font-bold" data-testid="text-total-employers">{employerCount}</p>
               <p className="text-xs text-muted-foreground">Employers</p>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-teal-500" />
+            <div>
+              <p className="text-2xl font-bold" data-testid="text-total-agents">{agentCount}</p>
+              <p className="text-xs text-muted-foreground">Agents</p>
             </div>
           </div>
         </Card>
@@ -211,7 +221,7 @@ export default function AdminUsers() {
           <div className="flex items-center gap-2">
             <Ban className="w-5 h-5 text-red-500" />
             <div>
-              <p className="text-2xl font-bold">{suspendedCount}</p>
+              <p className="text-2xl font-bold" data-testid="text-total-suspended">{suspendedCount}</p>
               <p className="text-xs text-muted-foreground">Suspended</p>
             </div>
           </div>
