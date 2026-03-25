@@ -857,6 +857,8 @@ export async function registerRoutes(
         canManageReports: input.permissions.canManageReports ?? false,
         canManageVerifications: input.permissions.canManageVerifications ?? false,
         canManageNotifications: input.permissions.canManageNotifications ?? false,
+        canManageAds: input.permissions.canManageAds ?? false,
+        canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
       });
       
@@ -906,6 +908,8 @@ export async function registerRoutes(
         canManageReports: input.permissions.canManageReports ?? false,
         canManageVerifications: input.permissions.canManageVerifications ?? false,
         canManageNotifications: input.permissions.canManageNotifications ?? false,
+        canManageAds: input.permissions.canManageAds ?? false,
+        canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
       });
 
@@ -2922,6 +2926,70 @@ export async function registerRoutes(
       console.error("Agent credit Flutterwave verify error:", err);
       return res.redirect("/post-job?payment=failed");
     }
+  });
+
+  // === ADMIN AGENT CREDIT MANAGEMENT ===
+
+  app.get("/api/admin/agent-credits", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAgentCredits) {
+      return res.status(403).json({ message: "You don't have permission to manage agent credits" });
+    }
+    const allUsers = await storage.getAllUsers();
+    const agents = allUsers.filter(u => u.role === "agent");
+    const result = agents.map(a => ({
+      id: a.id,
+      firstName: a.firstName,
+      lastName: a.lastName,
+      email: a.email,
+      agencyName: a.agencyName,
+      phone: a.phone,
+      agentPostCredits: a.agentPostCredits || 0,
+      subscriptionStatus: a.subscriptionStatus,
+      createdAt: a.createdAt,
+    }));
+    res.json(result);
+  });
+
+  app.patch("/api/admin/agent-credits/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAgentCredits) {
+      return res.status(403).json({ message: "You don't have permission to manage agent credits" });
+    }
+    const { userId } = req.params;
+    const { action, amount, reason } = req.body;
+    if (!action || !amount || typeof amount !== "number" || amount < 1) {
+      return res.status(400).json({ message: "Valid action and amount are required" });
+    }
+    const targetUser = await storage.getUser(userId);
+    if (!targetUser || targetUser.role !== "agent") {
+      return res.status(404).json({ message: "Agent not found" });
+    }
+    const current = targetUser.agentPostCredits || 0;
+    let newCredits: number;
+    if (action === "add") {
+      newCredits = current + amount;
+    } else if (action === "deduct") {
+      newCredits = Math.max(0, current - amount);
+    } else if (action === "set") {
+      newCredits = Math.max(0, amount);
+    } else {
+      return res.status(400).json({ message: "Invalid action. Use 'add', 'deduct', or 'set'" });
+    }
+    await storage.updateUser(userId, { agentPostCredits: newCredits } as any);
+
+    storage.createNotification({
+      title: action === "add" ? "Post Credits Added" : action === "deduct" ? "Post Credits Deducted" : "Post Credits Updated",
+      message: action === "add"
+        ? `${amount} job post credit${amount !== 1 ? "s" : ""} have been added to your account by the admin team.${reason ? ` Reason: ${reason}` : ""}`
+        : action === "deduct"
+        ? `${amount} job post credit${amount !== 1 ? "s" : ""} have been deducted from your account.${reason ? ` Reason: ${reason}` : ""}`
+        : `Your job post credits have been set to ${newCredits}.${reason ? ` Reason: ${reason}` : ""}`,
+      type: "individual",
+      targetRole: null,
+      targetUserId: userId,
+      createdBy: req.session.userId!,
+    }).catch(() => {});
+
+    res.json({ message: "Credits updated", previousCredits: current, newCredits, action, amount });
   });
 
   // Admin: Get all verification requests

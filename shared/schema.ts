@@ -171,6 +171,7 @@ export const adminPermissions = pgTable("admin_permissions", {
   canManageVerifications: boolean("can_manage_verifications").default(false),
   canManageNotifications: boolean("can_manage_notifications").default(false),
   canManageAds: boolean("can_manage_ads").default(false),
+  canManageAgentCredits: boolean("can_manage_agent_credits").default(false),
   canManageSettings: boolean("can_manage_settings").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -203,6 +204,7 @@ export const insertAdminPermissionsSchema = z.object({
   canManageVerifications: z.boolean().default(false),
   canManageNotifications: z.boolean().default(false),
   canManageAds: z.boolean().default(false),
+  canManageAgentCredits: z.boolean().default(false),
   canManageSettings: z.boolean().default(false),
   createdBy: z.string().optional().nullable(),
 });
@@ -221,6 +223,7 @@ export const updateAdminPermissionsSchema = z.object({
   canManageVerifications: z.boolean().optional(),
   canManageNotifications: z.boolean().optional(),
   canManageAds: z.boolean().optional(),
+  canManageAgentCredits: z.boolean().optional(),
   canManageSettings: z.boolean().optional(),
 });
 

@@ -37,6 +37,7 @@ import AdminNotifications from "@/pages/AdminNotifications";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminTransactions from "@/pages/AdminTransactions";
 import AdminAds from "@/pages/AdminAds";
+import AdminAgentCredits from "@/pages/AdminAgentCredits";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
