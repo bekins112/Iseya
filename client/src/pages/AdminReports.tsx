@@ -17,6 +17,19 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Report } from "@shared/schema";
 import { format } from "date-fns";
+import { ExportButton } from "@/components/ExportButton";
+
+const reportExportColumns = [
+  { key: "id", label: "ID" },
+  { key: "reportedType", label: "Report Type" },
+  { key: "reportedId", label: "Reported ID" },
+  { key: "reporterId", label: "Reporter ID" },
+  { key: "reason", label: "Reason" },
+  { key: "description", label: "Description" },
+  { key: "status", label: "Status" },
+  { key: "adminNotes", label: "Admin Notes" },
+  { key: "createdAt", label: "Date", transform: (v: any) => v ? format(new Date(v), "yyyy-MM-dd HH:mm") : "" },
+];
 
 export default function AdminReports() {
   const { user } = useAuth();
@@ -202,6 +215,12 @@ export default function AdminReports() {
                 <SelectItem value="job">Job Reports</SelectItem>
               </SelectContent>
             </Select>
+            <ExportButton
+              data={filteredReports}
+              columns={reportExportColumns}
+              filename="reports"
+              totalLabel="reports"
+            />
           </div>
         </CardHeader>
         <CardContent>

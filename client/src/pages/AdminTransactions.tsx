@@ -29,6 +29,21 @@ import {
   Briefcase,
 } from "lucide-react";
 import { format } from "date-fns";
+import { ExportButton } from "@/components/ExportButton";
+
+const txnExportColumns = [
+  { key: "id", label: "ID" },
+  { key: "userName", label: "User Name" },
+  { key: "userEmail", label: "User Email" },
+  { key: "type", label: "Type" },
+  { key: "gateway", label: "Gateway" },
+  { key: "reference", label: "Reference" },
+  { key: "amount", label: "Amount (₦)", transform: (v: any) => v != null ? String(Number(v).toLocaleString()) : "0" },
+  { key: "currency", label: "Currency" },
+  { key: "status", label: "Status" },
+  { key: "plan", label: "Plan" },
+  { key: "createdAt", label: "Date", transform: (v: any) => v ? format(new Date(v), "yyyy-MM-dd HH:mm") : "" },
+];
 
 type TransactionItem = {
   id: number;
@@ -334,6 +349,14 @@ export default function AdminTransactions() {
                 <SelectItem value="flutterwave">Flutterwave</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex justify-end pt-2">
+            <ExportButton
+              data={filteredTxns}
+              columns={txnExportColumns}
+              filename="transactions"
+              totalLabel="transactions"
+            />
           </div>
         </CardHeader>
         <CardContent>

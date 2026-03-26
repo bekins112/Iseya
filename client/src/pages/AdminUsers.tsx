@@ -22,6 +22,27 @@ import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
+import { ExportButton } from "@/components/ExportButton";
+
+const userExportColumns = [
+  { key: "id", label: "ID" },
+  { key: "firstName", label: "First Name" },
+  { key: "lastName", label: "Last Name" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "role", label: "Role" },
+  { key: "subscriptionTier", label: "Subscription Tier", transform: (v: any) => v || "free" },
+  { key: "subscriptionExpiry", label: "Subscription Expiry", transform: (v: any) => v ? new Date(v).toLocaleDateString() : "" },
+  { key: "isVerified", label: "Verified", transform: (v: any) => v ? "Yes" : "No" },
+  { key: "isSuspended", label: "Suspended", transform: (v: any) => v ? "Yes" : "No" },
+  { key: "suspendedReason", label: "Suspend Reason" },
+  { key: "state", label: "State" },
+  { key: "city", label: "City" },
+  { key: "location", label: "Location" },
+  { key: "bio", label: "Bio" },
+  { key: "companyName", label: "Company Name" },
+  { key: "createdAt", label: "Joined", transform: (v: any) => v ? new Date(v).toLocaleDateString() : "" },
+];
 
 export default function AdminUsers() {
   const { user } = useAuth();
@@ -274,6 +295,12 @@ export default function AdminUsers() {
                 <SelectItem value="admin">Admins</SelectItem>
               </SelectContent>
             </Select>
+            <ExportButton
+              data={filteredUsers}
+              columns={userExportColumns}
+              filename="users"
+              totalLabel="users"
+            />
           </div>
         </CardHeader>
         <CardContent>
