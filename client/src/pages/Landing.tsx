@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, ClipboardList, Users, BadgeCheck, MapPin, Clock, Calendar, ChevronDown, UserCheck, Menu, X, CreditCard } from "lucide-react";
-import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
+import { SiInstagram, SiLinkedin, SiX, SiFacebook, SiTiktok } from "react-icons/si";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@shared/routes";
@@ -236,6 +236,10 @@ export default function Landing() {
   const [filterJobType, setFilterJobType] = useState("");
   const [discoverOpen, setDiscoverOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const { data: appSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings/public"],
+  });
 
   const activeFilters = Object.fromEntries(
     Object.entries({ category: filterCategory, location: filterLocation, jobType: filterJobType })
@@ -1240,18 +1244,31 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <p className="text-sm text-muted-foreground">© 2026 Iṣéyá by RenownedTech. All rights reserved.</p>
               <div className="flex items-center gap-3" data-testid="social-links-footer">
-                <a href="https://instagram.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-instagram" aria-label="Instagram">
-                  <SiInstagram className="w-4 h-4" />
-                </a>
-                <a href="https://linkedin.com/company/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-linkedin" aria-label="LinkedIn">
-                  <SiLinkedin className="w-4 h-4" />
-                </a>
-                <a href="https://x.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-twitter" aria-label="X (Twitter)">
-                  <SiX className="w-4 h-4" />
-                </a>
-                <a href="https://facebook.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-facebook" aria-label="Facebook">
-                  <SiFacebook className="w-4 h-4" />
-                </a>
+                {(appSettings?.app_instagram || "https://instagram.com/iseyaofficial") && (
+                  <a href={appSettings?.app_instagram || "https://instagram.com/iseyaofficial"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-instagram" aria-label="Instagram">
+                    <SiInstagram className="w-4 h-4" />
+                  </a>
+                )}
+                {(appSettings?.app_linkedin || "https://linkedin.com/company/iseyaofficial") && (
+                  <a href={appSettings?.app_linkedin || "https://linkedin.com/company/iseyaofficial"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-linkedin" aria-label="LinkedIn">
+                    <SiLinkedin className="w-4 h-4" />
+                  </a>
+                )}
+                {(appSettings?.app_twitter || "https://x.com/iseyaofficial") && (
+                  <a href={appSettings?.app_twitter || "https://x.com/iseyaofficial"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-twitter" aria-label="X (Twitter)">
+                    <SiX className="w-4 h-4" />
+                  </a>
+                )}
+                {(appSettings?.app_facebook || "https://facebook.com/iseyaofficial") && (
+                  <a href={appSettings?.app_facebook || "https://facebook.com/iseyaofficial"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-facebook" aria-label="Facebook">
+                    <SiFacebook className="w-4 h-4" />
+                  </a>
+                )}
+                {appSettings?.app_tiktok && (
+                  <a href={appSettings.app_tiktok} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" data-testid="link-tiktok" aria-label="TikTok">
+                    <SiTiktok className="w-4 h-4" />
+                  </a>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-6 flex-wrap justify-center">

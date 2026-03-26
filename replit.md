@@ -45,6 +45,7 @@ Preferred communication style: Simple, everyday language.
 ### Subscription System
 - Supports `free`, `standard`, `premium`, `enterprise` tiers with varying job posting limits and feature access.
 - Dynamic, admin-configurable pricing with per-tier discounts, job posting limits, and interview credits (all managed from Platform Settings).
+- **Platform Settings** also includes: App contact info (phone, email, address), social media links (Facebook, Twitter, Instagram, LinkedIn, TikTok), and payment gateway keys (Paystack and Flutterwave public/secret keys). All managed from `/admin/settings`. Contact info and social links are exposed via `/api/settings/public` (payment keys excluded for security) and used dynamically by the Landing page footer and Contact page.
 - Payment gateways: Paystack and Flutterwave.
 - **Transaction History**: Users can view their transaction history. Failed/pending transactions are recorded and can be resolved by admins.
 - **Interview Credits**: Premium/Enterprise employers receive interview credits, tracked against billing periods. Admin-scheduled interviews count against employer credits.

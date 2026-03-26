@@ -3322,7 +3322,26 @@ export async function registerRoutes(
     "interview_credits_enterprise": "5",
     "agent_job_post_fee": "5000",
     "agent_job_post_discount": "0",
+    "app_phone": "",
+    "app_email": "",
+    "app_address": "",
+    "app_facebook": "",
+    "app_twitter": "",
+    "app_instagram": "",
+    "app_linkedin": "",
+    "app_tiktok": "",
+    "paystack_public_key": "",
+    "paystack_secret_key": "",
+    "flutterwave_public_key": "",
+    "flutterwave_secret_key": "",
   };
+
+  const TEXT_SETTINGS_KEYS = new Set([
+    "app_phone", "app_email", "app_address",
+    "app_facebook", "app_twitter", "app_instagram", "app_linkedin", "app_tiktok",
+    "paystack_public_key", "paystack_secret_key",
+    "flutterwave_public_key", "flutterwave_secret_key",
+  ]);
 
   async function getSettingValue(key: string): Promise<string> {
     const val = await storage.getSetting(key);
@@ -3500,9 +3519,11 @@ export async function registerRoutes(
   });
 
   app.get("/api/settings/public", async (_req, res) => {
+    const sensitiveKeys = new Set(["paystack_public_key", "paystack_secret_key", "flutterwave_public_key", "flutterwave_secret_key"]);
     const keys = Object.keys(DEFAULT_SETTINGS);
     const result: Record<string, string> = {};
     for (const key of keys) {
+      if (sensitiveKeys.has(key)) continue;
       result[key] = await getSettingValue(key);
     }
     res.json(result);
@@ -3530,17 +3551,21 @@ export async function registerRoutes(
     const validKeys = Object.keys(DEFAULT_SETTINGS);
     for (const [key, value] of Object.entries(updates)) {
       if (!validKeys.includes(key)) continue;
-      const numVal = parseFloat(value);
-      if (isNaN(numVal)) continue;
-      if (key.startsWith("job_limit_")) {
-        if (!Number.isInteger(numVal) || numVal < -1) continue;
-      } else if (key.startsWith("interview_credits_")) {
-        if (!Number.isInteger(numVal) || numVal < 0) continue;
+      if (TEXT_SETTINGS_KEYS.has(key)) {
+        await storage.upsertSetting(key, String(value || "").trim(), userId);
       } else {
-        if (numVal < 0) continue;
-        if (key.includes("discount") && numVal > 100) continue;
+        const numVal = parseFloat(value);
+        if (isNaN(numVal)) continue;
+        if (key.startsWith("job_limit_")) {
+          if (!Number.isInteger(numVal) || numVal < -1) continue;
+        } else if (key.startsWith("interview_credits_")) {
+          if (!Number.isInteger(numVal) || numVal < 0) continue;
+        } else {
+          if (numVal < 0) continue;
+          if (key.includes("discount") && numVal > 100) continue;
+        }
+        await storage.upsertSetting(key, String(numVal), userId);
       }
-      await storage.upsertSetting(key, String(numVal), userId);
     }
     const settings = await storage.getAllSettings();
     const result: Record<string, string> = { ...DEFAULT_SETTINGS };

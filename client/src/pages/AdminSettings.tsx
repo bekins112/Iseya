@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui-extension";
-import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus } from "lucide-react";
+import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus, Phone, Mail, MapPin, Globe, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -33,6 +33,18 @@ const settingsSchema = z.object({
   interview_credits_enterprise: z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more"),
   agent_job_post_fee: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0, "Must be a valid amount"),
   agent_job_post_discount: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "Must be 0-100"),
+  app_phone: z.string().optional().default(""),
+  app_email: z.string().optional().default(""),
+  app_address: z.string().optional().default(""),
+  app_facebook: z.string().optional().default(""),
+  app_twitter: z.string().optional().default(""),
+  app_instagram: z.string().optional().default(""),
+  app_linkedin: z.string().optional().default(""),
+  app_tiktok: z.string().optional().default(""),
+  paystack_public_key: z.string().optional().default(""),
+  paystack_secret_key: z.string().optional().default(""),
+  flutterwave_public_key: z.string().optional().default(""),
+  flutterwave_secret_key: z.string().optional().default(""),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -77,6 +89,18 @@ export default function AdminSettings() {
       interview_credits_enterprise: "5",
       agent_job_post_fee: "5000",
       agent_job_post_discount: "0",
+      app_phone: "",
+      app_email: "",
+      app_address: "",
+      app_facebook: "",
+      app_twitter: "",
+      app_instagram: "",
+      app_linkedin: "",
+      app_tiktok: "",
+      paystack_public_key: "",
+      paystack_secret_key: "",
+      flutterwave_public_key: "",
+      flutterwave_secret_key: "",
     },
   });
 
@@ -101,6 +125,18 @@ export default function AdminSettings() {
         interview_credits_enterprise: settings.interview_credits_enterprise || "5",
         agent_job_post_fee: settings.agent_job_post_fee || "5000",
         agent_job_post_discount: settings.agent_job_post_discount || "0",
+        app_phone: settings.app_phone || "",
+        app_email: settings.app_email || "",
+        app_address: settings.app_address || "",
+        app_facebook: settings.app_facebook || "",
+        app_twitter: settings.app_twitter || "",
+        app_instagram: settings.app_instagram || "",
+        app_linkedin: settings.app_linkedin || "",
+        app_tiktok: settings.app_tiktok || "",
+        paystack_public_key: settings.paystack_public_key || "",
+        paystack_secret_key: settings.paystack_secret_key || "",
+        flutterwave_public_key: settings.flutterwave_public_key || "",
+        flutterwave_secret_key: settings.flutterwave_secret_key || "",
       });
     }
   }, [settings, form]);
@@ -556,6 +592,238 @@ export default function AdminSettings() {
                           <Input type="number" min="0" max="100" step="1" {...field} data-testid="input-agent-job-post-discount" />
                         </FormControl>
                         <FormDescription>Promotional discount on per-post fee</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" data-testid="text-app-info-title">
+                <Phone className="w-5 h-5 text-primary" />
+                App Contact Information
+              </CardTitle>
+              <CardDescription>
+                Set the contact details displayed on the website footer, contact page, and other public areas.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="app_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5" />
+                          Phone Number
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. +234 800 123 4567" {...field} data-testid="input-app-phone" />
+                        </FormControl>
+                        <FormDescription>Public contact phone number</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="app_email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                          <Mail className="w-3.5 h-3.5" />
+                          Email Address
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. support@iseya.ng" {...field} data-testid="input-app-email" />
+                        </FormControl>
+                        <FormDescription>Public contact email</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="app_address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        Office Address
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. 15 Admiralty Way, Lekki, Lagos, Nigeria" {...field} data-testid="input-app-address" />
+                      </FormControl>
+                      <FormDescription>Physical office address</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" data-testid="text-social-links-title">
+                <Globe className="w-5 h-5 text-primary" />
+                Social Media Links
+              </CardTitle>
+              <CardDescription>
+                Set the social media profile URLs. Leave blank to hide a social link from the website.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="app_facebook"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Facebook</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://facebook.com/yourpage" {...field} data-testid="input-app-facebook" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="app_twitter"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>X (Twitter)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://x.com/yourhandle" {...field} data-testid="input-app-twitter" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="app_instagram"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instagram</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://instagram.com/yourhandle" {...field} data-testid="input-app-instagram" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="app_linkedin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LinkedIn</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://linkedin.com/company/yourcompany" {...field} data-testid="input-app-linkedin" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="app_tiktok"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>TikTok</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://tiktok.com/@yourhandle" {...field} data-testid="input-app-tiktok" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" data-testid="text-payment-gateway-title">
+                <Key className="w-5 h-5 text-primary" />
+                Payment Gateway Keys
+              </CardTitle>
+              <CardDescription>
+                Configure your Paystack and Flutterwave API keys. These are sensitive credentials used for processing payments.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="border rounded-lg p-6 space-y-4">
+                <h3 className="font-semibold text-lg" data-testid="text-paystack-label">Paystack</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="paystack_public_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Public Key</FormLabel>
+                        <FormControl>
+                          <Input placeholder="pk_live_..." {...field} data-testid="input-paystack-public-key" />
+                        </FormControl>
+                        <FormDescription>Paystack public/publishable key</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="paystack_secret_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Secret Key</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="sk_live_..." {...field} data-testid="input-paystack-secret-key" />
+                        </FormControl>
+                        <FormDescription>Paystack secret key (keep private)</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+              <div className="border rounded-lg p-6 space-y-4">
+                <h3 className="font-semibold text-lg" data-testid="text-flutterwave-label">Flutterwave</h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="flutterwave_public_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Public Key</FormLabel>
+                        <FormControl>
+                          <Input placeholder="FLWPUBK-..." {...field} data-testid="input-flutterwave-public-key" />
+                        </FormControl>
+                        <FormDescription>Flutterwave public key</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="flutterwave_secret_key"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Secret Key</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="FLWSECK-..." {...field} data-testid="input-flutterwave-secret-key" />
+                        </FormControl>
+                        <FormDescription>Flutterwave secret key (keep private)</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
