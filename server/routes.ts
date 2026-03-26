@@ -3370,6 +3370,10 @@ export async function registerRoutes(
     "paystack_secret_key": "",
     "flutterwave_public_key": "",
     "flutterwave_secret_key": "",
+    "youtube_landing": "",
+    "youtube_employers": "",
+    "youtube_agents": "",
+    "youtube_applicants": "",
   };
 
   const TEXT_SETTINGS_KEYS = new Set([
@@ -3377,6 +3381,7 @@ export async function registerRoutes(
     "app_facebook", "app_twitter", "app_instagram", "app_linkedin", "app_tiktok",
     "paystack_public_key", "paystack_secret_key",
     "flutterwave_public_key", "flutterwave_secret_key",
+    "youtube_landing", "youtube_employers", "youtube_agents", "youtube_applicants",
   ]);
 
   async function getSettingValue(key: string): Promise<string> {
