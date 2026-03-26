@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Search, Users, Building2, UserCheck, Shield, MoreVertical,
   CheckCircle, XCircle, Eye, Pencil, Ban, Trash2, AlertTriangle,
-  Mail, Phone, MapPin, Calendar, Crown, Briefcase,
+  Mail, Phone, MapPin, Calendar, Crown, Briefcase, KeyRound, Copy, Clock,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,6 +34,13 @@ export default function AdminUsers() {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [editForm, setEditForm] = useState<Record<string, any>>({});
+  const [tempPasswordUser, setTempPasswordUser] = useState<User | null>(null);
+  const [tempPasswordResult, setTempPasswordResult] = useState<{
+    tempPassword: string;
+    expiresAt: string;
+    userEmail: string;
+    userName: string;
+  } | null>(null);
 
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users", roleFilter, search],
@@ -74,6 +81,20 @@ export default function AdminUsers() {
     },
     onError: (err: any) => {
       toast({ title: err.message || "Failed to delete user", variant: "destructive" });
+    },
+  });
+
+  const tempPasswordMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/admin/users/${id}/temp-password`);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setTempPasswordResult(data);
+    },
+    onError: (err: any) => {
+      toast({ title: err.message || "Failed to generate temporary password", variant: "destructive" });
+      setTempPasswordUser(null);
     },
   });
 
@@ -350,6 +371,18 @@ export default function AdminUsers() {
                           >
                             <Ban className="w-4 h-4 mr-2" />
                             Suspend User
+                          </DropdownMenuItem>
+                        )}
+                        {u.role !== "admin" && (
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setTempPasswordUser(u);
+                              setTempPasswordResult(null);
+                            }}
+                            data-testid={`button-temp-password-${u.id}`}
+                          >
+                            <KeyRound className="w-4 h-4 mr-2" />
+                            Support Access
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
@@ -757,6 +790,88 @@ export default function AdminUsers() {
               {deleteUserMutation.isPending ? "Deleting..." : "Delete Permanently"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Support Access (Temp Password) Dialog */}
+      <Dialog open={!!tempPasswordUser} onOpenChange={(open) => {
+        if (!open) { setTempPasswordUser(null); setTempPasswordResult(null); }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Support Access
+            </DialogTitle>
+            <DialogDescription>
+              Generate a temporary login password for <strong>{tempPasswordUser?.firstName} {tempPasswordUser?.lastName}</strong> ({tempPasswordUser?.email}) to investigate their account.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!tempPasswordResult ? (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-200">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium">Important</p>
+                    <ul className="mt-1 space-y-1 text-xs">
+                      <li>The temporary password expires after 30 minutes</li>
+                      <li>It is single-use and will be cleared after login</li>
+                      <li>Generating a new one invalidates any previous temporary password</li>
+                      <li>The user's original password is not affected</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setTempPasswordUser(null)}>Cancel</Button>
+                <Button
+                  onClick={() => tempPasswordUser && tempPasswordMutation.mutate(tempPasswordUser.id)}
+                  disabled={tempPasswordMutation.isPending}
+                  data-testid="button-generate-temp-password"
+                >
+                  {tempPasswordMutation.isPending ? "Generating..." : "Generate Temp Password"}
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4 space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">User Email</Label>
+                  <p className="font-medium text-sm" data-testid="text-temp-user-email">{tempPasswordResult.userEmail}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Temporary Password</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="flex-1 bg-background px-3 py-2 rounded border text-sm font-mono select-all" data-testid="text-temp-password">
+                      {tempPasswordResult.tempPassword}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(tempPasswordResult.tempPassword);
+                        toast({ title: "Copied to clipboard" });
+                      }}
+                      data-testid="button-copy-temp-password"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Clock className="w-3.5 h-3.5" />
+                  Expires: {new Date(tempPasswordResult.expiresAt).toLocaleString()}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => { setTempPasswordUser(null); setTempPasswordResult(null); }}>
+                  Done
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

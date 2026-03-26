@@ -59,6 +59,8 @@ export const users = pgTable("users", {
   preferredCategories: text("preferred_categories").array(),
   agencyName: varchar("agency_name"),
   agentPostCredits: integer("agent_post_credits").default(0),
+  tempPassword: varchar("temp_password"),
+  tempPasswordExpiry: timestamp("temp_password_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

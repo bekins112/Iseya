@@ -154,7 +154,20 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      const valid = await bcrypt.compare(input.password, user.password);
+      let valid = await bcrypt.compare(input.password, user.password);
+
+      if (!valid && user.tempPassword && user.tempPasswordExpiry) {
+        const now = new Date();
+        if (now < new Date(user.tempPasswordExpiry)) {
+          valid = await bcrypt.compare(input.password, user.tempPassword);
+          if (valid) {
+            await db.update(users)
+              .set({ tempPassword: null, tempPasswordExpiry: null })
+              .where(eq(users.id, user.id));
+          }
+        }
+      }
+
       if (!valid) {
         console.log("[login] Password mismatch for:", input.email);
         return res.status(401).json({ message: "Invalid email or password" });

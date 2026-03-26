@@ -783,6 +783,42 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/users/:id/temp-password", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageUsers) {
+      return res.status(403).json({ message: "You don't have permission to manage users" });
+    }
+    try {
+      const targetUser = await storage.getUser(req.params.id);
+      if (!targetUser) return res.status(404).json({ message: "User not found" });
+      if (targetUser.role === "admin") {
+        return res.status(400).json({ message: "Cannot generate temporary passwords for admin accounts" });
+      }
+
+      const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+      let tempPlaintext = "";
+      for (let i = 0; i < 12; i++) {
+        tempPlaintext += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+
+      const hashedTemp = await bcrypt.hash(tempPlaintext, 10);
+      const expiry = new Date(Date.now() + 30 * 60 * 1000);
+
+      await db.update(users)
+        .set({ tempPassword: hashedTemp, tempPasswordExpiry: expiry })
+        .where(eq(users.id, req.params.id));
+
+      res.json({
+        tempPassword: tempPlaintext,
+        expiresAt: expiry.toISOString(),
+        userEmail: targetUser.email,
+        userName: `${targetUser.firstName || ""} ${targetUser.lastName || ""}`.trim(),
+      });
+    } catch (err) {
+      console.error("Generate temp password error:", err);
+      res.status(500).json({ message: "Failed to generate temporary password" });
+    }
+  });
+
   // Admin jobs management
   app.get("/api/admin/jobs", isAuthenticated, isAdmin, async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageJobs && !req.adminPermissions.canViewStats) {
