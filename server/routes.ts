@@ -3431,9 +3431,10 @@ export async function registerRoutes(
       if (typeof targetPages === "string") {
         try { targetPages = JSON.parse(targetPages); } catch { targetPages = [targetPages]; }
       }
+      const adType = req.body.type;
       const adSchema = z.object({
-        title: z.string().min(1, "Title is required"),
-        content: z.string().min(1, "Content is required"),
+        title: adType === "popup" ? z.string().min(1, "Title is required") : z.string().optional().default(""),
+        content: adType === "popup" ? z.string().min(1, "Content is required") : z.string().optional().default(""),
         type: z.enum(["banner", "popup"]),
         targetPages: z.array(z.string()).min(1, "Select at least one target page"),
         linkUrl: z.string().nullable().optional(),

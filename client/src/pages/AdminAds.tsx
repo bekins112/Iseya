@@ -36,8 +36,8 @@ const POSITION_OPTIONS = [
 ];
 
 const adFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  content: z.string().min(1, "Content is required"),
+  title: z.string().optional().default(""),
+  content: z.string().optional().default(""),
   type: z.enum(["banner", "popup"]),
   targetPages: z.array(z.string()).min(1, "Select at least one target page"),
   position: z.enum(["top", "middle", "bottom"]).default("top"),
@@ -49,6 +49,15 @@ const adFormSchema = z.object({
   priority: z.number().int().default(0),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+  if (data.type === "popup") {
+    if (!data.title || data.title.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Title is required for popups", path: ["title"] });
+    }
+    if (!data.content || data.content.trim() === "") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Content is required for popups", path: ["content"] });
+    }
+  }
 });
 
 type AdFormValues = z.infer<typeof adFormSchema>;
@@ -429,7 +438,7 @@ export default function AdminAds() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Title</FormLabel>
+                    <FormLabel>Title {form.watch("type") === "banner" && <span className="text-muted-foreground font-normal">(optional)</span>}</FormLabel>
                     <FormControl>
                       <Input placeholder="Ad title" {...field} data-testid="input-ad-title" />
                     </FormControl>
@@ -442,7 +451,7 @@ export default function AdminAds() {
                 name="content"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Content</FormLabel>
+                    <FormLabel>Content {form.watch("type") === "banner" && <span className="text-muted-foreground font-normal">(optional)</span>}</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Ad content / message..." className="min-h-[80px] resize-none" {...field} data-testid="input-ad-content" />
                     </FormControl>
