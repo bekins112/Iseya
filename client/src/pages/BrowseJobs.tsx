@@ -89,7 +89,8 @@ const categories = [
 const jobTypes = ["full-time", "part-time", "contract", "temporary"];
 
 export default function BrowseJobs() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const urlParams = new URLSearchParams(window.location.search);
+  const [searchQuery, setSearchQuery] = useState(urlParams.get("q") || "");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     category: "",

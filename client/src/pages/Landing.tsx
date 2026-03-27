@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, ClipboardList, Users, BadgeCheck, MapPin, ChevronDown, UserCheck, Menu, X, CreditCard } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiX, SiFacebook, SiTiktok } from "react-icons/si";
@@ -548,17 +549,78 @@ export default function Landing() {
             className="text-center mb-8"
           >
             <h2 className="text-3xl md:text-4xl font-display font-bold mb-3" data-testid="text-search-heading">Find Jobs That Match You</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">Browse through available opportunities near you.</p>
+            <p className="text-muted-foreground max-w-xl mx-auto">Search and discover flexible work opportunities near you.</p>
           </motion.div>
 
-          <div className="text-center">
-            <Link href="/browse-jobs">
-              <Button size="lg" className="font-semibold" data-testid="button-browse-all-jobs">
-                <Search className="mr-2 w-4 h-4" />
-                Browse All Jobs
+          <motion.form
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const query = (form.elements.namedItem("landingSearch") as HTMLInputElement).value.trim();
+              setLocation(query ? `/browse-jobs?q=${encodeURIComponent(query)}` : "/browse-jobs");
+            }}
+            className="max-w-2xl mx-auto mb-8"
+            data-testid="form-landing-search"
+          >
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  name="landingSearch"
+                  placeholder="Search jobs, categories, locations..."
+                  className="pl-12 h-12 rounded-xl text-base"
+                  data-testid="input-landing-search"
+                />
+              </div>
+              <Button type="submit" size="lg" className="h-12 rounded-xl px-6 font-semibold" data-testid="button-landing-search">
+                Search
+              </Button>
+            </div>
+          </motion.form>
+
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-center"
+          >
+            <p className="text-sm text-muted-foreground mb-3 font-medium">Popular Searches</p>
+            <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
+              {[
+                "Cleaner",
+                "Driver",
+                "Cook",
+                "Security Guard",
+                "Waiter",
+                "Nanny",
+                "Sales Assistant",
+                "Factory Worker",
+                "Receptionist",
+                "Lagos",
+                "Abuja",
+                "Part-time",
+              ].map((tag) => (
+                <Link key={tag} href={`/browse-jobs?q=${encodeURIComponent(tag)}`}>
+                  <Badge
+                    variant="outline"
+                    className="px-3 py-1.5 text-sm cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
+                    data-testid={`badge-popular-${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    {tag}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+            <Link href="/browse-jobs" className="inline-block mt-5">
+              <Button variant="ghost" className="font-semibold text-primary gap-1" data-testid="link-view-all-jobs">
+                View All Jobs <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </section>
 
