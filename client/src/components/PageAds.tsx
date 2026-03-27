@@ -15,7 +15,10 @@ export default function PageAds({ page, position = "top" }: { page: string; posi
 
   if (ads.length === 0) return null;
 
-  const positionAds = ads.filter(ad => (ad.position || "top") === position);
+  const positionAds = ads.filter(ad => {
+    const adPositions = Array.isArray(ad.position) ? ad.position : [ad.position || "top"];
+    return adPositions.includes(position);
+  });
 
   const banners = positionAds.filter(ad => ad.type === "banner");
   const popups = positionAds.filter(ad => ad.type === "popup");

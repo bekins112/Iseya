@@ -3432,6 +3432,10 @@ export async function registerRoutes(
         try { targetPages = JSON.parse(targetPages); } catch { targetPages = [targetPages]; }
       }
       const adType = req.body.type;
+      let position = req.body.position;
+      if (typeof position === "string") {
+        try { position = JSON.parse(position); } catch { position = [position]; }
+      }
       const adSchema = z.object({
         title: adType === "popup" ? z.string().min(1, "Title is required") : z.string().optional().default(""),
         content: adType === "popup" ? z.string().min(1, "Content is required") : z.string().optional().default(""),
@@ -3441,13 +3445,13 @@ export async function registerRoutes(
         linkText: z.string().nullable().optional(),
         bgColor: z.string().nullable().optional(),
         textColor: z.string().nullable().optional(),
-        position: z.enum(["top", "middle", "bottom"]).optional(),
+        position: z.array(z.enum(["top", "middle", "bottom"])).min(1, "Select at least one position").optional(),
         isActive: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional(),
         priority: z.preprocess((v) => typeof v === "string" ? parseInt(v) || 0 : v, z.number()).optional(),
         startDate: z.string().nullable().optional(),
         endDate: z.string().nullable().optional(),
       });
-      const input = adSchema.parse({ ...req.body, targetPages });
+      const input = adSchema.parse({ ...req.body, targetPages, position });
       const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
       if (req.file) storeFileInDb(imageUrl!, req.file.path).catch(() => {});
       const ad = await storage.createAd({
@@ -3457,7 +3461,7 @@ export async function registerRoutes(
         bgColor: input.bgColor && input.bgColor.trim() ? input.bgColor : null,
         textColor: input.textColor && input.textColor.trim() ? input.textColor : null,
         imageUrl,
-        position: input.position || "top",
+        position: input.position || ["top"],
         isActive: input.isActive ?? true,
         priority: input.priority ?? 0,
         startDate: input.startDate ? new Date(input.startDate) : null,
@@ -3488,23 +3492,29 @@ export async function registerRoutes(
           try { targetPages = JSON.parse(targetPages); } catch { targetPages = [targetPages]; }
         }
       }
+      let position = req.body.position;
+      if (position !== undefined) {
+        if (typeof position === "string") {
+          try { position = JSON.parse(position); } catch { position = [position]; }
+        }
+      }
       const updateSchema = z.object({
-        title: z.string().min(1).optional(),
-        content: z.string().min(1).optional(),
+        title: z.string().optional(),
+        content: z.string().optional(),
         type: z.enum(["banner", "popup"]).optional(),
         targetPages: z.array(z.string()).min(1).optional(),
         linkUrl: z.string().nullable().optional(),
         linkText: z.string().nullable().optional(),
         bgColor: z.string().nullable().optional(),
         textColor: z.string().nullable().optional(),
-        position: z.enum(["top", "middle", "bottom"]).optional(),
+        position: z.array(z.enum(["top", "middle", "bottom"])).min(1).optional(),
         isActive: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional(),
         priority: z.preprocess((v) => typeof v === "string" ? parseInt(v) || 0 : v, z.number()).optional(),
         startDate: z.string().nullable().optional(),
         endDate: z.string().nullable().optional(),
         removeImage: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional(),
       });
-      const parsed = updateSchema.parse({ ...req.body, ...(targetPages !== undefined ? { targetPages } : {}) });
+      const parsed = updateSchema.parse({ ...req.body, ...(targetPages !== undefined ? { targetPages } : {}), ...(position !== undefined ? { position } : {}) });
       const updates: any = { ...parsed };
       delete updates.removeImage;
       if (updates.startDate !== undefined) updates.startDate = updates.startDate ? new Date(updates.startDate) : null;

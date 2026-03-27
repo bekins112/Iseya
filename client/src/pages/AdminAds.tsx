@@ -40,7 +40,7 @@ const adFormSchema = z.object({
   content: z.string().optional().default(""),
   type: z.enum(["banner", "popup"]),
   targetPages: z.array(z.string()).min(1, "Select at least one target page"),
-  position: z.enum(["top", "middle", "bottom"]).default("top"),
+  position: z.array(z.string()).min(1, "Select at least one position"),
   linkUrl: z.string().optional().nullable(),
   linkText: z.string().optional().nullable(),
   bgColor: z.string().optional().nullable(),
@@ -67,7 +67,7 @@ const defaultFormValues: AdFormValues = {
   content: "",
   type: "banner",
   targetPages: [],
-  position: "top",
+  position: ["top"],
   linkUrl: "",
   linkText: "",
   bgColor: "",
@@ -119,7 +119,7 @@ export default function AdminAds() {
       content: ad.content,
       type: ad.type as "banner" | "popup",
       targetPages: ad.targetPages || [],
-      position: (ad.position as "top" | "middle" | "bottom") || "top",
+      position: Array.isArray(ad.position) ? ad.position : [ad.position || "top"],
       linkUrl: ad.linkUrl || "",
       linkText: ad.linkText || "",
       bgColor: ad.bgColor || "",
@@ -158,7 +158,7 @@ export default function AdminAds() {
     formData.append("content", data.content);
     formData.append("type", data.type);
     formData.append("targetPages", JSON.stringify(data.targetPages));
-    formData.append("position", data.position || "top");
+    formData.append("position", JSON.stringify(data.position || ["top"]));
     formData.append("linkUrl", data.linkUrl || "");
     formData.append("linkText", data.linkText || "");
     formData.append("bgColor", data.bgColor || "");
@@ -356,7 +356,7 @@ export default function AdminAds() {
                           {ad.isActive ? "Active" : "Inactive"}
                         </Badge>
                         <Badge variant="outline" className="text-xs" data-testid={`badge-ad-position-${ad.id}`}>
-                          {ad.position === "middle" ? "Middle" : ad.position === "bottom" ? "Bottom" : "Top"}
+                          {(Array.isArray(ad.position) ? ad.position : [ad.position || "top"]).map(p => p === "middle" ? "Middle" : p === "bottom" ? "Bottom" : "Top").join(", ")}
                         </Badge>
                         {ad.priority !== null && ad.priority > 0 && (
                           <Badge variant="outline" className="text-xs">
@@ -520,21 +520,37 @@ export default function AdminAds() {
               <FormField
                 control={form.control}
                 name="position"
-                render={({ field }) => (
+                render={() => (
                   <FormItem>
                     <FormLabel>Position on Page</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-ad-position">
-                          <SelectValue placeholder="Select position" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {POSITION_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                      {POSITION_OPTIONS.map((opt) => (
+                        <FormField
+                          key={opt.value}
+                          control={form.control}
+                          name="position"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center gap-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(opt.value)}
+                                  onCheckedChange={(checked) => {
+                                    const current = field.value || [];
+                                    field.onChange(
+                                      checked
+                                        ? [...current, opt.value]
+                                        : current.filter((v: string) => v !== opt.value)
+                                    );
+                                  }}
+                                  data-testid={`checkbox-position-${opt.value}`}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal !mt-0">{opt.label}</FormLabel>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
