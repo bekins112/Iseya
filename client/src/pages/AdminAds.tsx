@@ -47,6 +47,8 @@ const adFormSchema = z.object({
   textColor: z.string().optional().nullable(),
   bannerWidth: z.number().int().min(50).default(250),
   bannerHeight: z.number().int().min(20).default(92),
+  popupWidth: z.number().int().min(100).default(400),
+  popupHeight: z.number().int().min(100).default(500),
   isActive: z.boolean().default(true),
   priority: z.number().int().default(0),
   startDate: z.string().optional().nullable(),
@@ -76,6 +78,8 @@ const defaultFormValues: AdFormValues = {
   textColor: "",
   bannerWidth: 250,
   bannerHeight: 92,
+  popupWidth: 400,
+  popupHeight: 500,
   isActive: true,
   priority: 0,
   startDate: "",
@@ -130,6 +134,8 @@ export default function AdminAds() {
       textColor: ad.textColor || "",
       bannerWidth: ad.bannerWidth ?? 250,
       bannerHeight: ad.bannerHeight ?? 92,
+      popupWidth: ad.popupWidth ?? 400,
+      popupHeight: ad.popupHeight ?? 500,
       isActive: ad.isActive ?? true,
       priority: ad.priority ?? 0,
       startDate: ad.startDate ? format(new Date(ad.startDate), "yyyy-MM-dd'T'HH:mm") : "",
@@ -172,6 +178,8 @@ export default function AdminAds() {
     formData.append("isActive", String(data.isActive));
     formData.append("bannerWidth", String(data.bannerWidth));
     formData.append("bannerHeight", String(data.bannerHeight));
+    formData.append("popupWidth", String(data.popupWidth));
+    formData.append("popupHeight", String(data.popupHeight));
     formData.append("priority", String(data.priority));
     formData.append("startDate", data.startDate || "");
     formData.append("endDate", data.endDate || "");
@@ -597,6 +605,48 @@ export default function AdminAds() {
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 92)}
                             data-testid="input-banner-height"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+              {form.watch("type") === "popup" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="popupWidth"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Popup Width (px)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={100}
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 400)}
+                            data-testid="input-popup-width"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="popupHeight"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Popup Height (px)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={100}
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 500)}
+                            data-testid="input-popup-height"
                           />
                         </FormControl>
                         <FormMessage />

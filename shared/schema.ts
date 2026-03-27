@@ -440,6 +440,8 @@ export const internalAds = pgTable("internal_ads", {
   position: text("position").array().default(["top"]),
   bannerWidth: integer("banner_width").default(250),
   bannerHeight: integer("banner_height").default(92),
+  popupWidth: integer("popup_width").default(400),
+  popupHeight: integer("popup_height").default(500),
   isActive: boolean("is_active").default(true),
   priority: integer("priority").default(0),
   startDate: timestamp("start_date"),

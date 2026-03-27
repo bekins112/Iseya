@@ -111,14 +111,18 @@ export function AdPopup({ ad }: { ad: InternalAd }) {
   return (
     <Dialog open={open} onOpenChange={(val) => { if (!val) handleClose(); }}>
       <DialogContent
-        className="max-w-sm rounded-2xl p-0 overflow-hidden"
+        className="rounded-2xl p-0 overflow-hidden"
+        style={{
+          maxWidth: ad.popupWidth ? `${ad.popupWidth}px` : "384px",
+          maxHeight: ad.popupHeight ? `${ad.popupHeight}px` : undefined,
+        }}
         data-testid={`ad-popup-${ad.id}`}
       >
         {ad.imageUrl && (
           <img
             src={ad.imageUrl}
             alt={ad.title}
-            className="w-full max-h-48 object-cover"
+            className="w-full object-contain"
             data-testid={`ad-popup-img-${ad.id}`}
           />
         )}
