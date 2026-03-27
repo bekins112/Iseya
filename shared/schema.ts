@@ -438,6 +438,8 @@ export const internalAds = pgTable("internal_ads", {
   textColor: varchar("text_color"),
   imageUrl: varchar("image_url"),
   position: text("position").array().default(["top"]),
+  bannerWidth: integer("banner_width").default(250),
+  bannerHeight: integer("banner_height").default(92),
   isActive: boolean("is_active").default(true),
   priority: integer("priority").default(0),
   startDate: timestamp("start_date"),

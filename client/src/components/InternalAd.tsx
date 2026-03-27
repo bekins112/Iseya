@@ -40,10 +40,11 @@ export function AdBanner({ ad }: { ad: InternalAd }) {
           data-testid={`ad-banner-${ad.id}`}
         >
           <div
-            className="relative rounded-xl mb-4 overflow-hidden"
+            className="relative rounded-xl mb-4 overflow-hidden mx-auto"
             style={{
               backgroundColor: ad.bgColor || "hsl(var(--primary))",
               color: ad.textColor || "hsl(var(--primary-foreground))",
+              maxWidth: ad.bannerWidth ? `${ad.bannerWidth}px` : undefined,
             }}
           >
             {ad.imageUrl && (
@@ -51,6 +52,9 @@ export function AdBanner({ ad }: { ad: InternalAd }) {
                 src={ad.imageUrl}
                 alt={ad.title || ""}
                 className="w-full object-contain"
+                style={{
+                  maxHeight: ad.bannerHeight ? `${ad.bannerHeight}px` : undefined,
+                }}
                 data-testid={`ad-banner-img-${ad.id}`}
               />
             )}

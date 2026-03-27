@@ -45,6 +45,8 @@ const adFormSchema = z.object({
   linkText: z.string().optional().nullable(),
   bgColor: z.string().optional().nullable(),
   textColor: z.string().optional().nullable(),
+  bannerWidth: z.number().int().min(50).default(250),
+  bannerHeight: z.number().int().min(20).default(92),
   isActive: z.boolean().default(true),
   priority: z.number().int().default(0),
   startDate: z.string().optional().nullable(),
@@ -72,6 +74,8 @@ const defaultFormValues: AdFormValues = {
   linkText: "",
   bgColor: "",
   textColor: "",
+  bannerWidth: 250,
+  bannerHeight: 92,
   isActive: true,
   priority: 0,
   startDate: "",
@@ -124,6 +128,8 @@ export default function AdminAds() {
       linkText: ad.linkText || "",
       bgColor: ad.bgColor || "",
       textColor: ad.textColor || "",
+      bannerWidth: ad.bannerWidth ?? 250,
+      bannerHeight: ad.bannerHeight ?? 92,
       isActive: ad.isActive ?? true,
       priority: ad.priority ?? 0,
       startDate: ad.startDate ? format(new Date(ad.startDate), "yyyy-MM-dd'T'HH:mm") : "",
@@ -164,6 +170,8 @@ export default function AdminAds() {
     formData.append("bgColor", data.bgColor || "");
     formData.append("textColor", data.textColor || "");
     formData.append("isActive", String(data.isActive));
+    formData.append("bannerWidth", String(data.bannerWidth));
+    formData.append("bannerHeight", String(data.bannerHeight));
     formData.append("priority", String(data.priority));
     formData.append("startDate", data.startDate || "");
     formData.append("endDate", data.endDate || "");
@@ -555,6 +563,48 @@ export default function AdminAds() {
                   </FormItem>
                 )}
               />
+              {form.watch("type") === "banner" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="bannerWidth"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Banner Width (px)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={50}
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 250)}
+                            data-testid="input-banner-width"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bannerHeight"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Banner Height (px)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={20}
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 92)}
+                            data-testid="input-banner-height"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="targetPages"
