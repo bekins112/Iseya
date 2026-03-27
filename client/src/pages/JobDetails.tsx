@@ -215,7 +215,7 @@ export default function JobDetails() {
       </nav>
 
       <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
-        <PageAds page="job-details" />
+        <PageAds page="job-details" position="top" />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -476,6 +476,8 @@ export default function JobDetails() {
           </Card>
         </motion.div>
 
+        <PageAds page="job-details" position="middle" />
+
         {/* Similar Jobs Section */}
         {similarJobs && similarJobs.length > 0 && (
           <motion.div
@@ -687,6 +689,10 @@ export default function JobDetails() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <div className="max-w-4xl mx-auto px-4 py-4">
+        <PageAds page="job-details" position="bottom" />
+      </div>
 
       <footer className="py-8 border-t">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">

@@ -520,7 +520,7 @@ export default function Landing() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <PageAds page="landing" />
+        <PageAds page="landing" position="top" />
       </div>
 
       <section className="relative pt-16 pb-20 lg:pt-20 lg:pb-28 px-4 overflow-hidden">
@@ -811,6 +811,10 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <PageAds page="landing" position="middle" />
+      </div>
 
       <section className="py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1193,6 +1197,10 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <PageAds page="landing" position="bottom" />
+      </div>
 
       <footer className="py-12 border-t">
         <div className="max-w-7xl mx-auto px-4">

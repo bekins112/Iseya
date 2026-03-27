@@ -184,7 +184,7 @@ export default function BrowseJobs() {
           <p className="text-muted-foreground">Find the perfect opportunity from {jobs?.length || 0} available positions</p>
         </motion.div>
 
-        <PageAds page="browse-jobs" />
+        <PageAds page="browse-jobs" position="top" />
 
         {/* Search and Filters */}
         <div className="space-y-4 mb-8">
@@ -310,6 +310,8 @@ export default function BrowseJobs() {
             )}
           </AnimatePresence>
         </div>
+
+        <PageAds page="browse-jobs" position="middle" />
 
         {/* Results */}
         {isLoading ? (
@@ -446,6 +448,10 @@ export default function BrowseJobs() {
           </Card>
         </motion.div>
       </main>
+
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <PageAds page="browse-jobs" position="bottom" />
+      </div>
 
       {/* Footer */}
       <footer className="py-8 border-t">

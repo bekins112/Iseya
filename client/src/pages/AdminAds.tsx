@@ -29,11 +29,18 @@ const TARGET_PAGE_OPTIONS = [
   { value: "job-details", label: "Job Details" },
 ];
 
+const POSITION_OPTIONS = [
+  { value: "top", label: "Top of Page" },
+  { value: "middle", label: "Middle of Page" },
+  { value: "bottom", label: "Bottom of Page" },
+];
+
 const adFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string().min(1, "Content is required"),
   type: z.enum(["banner", "popup"]),
   targetPages: z.array(z.string()).min(1, "Select at least one target page"),
+  position: z.enum(["top", "middle", "bottom"]).default("top"),
   linkUrl: z.string().optional().nullable(),
   linkText: z.string().optional().nullable(),
   bgColor: z.string().optional().nullable(),
@@ -51,6 +58,7 @@ const defaultFormValues: AdFormValues = {
   content: "",
   type: "banner",
   targetPages: [],
+  position: "top",
   linkUrl: "",
   linkText: "",
   bgColor: "",
@@ -102,6 +110,7 @@ export default function AdminAds() {
       content: ad.content,
       type: ad.type as "banner" | "popup",
       targetPages: ad.targetPages || [],
+      position: (ad.position as "top" | "middle" | "bottom") || "top",
       linkUrl: ad.linkUrl || "",
       linkText: ad.linkText || "",
       bgColor: ad.bgColor || "",
@@ -140,6 +149,7 @@ export default function AdminAds() {
     formData.append("content", data.content);
     formData.append("type", data.type);
     formData.append("targetPages", JSON.stringify(data.targetPages));
+    formData.append("position", data.position || "top");
     formData.append("linkUrl", data.linkUrl || "");
     formData.append("linkText", data.linkText || "");
     formData.append("bgColor", data.bgColor || "");
@@ -336,6 +346,9 @@ export default function AdminAds() {
                         >
                           {ad.isActive ? "Active" : "Inactive"}
                         </Badge>
+                        <Badge variant="outline" className="text-xs" data-testid={`badge-ad-position-${ad.id}`}>
+                          {ad.position === "middle" ? "Middle" : ad.position === "bottom" ? "Bottom" : "Top"}
+                        </Badge>
                         {ad.priority !== null && ad.priority > 0 && (
                           <Badge variant="outline" className="text-xs">
                             Priority: {ad.priority}
@@ -489,6 +502,28 @@ export default function AdminAds() {
                       <SelectContent>
                         <SelectItem value="banner">Banner</SelectItem>
                         <SelectItem value="popup">Popup</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Position on Page</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-ad-position">
+                          <SelectValue placeholder="Select position" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {POSITION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
