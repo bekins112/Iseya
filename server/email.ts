@@ -71,18 +71,138 @@ async function sendEmail(to: string, toName: string, subject: string, htmlBody: 
 }
 
 export async function sendWelcomeEmail(to: string, name: string, role: string): Promise<boolean> {
-  const roleText = role === "employer" ? "post jobs and find great workers" : "discover job opportunities";
+  if (role === "applicant") {
+    return sendApplicantWelcomeEmail(to, name);
+  }
+  return sendEmployerWelcomeEmail(to, name);
+}
+
+async function sendApplicantWelcomeEmail(to: string, name: string): Promise<boolean> {
+  const baseUrl = "https://iseya-ng.replit.app";
+  const logoImg = `${baseUrl}/email-logo-color.png`;
+  const heroImg = `${baseUrl}/email-applicant-hero.png`;
+  const celebrateImg = `${baseUrl}/email-applicant-celebrate.png`;
+  const mailImg = `${baseUrl}/email-applicant-mail.png`;
+  const searchImg = `${baseUrl}/email-applicant-search.png`;
+
+  const client = getResendClient();
+  const fromField = "Iseya <support@iseya.ng>";
+
+  if (!client) {
+    console.warn("Resend not configured — skipping email to", to);
+    return false;
+  }
+
+  const html = `
+    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff6ec;">
+      <!-- Logo -->
+      <div style="text-align: center; padding: 30px 20px 10px;">
+        <img src="${logoImg}" alt="Iseya" style="height: 50px; width: auto;" />
+      </div>
+
+      <!-- Hero Image -->
+      <div style="text-align: center; padding: 10px 20px;">
+        <img src="${heroImg}" alt="What you should Know as Applicant" style="width: 100%; max-width: 560px; border-radius: 12px;" />
+      </div>
+
+      <!-- Welcome Section -->
+      <div style="padding: 20px 32px; text-align: center;">
+        <div style="text-align: right; margin-bottom: -20px;">
+          <img src="${celebrateImg}" alt="" style="height: 100px; width: auto;" />
+        </div>
+        <h2 style="color: #333; font-size: 22px; margin: 0 0 12px; font-weight: 700;">Now you can apply for your 1st Job.</h2>
+        <p style="color: #555; line-height: 1.6; font-size: 15px; margin: 0 0 16px;">
+          Welcome to Iṣéyá! 🎉 We're stoked to have you on board as an applicant, <strong>${name}</strong>! You've got access to awesome tools like job vacancy feeds, job management, and how to get hired on Iṣéyá. Let's get started!
+        </p>
+        <p style="color: #555; line-height: 1.6; font-size: 14px; margin: 0;">
+          Check your dashboard — want us to walk you through a quick tour or jump into finding jobs?
+        </p>
+      </div>
+
+      <!-- Get Job-Ready Section -->
+      <div style="padding: 10px 32px 20px;">
+        <div style="display: flex; align-items: flex-start;">
+          <div style="flex: 1;">
+            <h3 style="color: #333; font-size: 18px; font-weight: 700; margin: 0 0 12px;">Get Job-Ready with Iṣéyá!</h3>
+            <table style="font-size: 14px; color: #555; line-height: 1.8;">
+              <tr><td style="padding: 2px 0;">✅ Check your email for job alerts tailored to you</td></tr>
+              <tr><td style="padding: 2px 0;">✅ We match you with jobs based on your preferences</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Connect quickly with employers looking for talent like you</td></tr>
+              <tr><td style="padding: 2px 0;">✅ We'll recommend you to top employers — boost your chances!</td></tr>
+            </table>
+          </div>
+          <div style="flex-shrink: 0; margin-left: 10px;">
+            <img src="${mailImg}" alt="" style="height: 120px; width: auto;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Stand Out Section -->
+      <div style="padding: 10px 32px 20px;">
+        <div style="display: flex; align-items: flex-start;">
+          <div style="flex-shrink: 0; margin-right: 10px;">
+            <img src="${searchImg}" alt="" style="height: 120px; width: auto;" />
+          </div>
+          <div style="flex: 1;">
+            <h3 style="color: #333; font-size: 18px; font-weight: 700; margin: 0 0 12px;">Stand Out & Get Hired!</h3>
+            <table style="font-size: 14px; color: #555; line-height: 1.8;">
+              <tr><td style="padding: 2px 0;">✅ Don't just sign up — build a killer profile!</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Verify your account to boost job opportunities</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Verification's affordable, and it:</td></tr>
+              <tr><td style="padding: 2px 8px 2px 24px;">- Checks your background</td></tr>
+              <tr><td style="padding: 2px 8px 2px 24px;">- Builds employer confidence</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Check the platform and email alerts regularly for jobs</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Get noticed and hired faster!</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA Section -->
+      <div style="text-align: center; padding: 20px 32px 30px;">
+        <h3 style="color: #333; font-size: 20px; font-weight: 700; margin: 0 0 16px;">We can't wait for you to find your 1st Job on Iṣéyá!</h3>
+        <a href="https://iseya-ng.replit.app/dashboard" style="display: inline-block; background: ${brandColor}; color: #fff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Go to Dashboard</a>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: ${brandColor}; padding: 20px 32px; text-align: center;">
+        <p style="color: #fff; font-size: 14px; font-weight: 600; margin: 0;">Hire Talent, Get Hired</p>
+      </div>
+      <div style="padding: 16px 32px; text-align: center; background-color: #fff6ec;">
+        <p style="color: #999; font-size: 12px; margin: 0;">© 2026 Iṣéyá. All rights reserved</p>
+        <p style="color: #bbb; font-size: 11px; margin: 8px 0 0;">You're receiving this email because you signed up for updates from Iṣéyá.ng</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await client.emails.send({
+      from: fromField,
+      to: [to],
+      subject: `Welcome to Iṣéyá, ${name}!`,
+      html,
+    });
+
+    if (error) {
+      console.error("Resend send error:", error);
+      return false;
+    }
+    console.log(`Welcome email sent to ${to} (id: ${data?.id})`);
+    return true;
+  } catch (err: any) {
+    console.error("Resend send error:", err?.message || err);
+    return false;
+  }
+}
+
+async function sendEmployerWelcomeEmail(to: string, name: string): Promise<boolean> {
   return sendEmail(to, name, `Welcome to Iṣéyá, ${name}!`, `
     <h2 style="color: #333; margin: 0 0 16px;">Welcome aboard, ${name}! 🎉</h2>
-    <p style="color: #555; line-height: 1.6;">Your account has been created successfully. You're all set to ${roleText} on Iṣéyá.</p>
-    ${role === "employer" ? `
-      <p style="color: #555; line-height: 1.6;">As an employer, you can post job listings, review applications, schedule interviews, and send offers — all from your dashboard.</p>
-    ` : `
-      <p style="color: #555; line-height: 1.6;">As an applicant, you can browse available jobs, apply with one click, and track your application status — all from your dashboard.</p>
-    `}
+    <p style="color: #555; line-height: 1.6;">Your account has been created successfully. You're all set to post jobs and find great workers on Iṣéyá.</p>
+    <p style="color: #555; line-height: 1.6;">As an employer, you can post job listings, review applications, schedule interviews, and send offers — all from your dashboard.</p>
     <div style="background: #fdf8e8; border-left: 4px solid ${brandColor}; padding: 16px; margin: 24px 0; border-radius: 4px;">
       <p style="color: #333; margin: 0; font-weight: 600;">Get started now!</p>
-      <p style="color: #666; margin: 8px 0 0; font-size: 14px;">Log in to your dashboard and ${role === "employer" ? "post your first job" : "start browsing available jobs"}.</p>
+      <p style="color: #666; margin: 8px 0 0; font-size: 14px;">Log in to your dashboard and post your first job.</p>
     </div>
   `);
 }
