@@ -1,13 +1,12 @@
-import Mailjet from "node-mailjet";
+import { Resend } from "resend";
 
 const senderName = "Iṣéyá";
 const brandColor = "#d4a017";
 
-function getMailjetClient() {
-  return new Mailjet({
-    apiKey: process.env.MJ_APIKEY_PUBLIC || "",
-    apiSecret: process.env.MJ_APIKEY_PRIVATE || "",
-  });
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  return new Resend(apiKey);
 }
 
 function emailWrapper(content: string): string {
@@ -29,31 +28,31 @@ function emailWrapper(content: string): string {
 }
 
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
-  const apiKey = process.env.MJ_APIKEY_PUBLIC;
-  const apiSecret = process.env.MJ_APIKEY_PRIVATE;
-  const senderEmail = process.env.MJ_SENDER_EMAIL || "noreply@iseya.com";
+  const client = getResendClient();
+  const senderEmail = process.env.RESEND_SENDER_EMAIL || "onboarding@resend.dev";
 
-  if (!apiKey || !apiSecret) {
-    console.warn("Mailjet not configured — skipping email to", to);
+  if (!client) {
+    console.warn("Resend not configured — skipping email to", to);
     return false;
   }
 
   try {
-    const client = getMailjetClient();
-    const result = await client.post("send", { version: "v3.1" }).request({
-      Messages: [
-        {
-          From: { Email: senderEmail, Name: senderName },
-          To: [{ Email: to, Name: toName }],
-          Subject: subject,
-          HTMLPart: emailWrapper(htmlBody),
-        },
-      ],
+    const { data, error } = await client.emails.send({
+      from: `${senderName} <${senderEmail}>`,
+      to: [to],
+      subject,
+      html: emailWrapper(htmlBody),
     });
-    console.log(`Email sent to ${to}: ${subject}`);
+
+    if (error) {
+      console.error("Resend send error:", error);
+      return false;
+    }
+
+    console.log(`Email sent to ${to}: ${subject} (id: ${data?.id})`);
     return true;
   } catch (err: any) {
-    console.error("Mailjet send error:", err?.statusCode, err?.response?.body || err?.message || err);
+    console.error("Resend send error:", err?.message || err);
     return false;
   }
 }
