@@ -27,10 +27,16 @@ function emailWrapper(content: string): string {
   `;
 }
 
+function extractEmail(raw: string): string {
+  const match = raw.match(/<([^>]+)>/);
+  if (match) return match[1].trim();
+  return raw.replace(/[<>]/g, "").trim();
+}
+
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
   const client = getResendClient();
   const rawSenderEmail = (process.env.RESEND_SENDER_EMAIL || "onboarding@resend.dev").trim();
-  const senderEmail = rawSenderEmail.replace(/[<>]/g, "").trim();
+  const senderEmail = extractEmail(rawSenderEmail);
   const fromField = `${senderName} <${senderEmail}>`;
 
   if (!client) {
@@ -38,7 +44,7 @@ async function sendEmail(to: string, toName: string, subject: string, htmlBody: 
     return false;
   }
 
-  console.log("Resend from field:", fromField);
+  console.log("Resend from field:", JSON.stringify(fromField));
 
   try {
     const { data, error } = await client.emails.send({
