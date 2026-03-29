@@ -35,9 +35,7 @@ function extractEmail(raw: string): string {
 
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
   const client = getResendClient();
-  const rawSenderEmail = (process.env.RESEND_SENDER_EMAIL || "onboarding@resend.dev").trim();
-  const senderEmail = extractEmail(rawSenderEmail);
-  const fromField = `${senderName} <${senderEmail}>`;
+  const fromField = "Iseya <support@iseya.ng>";
 
   if (!client) {
     console.warn("Resend not configured — skipping email to", to);
