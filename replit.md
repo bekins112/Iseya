@@ -54,7 +54,8 @@ Preferred communication style: Simple, everyday language.
 - **Admin Assessment**: Admins can rate applicants (1-5 stars) and add notes post-interview/background check, displayed on applicant and recommendation cards.
 
 ### Email System
-- Uses Mailjet for transactional emails (e.g., welcome, application notifications, subscription updates).
+- Uses Resend for transactional emails (e.g., welcome, application notifications, subscription updates, password reset, verification, support tickets).
+- Requires `RESEND_API_KEY` and `RESEND_SENDER_EMAIL` environment variables.
 - All emails use branded HTML templates.
 
 ### Facebook Auto-Posting
@@ -125,7 +126,7 @@ Preferred communication style: Simple, everyday language.
 - **Flutterwave**: Payment processing.
 
 ### Email Service
-- **Mailjet**: Transactional email delivery.
+- **Resend**: Transactional email delivery.
 
 ### Key NPM Packages
 - `@tanstack/react-query`: Data fetching and caching.
@@ -134,4 +135,4 @@ Preferred communication style: Simple, everyday language.
 - `framer-motion`: Animations.
 - `date-fns`: Date utilities.
 - `svg-captcha`: CAPTCHA generation.
-- `node-mailjet`: Mailjet API client.
+- `resend`: Resend API client.
