@@ -21,7 +21,7 @@ function emailWrapper(content: string): string {
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 0; background: #ffffff;">
       <div style="background: ${brandColor}; padding: 24px 32px; text-align: center;">
-        <img src="${logoUrl}" alt="Iseya" style="width: 60px; height: 60px; border-radius: 12px; margin-bottom: 8px;" />
+        <img src="${logoUrl}" alt="Iseya" style="height: 40px; width: auto; margin-bottom: 8px;" />
         <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0; font-size: 13px;">Hire Talent, Get Hired</p>
       </div>
       <div style="padding: 32px 32px 24px;">
