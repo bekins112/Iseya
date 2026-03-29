@@ -29,16 +29,20 @@ function emailWrapper(content: string): string {
 
 async function sendEmail(to: string, toName: string, subject: string, htmlBody: string): Promise<boolean> {
   const client = getResendClient();
-  const senderEmail = process.env.RESEND_SENDER_EMAIL || "onboarding@resend.dev";
+  const rawSenderEmail = (process.env.RESEND_SENDER_EMAIL || "onboarding@resend.dev").trim();
+  const senderEmail = rawSenderEmail.replace(/[<>]/g, "").trim();
+  const fromField = `${senderName} <${senderEmail}>`;
 
   if (!client) {
     console.warn("Resend not configured — skipping email to", to);
     return false;
   }
 
+  console.log("Resend from field:", fromField);
+
   try {
     const { data, error } = await client.emails.send({
-      from: `${senderName} <${senderEmail}>`,
+      from: fromField,
       to: [to],
       subject,
       html: emailWrapper(htmlBody),
