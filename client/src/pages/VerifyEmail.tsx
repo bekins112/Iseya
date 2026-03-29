@@ -17,12 +17,15 @@ export default function VerifyEmail() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [resent, setResent] = useState(false);
 
   const sendCode = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/send-verification"),
     onSuccess: () => {
-      setSuccess("Verification code sent to your email!");
+      setSuccess("A new verification code has been sent to your email!");
       setError("");
+      setResent(true);
+      setCode("");
     },
     onError: (err: any) => {
       setError(err.message || "Failed to send verification code");
@@ -95,7 +98,7 @@ export default function VerifyEmail() {
               </div>
               <CardTitle className="text-2xl font-display font-bold">Verify Your Email</CardTitle>
               <CardDescription>
-                We need to verify your email address ({user?.email}) before you can continue.
+                We've sent a 6-digit verification code to <strong>{user?.email}</strong>. Enter it below to continue.
               </CardDescription>
             </CardHeader>
             <CardContent className="px-8 pb-8 space-y-6">
@@ -112,17 +115,6 @@ export default function VerifyEmail() {
                   <AlertDescription className="text-green-700 dark:text-green-400">{success}</AlertDescription>
                 </Alert>
               )}
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => sendCode.mutate()}
-                disabled={sendCode.isPending}
-                data-testid="button-send-code"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${sendCode.isPending ? "animate-spin" : ""}`} />
-                {sendCode.isPending ? "Sending..." : "Send Verification Code"}
-              </Button>
 
               <form onSubmit={handleVerify} className="space-y-4">
                 <div className="space-y-2">
@@ -149,9 +141,22 @@ export default function VerifyEmail() {
                 </Button>
               </form>
 
-              <p className="text-center text-xs text-muted-foreground">
-                The code expires in 15 minutes. Check your spam folder if you don't see it.
-              </p>
+              <div className="text-center space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  The code expires in 15 minutes. Check your spam folder if you don't see it.
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-primary"
+                  onClick={() => sendCode.mutate()}
+                  disabled={sendCode.isPending}
+                  data-testid="button-resend-code"
+                >
+                  <RefreshCw className={`w-3 h-3 mr-1 ${sendCode.isPending ? "animate-spin" : ""}`} />
+                  {sendCode.isPending ? "Sending..." : "Didn't get the code? Resend"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
