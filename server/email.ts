@@ -718,6 +718,18 @@ export async function sendTicketAdminNotifyEmail(
   `);
 }
 
+export async function sendPasswordChangedEmail(to: string, name: string): Promise<boolean> {
+  return sendEmail(to, name, "Your Password Has Been Changed", `
+    <h2 style="color: #333; margin: 0 0 16px;">Password Changed Successfully</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${name},</p>
+    <p style="color: #555; line-height: 1.6;">Your password has been successfully changed. You can now sign in with your new password.</p>
+    <div style="background: #fdf8e8; border-left: 4px solid ${brandColor}; padding: 16px; margin: 24px 0; border-radius: 4px;">
+      <p style="color: #333; margin: 0; font-weight: 600;">Didn't make this change?</p>
+      <p style="color: #666; margin: 8px 0 0; font-size: 14px;">If you didn't reset your password, please contact our support team immediately to secure your account.</p>
+    </div>
+  `);
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, code: string): Promise<boolean> {
   return sendEmail(to, name, "Password Reset Request", `
     <h2 style="color: #333; margin: 0 0 16px;">Password Reset Request</h2>

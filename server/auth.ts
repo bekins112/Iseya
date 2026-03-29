@@ -259,6 +259,10 @@ export async function setupAuth(app: Express) {
         .set({ password: hashedPassword, resetToken: null, resetTokenExpiry: null })
         .where(eq(users.id, user.id));
 
+      const { sendPasswordChangedEmail } = await import("./email");
+      const userName = user.firstName || user.lastName || "User";
+      sendPasswordChangedEmail(user.email!, userName);
+
       res.json({ message: "Password reset successfully. You can now sign in with your new password." });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
