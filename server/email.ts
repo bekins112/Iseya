@@ -74,6 +74,9 @@ export async function sendWelcomeEmail(to: string, name: string, role: string): 
   if (role === "applicant") {
     return sendApplicantWelcomeEmail(to, name);
   }
+  if (role === "agent") {
+    return sendAgentWelcomeEmail(to, name);
+  }
   return sendEmployerWelcomeEmail(to, name);
 }
 
@@ -302,6 +305,115 @@ async function sendEmployerWelcomeEmail(to: string, name: string): Promise<boole
       return false;
     }
     console.log(`Employer welcome email sent to ${to} (id: ${data?.id})`);
+    return true;
+  } catch (err: any) {
+    console.error("Resend send error:", err?.message || err);
+    return false;
+  }
+}
+
+async function sendAgentWelcomeEmail(to: string, name: string): Promise<boolean> {
+  const baseUrl = "https://iseya-ng.replit.app";
+  const logoImg = `${baseUrl}/email-logo-color.png`;
+  const heroImg = `${baseUrl}/email-agent-hero.png`;
+  const celebrateImg = `${baseUrl}/email-applicant-celebrate.png`;
+  const searchImg = `${baseUrl}/email-applicant-search.png`;
+  const mailImg = `${baseUrl}/email-applicant-mail.png`;
+
+  const client = getResendClient();
+  const fromField = "Iseya <support@iseya.ng>";
+
+  if (!client) {
+    console.warn("Resend not configured — skipping email to", to);
+    return false;
+  }
+
+  const html = `
+    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; background-color: #fff6ec;">
+      <div style="text-align: center; padding: 30px 20px 10px;">
+        <img src="${logoImg}" alt="Iseya" style="height: 50px; width: auto;" />
+      </div>
+
+      <div style="text-align: center; padding: 10px 20px;">
+        <img src="${heroImg}" alt="What you should Know as an Agent" style="width: 100%; max-width: 560px; border-radius: 12px;" />
+      </div>
+
+      <div style="padding: 20px 32px; text-align: center;">
+        <div style="text-align: right; margin-bottom: -20px;">
+          <img src="${celebrateImg}" alt="" style="height: 100px; width: auto;" />
+        </div>
+        <h2 style="color: #333; font-size: 22px; margin: 0 0 12px; font-weight: 700;">Be aware of Job Vacancy in your Area</h2>
+        <p style="color: #555; line-height: 1.6; font-size: 15px; margin: 0 0 16px;">
+          Welcome to Iṣéyá! 🎉 We're stoked to have you on board as an agent, <strong>${name}</strong>! You've got access to awesome tools like job vacancy feeds, job management, and how to earn on Iṣéyá. Let's get you making money!
+        </p>
+        <p style="color: #555; line-height: 1.6; font-size: 14px; margin: 0;">
+          Check your dashboard — want us to walk you through a quick tour or jump into posting jobs?
+        </p>
+      </div>
+
+      <div style="padding: 10px 32px 20px;">
+        <div style="display: flex; align-items: flex-start;">
+          <div style="flex: 1;">
+            <h3 style="color: #333; font-size: 18px; font-weight: 700; margin: 0 0 12px;">Tasks you do:</h3>
+            <table style="font-size: 14px; color: #555; line-height: 1.8;">
+              <tr><td style="padding: 2px 0;">✅ Search for job vacancies in your area</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Liaise with job owners</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Post and manage jobs</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Recommend applicants</td></tr>
+            </table>
+          </div>
+          <div style="flex-shrink: 0; margin-left: 10px;">
+            <img src="${searchImg}" alt="" style="height: 120px; width: auto;" />
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 10px 32px 20px;">
+        <div style="display: flex; align-items: flex-start;">
+          <div style="flex-shrink: 0; margin-right: 10px;">
+            <img src="${mailImg}" alt="" style="height: 120px; width: auto;" />
+          </div>
+          <div style="flex: 1;">
+            <h3 style="color: #333; font-size: 18px; font-weight: 700; margin: 0 0 12px;">Earn Big with Iṣéyá!</h3>
+            <table style="font-size: 14px; color: #555; line-height: 1.8;">
+              <tr><td style="padding: 2px 0;">✅ Job posts aren't free, so charge job owners a competitive rate.</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Earn commission on direct job posts from owners</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Boost earnings with Pay-per-Post or Subscription plans.</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Set your commission base and get tracking.</td></tr>
+              <tr><td style="padding: 2px 0;">✅ Monitor jobs and recommend top applicants to owners.</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align: center; padding: 20px 32px 30px;">
+        <h3 style="color: #333; font-size: 20px; font-weight: 700; margin: 0 0 16px;">We can't wait for your first Post on Iṣéyá & earn — 30% Discount!!</h3>
+        <a href="https://iseya-ng.replit.app/dashboard" style="display: inline-block; background: ${brandColor}; color: #fff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Go to Dashboard</a>
+      </div>
+
+      <div style="background: ${brandColor}; padding: 20px 32px; text-align: center;">
+        <p style="color: #fff; font-size: 14px; font-weight: 600; margin: 0;">Hire Talent, Get Hired</p>
+      </div>
+      <div style="padding: 16px 32px; text-align: center; background-color: #fff6ec;">
+        <p style="color: #999; font-size: 12px; margin: 0;">© 2026 Iṣéyá. All rights reserved</p>
+        <p style="color: #bbb; font-size: 11px; margin: 8px 0 0;">You're receiving this email because you signed up for updates from Iṣéyá.ng</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await client.emails.send({
+      from: fromField,
+      to: [to],
+      subject: `Welcome to Iṣéyá, ${name}!`,
+      html,
+    });
+
+    if (error) {
+      console.error("Resend send error:", error);
+      return false;
+    }
+    console.log(`Agent welcome email sent to ${to} (id: ${data?.id})`);
     return true;
   } catch (err: any) {
     console.error("Resend send error:", err?.message || err);
