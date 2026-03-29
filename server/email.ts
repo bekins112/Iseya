@@ -720,7 +720,7 @@ export async function sendTicketAdminNotifyEmail(
 
 export async function sendPasswordChangedEmail(to: string, name: string): Promise<boolean> {
   return sendEmail(to, name, "Your Password Has Been Changed", `
-    <h2 style="color: #333; margin: 0 0 16px;">Password Changed Successfully</h2>
+    <h2 style="color: #333; margin: 0 0 16px;">Password Reset Successfully</h2>
     <p style="color: #555; line-height: 1.6;">Hi ${name},</p>
     <p style="color: #555; line-height: 1.6;">Your password has been successfully changed. You can now sign in with your new password.</p>
     <div style="background: #fdf8e8; border-left: 4px solid ${brandColor}; padding: 16px; margin: 24px 0; border-radius: 4px;">
