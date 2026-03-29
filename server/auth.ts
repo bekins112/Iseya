@@ -202,26 +202,23 @@ export async function setupAuth(app: Express) {
         return res.json({ message: "If an account exists with that email, a reset link has been sent." });
       }
 
-      const token = crypto.randomBytes(32).toString("hex");
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiry = new Date(Date.now() + 60 * 60 * 1000);
 
       await db
         .update(users)
-        .set({ resetToken: token, resetTokenExpiry: expiry })
+        .set({ resetToken: code, resetTokenExpiry: expiry })
         .where(eq(users.id, user.id));
-
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
-      const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
       try {
         const { sendPasswordResetEmail } = await import("./email");
         const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
-        await sendPasswordResetEmail(user.email!, userName, resetLink);
+        await sendPasswordResetEmail(user.email!, userName, code);
       } catch (emailErr) {
         console.error("Failed to send reset email:", emailErr);
       }
 
-      res.json({ message: "If an account exists with that email, a reset link has been sent." });
+      res.json({ message: "If an account exists with that email, a reset code has been sent." });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: "Please enter a valid email address." });
@@ -233,18 +230,19 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/auth/reset-password", async (req, res) => {
     try {
-      const { token, password } = z.object({
-        token: z.string().min(1),
+      const { code, email, password } = z.object({
+        code: z.string().length(6, "Reset code must be 6 digits"),
+        email: z.string().email(),
         password: z.string().min(6, "Password must be at least 6 characters"),
       }).parse(req.body);
 
       const [user] = await db
         .select()
         .from(users)
-        .where(eq(users.resetToken, token));
+        .where(eq(users.email, email));
 
-      if (!user) {
-        return res.status(400).json({ message: "Invalid or expired reset link. Please request a new one." });
+      if (!user || user.resetToken !== code) {
+        return res.status(400).json({ message: "Invalid reset code. Please check and try again." });
       }
 
       if (!user.resetTokenExpiry || new Date() > user.resetTokenExpiry) {
@@ -252,7 +250,7 @@ export async function setupAuth(app: Express) {
           .update(users)
           .set({ resetToken: null, resetTokenExpiry: null })
           .where(eq(users.id, user.id));
-        return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
+        return res.status(400).json({ message: "This reset code has expired. Please request a new one." });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);

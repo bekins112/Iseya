@@ -9,12 +9,15 @@ function getResendClient() {
   return new Resend(apiKey);
 }
 
+const logoUrl = "https://iseya-ng.replit.app/favicon-192x192.png";
+
 function emailWrapper(content: string): string {
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 0; background: #ffffff;">
       <div style="background: ${brandColor}; padding: 24px 32px; text-align: center;">
+        <img src="${logoUrl}" alt="Iseya" style="width: 48px; height: 48px; border-radius: 10px; margin-bottom: 8px;" />
         <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px;">Iṣéyá</h1>
-        <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0; font-size: 13px;">Nigeria's Job Marketplace</p>
+        <p style="color: rgba(255,255,255,0.85); margin: 4px 0 0; font-size: 13px;">Hire Talent, Get Hired</p>
       </div>
       <div style="padding: 32px 32px 24px;">
         ${content}
@@ -379,14 +382,14 @@ export async function sendTicketAdminNotifyEmail(
   `);
 }
 
-export async function sendPasswordResetEmail(to: string, name: string, resetLink: string): Promise<boolean> {
-  return sendEmail(to, name, "Password Reset — Iṣéyá", `
+export async function sendPasswordResetEmail(to: string, name: string, code: string): Promise<boolean> {
+  return sendEmail(to, name, "Password Reset Code — Iṣéyá", `
     <h2 style="color: #333; margin: 0 0 16px;">Password Reset Request</h2>
     <p style="color: #555; line-height: 1.6;">Hi ${name},</p>
-    <p style="color: #555; line-height: 1.6;">We received a request to reset your password. Click the button below to set a new password:</p>
-    <div style="text-align: center; margin: 28px 0;">
-      <a href="${resetLink}" style="display: inline-block; background: ${brandColor}; color: #fff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Reset Password</a>
+    <p style="color: #555; line-height: 1.6;">We received a request to reset your password. Use the code below to proceed:</p>
+    <div style="background: #f5f5f5; padding: 20px; text-align: center; border-radius: 8px; margin: 24px 0;">
+      <span style="font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #333;">${code}</span>
     </div>
-    <p style="color: #666; font-size: 14px;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
+    <p style="color: #666; font-size: 14px;">This code expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
   `);
 }
