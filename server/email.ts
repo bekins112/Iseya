@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-const senderName = "Iṣéyá";
+const senderName = "Iseya";
 const brandColor = "#d4a017";
 
 function getResendClient() {
