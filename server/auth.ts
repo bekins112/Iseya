@@ -418,6 +418,7 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
       }
 
+      console.log(`[verify-email] Stored code: "${user.emailVerificationCode}" (type: ${typeof user.emailVerificationCode}), Input code: "${input.code}" (type: ${typeof input.code})`);
       if (user.emailVerificationCode !== input.code) {
         return res.status(400).json({ message: "Invalid verification code" });
       }
