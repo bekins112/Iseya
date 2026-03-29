@@ -725,7 +725,7 @@ export async function sendPasswordChangedEmail(to: string, name: string): Promis
     <p style="color: #555; line-height: 1.6;">Your password has been successfully changed. You can now sign in with your new password.</p>
     <div style="background: #fdf8e8; border-left: 4px solid ${brandColor}; padding: 16px; margin: 24px 0; border-radius: 4px;">
       <p style="color: #333; margin: 0; font-weight: 600;">Didn't make this change?</p>
-      <p style="color: #666; margin: 8px 0 0; font-size: 14px;">If you didn't reset your password, please contact our support team immediately to secure your account.</p>
+      <p style="color: #666; margin: 8px 0 0; font-size: 14px;">If you didn't reset your password, please contact our support team at <a href="mailto:support@iseya.ng" style="color: ${brandColor}; text-decoration: underline;">support@iseya.ng</a> immediately to secure your account.</p>
     </div>
   `);
 }
