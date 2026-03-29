@@ -113,15 +113,27 @@ export async function setupAuth(app: Express) {
           role: input.role || "applicant",
           age: input.age,
           subscribedToNewsletter: input.subscribedToNewsletter || false,
+          emailVerified: false,
         })
         .returning();
 
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 15 * 60 * 1000);
+
       await db.update(users).set({
-        emailVerified: true,
+        emailVerificationCode: code,
+        emailVerificationExpiry: expiry,
       }).where(eq(users.id, user.id));
 
+      try {
+        const { sendVerificationEmail } = await import("./email");
+        await sendVerificationEmail(input.email, code, input.firstName);
+      } catch (emailErr) {
+        console.log(`[Email Verification] Code for ${input.email}: ${code}`);
+      }
+
       req.session.userId = user.id;
-      const { password: _, ...safeUser } = { ...user, emailVerified: true };
+      const { password: _, ...safeUser } = { ...user, emailVerified: false };
 
       res.status(201).json(safeUser);
     } catch (err: any) {
@@ -419,6 +431,13 @@ export async function setupAuth(app: Express) {
           updatedAt: new Date(),
         })
         .where(eq(users.id, req.session.userId));
+
+      try {
+        const { sendWelcomeEmail } = await import("./email");
+        sendWelcomeEmail(user.email!, user.firstName || "User", user.role || "applicant");
+      } catch (emailErr) {
+        console.error("Failed to send welcome email:", emailErr);
+      }
 
       const { password: _, ...safeUser } = { ...user, emailVerified: true, emailVerificationCode: null, emailVerificationExpiry: null };
       res.json(safeUser);

@@ -33,6 +33,8 @@ export default function Login() {
   }, []);
 
   const getRedirectPath = (u: typeof user) => {
+    const isAdmin = u?.role === "admin" || (u as any)?.isAdmin;
+    if (!isAdmin && !(u as any)?.emailVerified) return "/verify-email";
     if (!u?.role || !u?.age) return "/onboarding";
     if (u.role === "admin") {
       localStorage.removeItem("admin_login_redirect");
