@@ -10,9 +10,6 @@ function getResendClient() {
 }
 
 function getLogoUrl(): string {
-  const domains = process.env.REPLIT_DOMAINS || "";
-  const domain = domains.split(",")[0]?.trim();
-  if (domain) return `https://${domain}/email-logo.png`;
   return "https://iseya-ng.replit.app/email-logo.png";
 }
 
