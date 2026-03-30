@@ -22,6 +22,8 @@ import {
   sendOfferEmail,
   sendOfferResponseEmail,
   sendInterviewScheduledEmail,
+  sendInterviewCancelledEmail,
+  sendCounterOfferEmail,
   sendSubscriptionEmail,
   sendVerificationApprovedEmail,
   sendVerificationRejectedEmail,
@@ -495,6 +497,7 @@ export async function registerRoutes(
     const enriched = await Promise.all(apps.map(async (app) => {
       const applicant = await storage.getUser(app.applicantId);
       const isApplicantVerified = applicant?.isVerified || false;
+      const offer = await storage.getOfferByApplication(app.id);
       return {
         ...app,
         applicantName: applicant ? `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim() : 'Unknown',
@@ -505,6 +508,7 @@ export async function registerRoutes(
         applicantGender: applicant?.gender || null,
         applicantAge: applicant?.age || null,
         applicantIsVerified: isApplicantVerified,
+        offer: offer || null,
       };
     }));
     enriched.sort((a, b) => {
@@ -1688,6 +1692,138 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/offers/:id/counter", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const offerId = Number(req.params.id);
+    if (isNaN(offerId)) return res.status(400).json({ message: "Invalid offer ID" });
+
+    const currentUser = await storage.getUser(userId);
+    if (currentUser && currentUser.role === "applicant" && !currentUser.isVerified) {
+      return res.status(403).json({ message: "Please get verified to respond to job offers.", code: "VERIFICATION_REQUIRED" });
+    }
+
+    const counterSchema = z.object({
+      counterSalary: z.number().min(1, "Salary must be greater than 0"),
+      counterCompensation: z.string().optional(),
+      counterNote: z.string().optional(),
+    });
+
+    try {
+      const input = counterSchema.parse(req.body);
+      const offer = await storage.getOffer(offerId);
+      if (!offer) return res.status(404).json({ message: "Offer not found" });
+      if (offer.applicantId !== userId) return res.status(403).json({ message: "Not authorized" });
+      if (offer.status !== "pending") return res.status(400).json({ message: "Offer already responded to" });
+
+      const updated = await storage.updateOffer(offerId, {
+        counterSalary: input.counterSalary,
+        counterCompensation: input.counterCompensation || null,
+        counterNote: input.counterNote || null,
+        status: "countered",
+      });
+
+      res.json(updated);
+
+      const employer = await storage.getUser(offer.employerId);
+      const applicant = await storage.getUser(offer.applicantId);
+      const job = await storage.getJob(offer.jobId);
+      if (employer && applicant && job) {
+        const employerName = employer.companyName || `${employer.firstName || ""} ${employer.lastName || ""}`.trim() || "Employer";
+        const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
+
+        storage.createNotification({
+          title: "Counter Offer Received",
+          message: `${applicantName} has submitted a counter offer of ₦${input.counterSalary.toLocaleString()} for "${job.title}". Your original offer was ₦${offer.salary.toLocaleString()}.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: offer.employerId,
+          createdBy: userId,
+        }).catch(() => {});
+
+        if (employer.email) {
+          sendCounterOfferEmail(
+            employer.email,
+            employerName,
+            applicantName,
+            job.title,
+            offer.salary,
+            input.counterSalary,
+            input.counterCompensation || null,
+            input.counterNote || null
+          ).catch(() => {});
+        }
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to submit counter offer" });
+    }
+  });
+
+  app.patch("/api/offers/:id/respond-counter", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const offerId = Number(req.params.id);
+    if (isNaN(offerId)) return res.status(400).json({ message: "Invalid offer ID" });
+
+    const responseSchema = z.object({
+      action: z.enum(["accept", "decline"]),
+    });
+
+    try {
+      const input = responseSchema.parse(req.body);
+      const offer = await storage.getOffer(offerId);
+      if (!offer) return res.status(404).json({ message: "Offer not found" });
+      if (offer.status !== "countered") return res.status(400).json({ message: "This offer does not have a pending counter offer" });
+
+      const employer = await storage.getUser(userId);
+      const isEmployer = offer.employerId === userId;
+      const isAdmin = employer?.role === "admin";
+      if (!isEmployer && !isAdmin) return res.status(403).json({ message: "Not authorized" });
+
+      if (input.action === "accept") {
+        const updated = await storage.updateOffer(offerId, {
+          salary: offer.counterSalary!,
+          compensation: offer.counterCompensation || offer.compensation,
+          status: "accepted",
+        });
+        await storage.updateApplicationStatus(offer.applicationId, "accepted");
+        await storage.updateJob(offer.jobId, { status: "filled", isActive: false });
+        res.json(updated);
+      } else {
+        const updated = await storage.updateOfferStatus(offerId, "declined");
+        await storage.updateApplicationStatus(offer.applicationId, "pending");
+        res.json(updated);
+      }
+
+      const applicant = await storage.getUser(offer.applicantId);
+      const job = await storage.getJob(offer.jobId);
+      if (applicant && job) {
+        const applicantName = `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant";
+        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
+        const actionLabel = input.action === "accept" ? "accepted" : "declined";
+
+        storage.createNotification({
+          title: `Counter Offer ${input.action === "accept" ? "Accepted" : "Declined"}`,
+          message: `${companyName} has ${actionLabel} your counter offer for "${job.title}".${input.action === "accept" ? " Congratulations!" : " The position may still be available — check your dashboard for updates."}`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: offer.applicantId,
+          createdBy: userId,
+        }).catch(() => {});
+
+        if (applicant.email) {
+          sendOfferResponseEmail(applicant.email, applicantName, companyName, job.title, input.action === "accept" ? "accepted" : "declined").catch(() => {});
+        }
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to respond to counter offer" });
+    }
+  });
+
   // === INTERVIEWS ===
 
   async function getInterviewCredits(): Promise<Record<string, number>> {
@@ -2073,6 +2209,46 @@ export async function registerRoutes(
             targetUserId: interview.employerId,
             createdBy: userId,
           }).catch(() => {});
+        }
+      }
+
+      if (input.status === "cancelled") {
+        const job = await storage.getJob(interview.jobId);
+        const applicant = await storage.getUser(interview.applicantId);
+        const employer = await storage.getUser(interview.employerId);
+        const applicantName = `${applicant?.firstName || ""} ${applicant?.lastName || ""}`.trim() || "Applicant";
+        const companyName = employer?.companyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Employer";
+
+        storage.createNotification({
+          title: "Interview Cancelled",
+          message: `Your interview for "${job?.title || "a job"}" scheduled on ${interview.interviewDate} at ${interview.interviewTime} has been cancelled.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: interview.applicantId,
+          createdBy: userId,
+        }).catch(() => {});
+
+        if (!isApplicant) {
+          storage.createNotification({
+            title: "Interview Cancelled",
+            message: `The interview with ${applicantName} for "${job?.title || "a job"}" has been cancelled.`,
+            type: "individual",
+            targetRole: null,
+            targetUserId: interview.employerId,
+            createdBy: userId,
+          }).catch(() => {});
+        }
+
+        if (applicant?.email) {
+          sendInterviewCancelledEmail(
+            applicant.email,
+            applicantName,
+            job?.title || "a job",
+            companyName,
+            interview.interviewDate,
+            interview.interviewTime,
+            input.notes || null
+          ).catch(() => {});
         }
       }
 

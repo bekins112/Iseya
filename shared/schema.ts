@@ -117,6 +117,9 @@ export const offers = pgTable("offers", {
   compensation: text("compensation"),
   note: text("note"),
   status: varchar("status").notNull().default("pending"),
+  counterSalary: integer("counter_salary"),
+  counterCompensation: text("counter_compensation"),
+  counterNote: text("counter_note"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

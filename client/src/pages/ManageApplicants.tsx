@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview, useSubmitAdminReview } from "@/hooks/use-casual";
+import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview, useSubmitAdminReview, useRespondToCounter } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,16 @@ type EnrichedApplication = Application & {
   applicantGender?: string | null;
   applicantAge?: number | null;
   applicantIsVerified?: boolean;
+  offer?: {
+    id: number;
+    salary: number;
+    compensation: string | null;
+    note: string | null;
+    status: string;
+    counterSalary: number | null;
+    counterCompensation: string | null;
+    counterNote: string | null;
+  } | null;
 };
 
 type StatusFilter = 'all' | 'pending' | 'offered' | 'accepted' | 'rejected';
@@ -636,6 +646,8 @@ function ApplicantCard({
   onSetNote,
   onSubmitReview,
   isSubmittingReview,
+  onRespondToCounter,
+  isRespondingToCounter,
 }: { 
   application: EnrichedApplication;
   onUpdateStatus: (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => void;
@@ -653,6 +665,8 @@ function ApplicantCard({
   onSetNote?: (n: string) => void;
   onSubmitReview?: () => void;
   isSubmittingReview?: boolean;
+  onRespondToCounter?: (offerId: number, action: "accept" | "decline") => void;
+  isRespondingToCounter?: boolean;
 }) {
   const status = application.status || 'pending';
   const StatusIcon = statusConfig[status]?.icon || Clock;
@@ -804,9 +818,52 @@ function ApplicantCard({
                 </>
               )}
               
-              {status === 'offered' && (
+              {status === 'offered' && application.offer?.status === 'countered' && application.offer.counterSalary && (
+                <div className="mt-2 p-2.5 rounded-md border border-amber-300 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Banknote className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Counter Offer Received</span>
+                  </div>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground line-through">₦{application.offer.salary.toLocaleString()}</span>
+                    <span className="font-bold text-amber-800 dark:text-amber-300">₦{application.offer.counterSalary.toLocaleString()}</span>
+                  </div>
+                  {application.offer.counterCompensation && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Benefits: {application.offer.counterCompensation}</p>
+                  )}
+                  {application.offer.counterNote && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Note: {application.offer.counterNote}</p>
+                  )}
+                  {onRespondToCounter && (
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        size="sm"
+                        className="gap-1 flex-1"
+                        onClick={() => onRespondToCounter(application.offer!.id, "accept")}
+                        disabled={isRespondingToCounter}
+                        data-testid={`button-accept-counter-${application.id}`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Accept Counter
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 flex-1"
+                        onClick={() => onRespondToCounter(application.offer!.id, "decline")}
+                        disabled={isRespondingToCounter}
+                        data-testid={`button-decline-counter-${application.id}`}
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        Decline
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {status === 'offered' && (!application.offer || application.offer.status !== 'countered') && (
                 <Badge variant="outline" className="text-blue-600 border-blue-500">
-                  Waiting for response
+                  Offer sent — waiting
                 </Badge>
               )}
 
@@ -1042,6 +1099,11 @@ export default function ManageApplicants() {
 
   const handleCancelInterview = (interviewId: number) => {
     updateInterview.mutate({ id: interviewId, status: "cancelled" });
+  };
+
+  const respondToCounter = useRespondToCounter();
+  const handleRespondToCounter = (offerId: number, action: "accept" | "decline") => {
+    respondToCounter.mutate({ offerId, action });
   };
 
   const filteredApps = (applications as EnrichedApplication[] | undefined)?.filter(app => 
@@ -1367,6 +1429,8 @@ export default function ManageApplicants() {
                 onSetNote={setReviewNote}
                 onSubmitReview={handleSubmitReview}
                 isSubmittingReview={submitAdminReview.isPending}
+                onRespondToCounter={handleRespondToCounter}
+                isRespondingToCounter={respondToCounter.isPending}
               />
             ))
           )}

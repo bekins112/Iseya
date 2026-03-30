@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { useMyApplications, useMyOffers, useRespondToOffer, useCancelApplication, useMyInterviews, useUpdateInterview } from "@/hooks/use-casual";
+import { useMyApplications, useMyOffers, useRespondToOffer, useCounterOffer, useCancelApplication, useMyInterviews, useUpdateInterview } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from "wouter";
 import { 
@@ -57,6 +60,9 @@ type EnrichedApp = {
     compensation: string | null;
     note: string | null;
     status: string;
+    counterSalary: number | null;
+    counterCompensation: string | null;
+    counterNote: string | null;
     createdAt: string;
   } | null;
 };
@@ -75,14 +81,40 @@ function OfferDetailsDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const respond = useRespondToOffer();
+  const counter = useCounterOffer();
+  const [showCounterForm, setShowCounterForm] = useState(false);
+  const [counterSalary, setCounterSalary] = useState("");
+  const [counterCompensation, setCounterCompensation] = useState("");
+  const [counterNote, setCounterNote] = useState("");
+
   if (!app?.offer) return null;
 
   const offer = app.offer;
   const isPending = offer.status === "pending";
+  const isCountered = offer.status === "countered";
+
+  const handleSubmitCounter = () => {
+    const salary = Number(counterSalary);
+    if (!salary || salary <= 0) return;
+    counter.mutate({
+      offerId: offer.id,
+      counterSalary: salary,
+      counterCompensation: counterCompensation || undefined,
+      counterNote: counterNote || undefined,
+    }, {
+      onSuccess: () => {
+        setShowCounterForm(false);
+        setCounterSalary("");
+        setCounterCompensation("");
+        setCounterNote("");
+        onOpenChange(false);
+      },
+    });
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={(val) => { onOpenChange(val); if (!val) setShowCounterForm(false); }}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
@@ -97,7 +129,7 @@ function OfferDetailsDialog({
           <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
             <Banknote className="w-5 h-5 text-primary shrink-0" />
             <div>
-              <p className="text-xs text-muted-foreground">Monthly Salary</p>
+              <p className="text-xs text-muted-foreground">Employer's Offer</p>
               <p className="font-bold text-lg" data-testid="text-offer-salary">{formatNaira(offer.salary)}</p>
             </div>
           </div>
@@ -122,7 +154,21 @@ function OfferDetailsDialog({
             </div>
           )}
 
-          {!isPending && (
+          {isCountered && offer.counterSalary && (
+            <div className="border border-amber-300 dark:border-amber-600 rounded-md p-3 bg-amber-50 dark:bg-amber-900/20 space-y-2">
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Your Counter Offer</p>
+              <p className="font-bold text-lg text-amber-800 dark:text-amber-300" data-testid="text-counter-salary">{formatNaira(offer.counterSalary)}</p>
+              {offer.counterCompensation && (
+                <p className="text-sm text-amber-700 dark:text-amber-400"><span className="font-medium">Benefits:</span> {offer.counterCompensation}</p>
+              )}
+              {offer.counterNote && (
+                <p className="text-sm text-amber-700 dark:text-amber-400"><span className="font-medium">Note:</span> {offer.counterNote}</p>
+              )}
+              <Badge variant="outline" className="text-amber-700 border-amber-400">Awaiting Employer Response</Badge>
+            </div>
+          )}
+
+          {!isPending && !isCountered && (
             <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50">
               {offer.status === "accepted" ? (
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -133,35 +179,107 @@ function OfferDetailsDialog({
             </div>
           )}
 
-          {isPending && (
-            <div className="flex items-center gap-2 pt-2">
+          {isPending && !showCounterForm && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    respond.mutate({ offerId: offer.id, status: "accepted" }, {
+                      onSuccess: () => onOpenChange(false),
+                    });
+                  }}
+                  disabled={respond.isPending || counter.isPending}
+                  data-testid="button-accept-offer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Accept
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    respond.mutate({ offerId: offer.id, status: "declined" }, {
+                      onSuccess: () => onOpenChange(false),
+                    });
+                  }}
+                  disabled={respond.isPending || counter.isPending}
+                  data-testid="button-decline-offer"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Decline
+                </Button>
+              </div>
               <Button
-                className="flex-1 gap-2"
+                variant="secondary"
+                className="w-full gap-2"
                 onClick={() => {
-                  respond.mutate({ offerId: offer.id, status: "accepted" }, {
-                    onSuccess: () => onOpenChange(false),
-                  });
+                  setCounterSalary(String(offer.salary));
+                  setShowCounterForm(true);
                 }}
-                disabled={respond.isPending}
-                data-testid="button-accept-offer"
+                disabled={respond.isPending || counter.isPending}
+                data-testid="button-counter-offer"
               >
-                <CheckCircle2 className="w-4 h-4" />
-                Accept Offer
+                <Banknote className="w-4 h-4" />
+                Make Counter Offer
               </Button>
-              <Button
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => {
-                  respond.mutate({ offerId: offer.id, status: "declined" }, {
-                    onSuccess: () => onOpenChange(false),
-                  });
-                }}
-                disabled={respond.isPending}
-                data-testid="button-decline-offer"
-              >
-                <XCircle className="w-4 h-4" />
-                Decline
-              </Button>
+            </div>
+          )}
+
+          {isPending && showCounterForm && (
+            <div className="border rounded-md p-4 space-y-3 bg-muted/30">
+              <p className="font-semibold text-sm">Your Counter Offer</p>
+              <div>
+                <Label htmlFor="counter-salary" className="text-xs">Your Preferred Salary (NGN)</Label>
+                <Input
+                  id="counter-salary"
+                  type="number"
+                  placeholder="e.g. 150000"
+                  value={counterSalary}
+                  onChange={(e) => setCounterSalary(e.target.value)}
+                  data-testid="input-counter-salary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="counter-compensation" className="text-xs">Benefits / Compensation (optional)</Label>
+                <Input
+                  id="counter-compensation"
+                  placeholder="e.g. Transport allowance, meals"
+                  value={counterCompensation}
+                  onChange={(e) => setCounterCompensation(e.target.value)}
+                  data-testid="input-counter-compensation"
+                />
+              </div>
+              <div>
+                <Label htmlFor="counter-note" className="text-xs">Note to Employer (optional)</Label>
+                <Textarea
+                  id="counter-note"
+                  placeholder="Explain why you're requesting this amount..."
+                  value={counterNote}
+                  onChange={(e) => setCounterNote(e.target.value)}
+                  className="min-h-[60px] resize-none"
+                  data-testid="input-counter-note"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={handleSubmitCounter}
+                  disabled={counter.isPending || !counterSalary || Number(counterSalary) <= 0}
+                  data-testid="button-submit-counter"
+                >
+                  <Send className="w-4 h-4" />
+                  {counter.isPending ? "Sending..." : "Send Counter Offer"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowCounterForm(false)}
+                  disabled={counter.isPending}
+                  data-testid="button-cancel-counter"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -347,9 +465,10 @@ export default function Applications() {
                                 </span>
                                 <Badge variant={
                                   app.offer.status === "accepted" ? "default" :
-                                  app.offer.status === "declined" ? "destructive" : "secondary"
-                                } className="text-xs">
-                                  {app.offer.status === "pending" ? "Offer Received" : app.offer.status}
+                                  app.offer.status === "declined" ? "destructive" :
+                                  app.offer.status === "countered" ? "outline" : "secondary"
+                                } className={`text-xs ${app.offer.status === "countered" ? "border-amber-400 text-amber-700" : ""}`}>
+                                  {app.offer.status === "pending" ? "Offer Received" : app.offer.status === "countered" ? "Counter Sent" : app.offer.status}
                                 </Badge>
                               </div>
                               <Button

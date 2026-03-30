@@ -506,6 +506,76 @@ export function useRespondToOffer() {
   });
 }
 
+export function useCounterOffer() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ offerId, counterSalary, counterCompensation, counterNote }: {
+      offerId: number;
+      counterSalary: number;
+      counterCompensation?: string;
+      counterNote?: string;
+    }) => {
+      const res = await fetch(`/api/offers/${offerId}/counter`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ counterSalary, counterCompensation, counterNote }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to submit counter offer");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-offers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-applications"] });
+      toast({
+        title: "Counter Offer Sent",
+        description: "Your counter offer has been sent to the employer.",
+      });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useRespondToCounter() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ offerId, action }: { offerId: number; action: "accept" | "decline" }) => {
+      const res = await fetch(`/api/offers/${offerId}/respond-counter`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to respond to counter offer");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-offers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my-applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      toast({
+        title: variables.action === "accept" ? "Counter Offer Accepted" : "Counter Offer Declined",
+        description: variables.action === "accept" ? "The counter offer has been accepted and the position is filled." : "The counter offer has been declined.",
+      });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
 // === INTERVIEW HOOKS ===
 export function useScheduleInterview() {
   const queryClient = useQueryClient();

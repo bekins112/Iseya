@@ -85,6 +85,7 @@ export interface IStorage {
   getOffersForApplicant(applicantId: string): Promise<Offer[]>;
   getOffersForEmployer(employerId: string): Promise<Offer[]>;
   updateOfferStatus(id: number, status: string): Promise<Offer>;
+  updateOffer(id: number, updates: Partial<Offer>): Promise<Offer>;
   
   // Interview methods
   createInterview(interview: InsertInterview): Promise<Interview>;
@@ -675,6 +676,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(offers)
       .set({ status, updatedAt: new Date() })
+      .where(eq(offers.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateOffer(id: number, updates: Partial<Offer>): Promise<Offer> {
+    const [updated] = await db
+      .update(offers)
+      .set({ ...updates, updatedAt: new Date() })
       .where(eq(offers.id, id))
       .returning();
     return updated;

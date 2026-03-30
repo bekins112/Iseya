@@ -54,9 +54,20 @@ Preferred communication style: Simple, everyday language.
 - **Admin Assessment**: Admins can rate applicants (1-5 stars) and add notes post-interview/background check, displayed on applicant and recommendation cards.
 
 ### Email System
-- Uses Resend for transactional emails (e.g., welcome, application notifications, subscription updates, password reset, verification, support tickets).
+- Uses Resend for transactional emails (e.g., welcome, application notifications, subscription updates, password reset, verification, support tickets, interview cancelled, counter offer).
 - Requires `RESEND_API_KEY` and `RESEND_SENDER_EMAIL` environment variables.
 - All emails use branded HTML templates.
+- Interview cancellation triggers email+notification to applicant (and employer if cancelled by admin).
+- Application rejection triggers email+notification to applicant via `sendApplicationStatusEmail`.
+
+### Counter-Offer System
+- Applicants can submit counter-offers when responding to job offers (salary, compensation, note).
+- Offer status flow: `pending` → `accepted` / `declined` / `countered`.
+- Counter offer flow: applicant submits → employer sees details + accept/decline buttons → notification+email sent to both parties.
+- Schema: `offers` table has `counter_salary`, `counter_compensation`, `counter_note` columns.
+- Routes: `PATCH /api/offers/:id/counter` (applicant submits), `PATCH /api/offers/:id/respond-counter` (employer responds).
+- When employer accepts counter: offer salary updates to counter amount, application status → accepted, job → filled.
+- When employer declines counter: offer status → declined, application status → pending.
 
 ### Facebook Auto-Posting
 - When premium or enterprise employers post jobs, they are automatically shared to the Iṣéyá Facebook Page via the Graph API.

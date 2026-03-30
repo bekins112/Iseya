@@ -580,6 +580,52 @@ export async function sendInterviewScheduledEmail(
   `);
 }
 
+export async function sendInterviewCancelledEmail(
+  applicantEmail: string,
+  applicantName: string,
+  jobTitle: string,
+  companyName: string,
+  interviewDate: string,
+  interviewTime: string,
+  reason?: string | null
+): Promise<boolean> {
+  return sendEmail(applicantEmail, applicantName, `Interview Cancelled — ${jobTitle}`, `
+    <h2 style="color: #333; margin: 0 0 16px;">Interview Cancelled</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${applicantName},</p>
+    <p style="color: #555; line-height: 1.6;">We're writing to let you know that your scheduled interview for <strong>${jobTitle}</strong> at <strong>${companyName}</strong> has been cancelled.</p>
+    <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0; color: #333;"><strong>Position:</strong> ${jobTitle}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Was Scheduled:</strong> ${interviewDate} at ${interviewTime}</p>
+      ${reason ? `<p style="margin: 12px 0 0; color: #666; font-size: 14px;"><strong>Reason:</strong> ${reason}</p>` : ""}
+    </div>
+    <p style="color: #555; line-height: 1.6;">If you have any questions, please contact the employer directly or reach out to our support team.</p>
+  `);
+}
+
+export async function sendCounterOfferEmail(
+  employerEmail: string,
+  employerName: string,
+  applicantName: string,
+  jobTitle: string,
+  originalSalary: number,
+  counterSalary: number,
+  counterCompensation?: string | null,
+  counterNote?: string | null
+): Promise<boolean> {
+  return sendEmail(employerEmail, employerName, `Counter Offer Received — ${jobTitle}`, `
+    <h2 style="color: #333; margin: 0 0 16px;">Counter Offer Received</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${employerName},</p>
+    <p style="color: #555; line-height: 1.6;"><strong>${applicantName}</strong> has submitted a counter offer for the position of <strong>${jobTitle}</strong>.</p>
+    <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0; color: #333;"><strong>Your Offer:</strong> ₦${originalSalary.toLocaleString()}</p>
+      <p style="margin: 8px 0 0; color: ${brandColor}; font-size: 20px; font-weight: 700;"><strong>Counter Offer:</strong> ₦${counterSalary.toLocaleString()}</p>
+      ${counterCompensation ? `<p style="margin: 12px 0 0; color: #666; font-size: 14px;"><strong>Requested Benefits:</strong> ${counterCompensation}</p>` : ""}
+      ${counterNote ? `<p style="margin: 8px 0 0; color: #666; font-size: 14px;"><strong>Applicant's Note:</strong> ${counterNote}</p>` : ""}
+    </div>
+    <p style="color: #555; line-height: 1.6;">Log in to your dashboard to review and respond to this counter offer.</p>
+  `);
+}
+
 export async function sendSubscriptionEmail(
   email: string,
   name: string,
