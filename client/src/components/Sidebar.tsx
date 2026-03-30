@@ -139,7 +139,7 @@ export function Sidebar() {
     <>
       {/* Mobile Top Header */}
       <div className="fixed top-0 left-0 right-0 h-14 bg-background/95 backdrop-blur-lg border-b z-50 md:hidden flex items-center justify-between px-4">
-        <img src={iseyaLogo} alt="Iseya" className="h-5 w-auto" />
+        <img src={iseyaLogo} alt="Iseya" className="h-7 w-auto" />
         <NotificationBell />
       </div>
 
