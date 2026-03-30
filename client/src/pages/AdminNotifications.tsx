@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui-extension";
@@ -23,15 +24,15 @@ const notificationSchema = z.object({
   title: z.string().min(1, "Title is required"),
   message: z.string().min(1, "Message is required"),
   type: z.enum(["all", "role", "individual"]),
-  targetRole: z.string().optional(),
+  targetRoles: z.array(z.string()).optional(),
   targetUserId: z.string().optional(),
 }).refine((data) => {
-  if (data.type === "role" && !data.targetRole) return false;
+  if (data.type === "role" && (!data.targetRoles || data.targetRoles.length === 0)) return false;
   if (data.type === "individual" && !data.targetUserId) return false;
   return true;
 }, {
-  message: "Please select a target for this notification",
-  path: ["targetRole"],
+  message: "Please select at least one role",
+  path: ["targetRoles"],
 });
 
 type NotificationFormValues = z.infer<typeof notificationSchema>;
@@ -67,26 +68,39 @@ export default function AdminNotifications() {
       title: "",
       message: "",
       type: "all",
-      targetRole: "",
+      targetRoles: [],
       targetUserId: "",
     },
   });
 
   const selectedType = form.watch("type");
+  const selectedRoles = form.watch("targetRoles") || [];
 
   const createMutation = useMutation({
     mutationFn: async (data: NotificationFormValues) => {
-      await apiRequest("POST", "/api/admin/notifications", {
-        title: data.title,
-        message: data.message,
-        type: data.type,
-        targetRole: data.type === "role" ? data.targetRole : null,
-        targetUserId: data.type === "individual" ? data.targetUserId : null,
-      });
+      if (data.type === "role" && data.targetRoles && data.targetRoles.length > 0) {
+        for (const role of data.targetRoles) {
+          await apiRequest("POST", "/api/admin/notifications", {
+            title: data.title,
+            message: data.message,
+            type: "role",
+            targetRole: role,
+            targetUserId: null,
+          });
+        }
+      } else {
+        await apiRequest("POST", "/api/admin/notifications", {
+          title: data.title,
+          message: data.message,
+          type: data.type,
+          targetRole: null,
+          targetUserId: data.type === "individual" ? data.targetUserId : null,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
-      form.reset({ title: "", message: "", type: "all", targetRole: "", targetUserId: "" });
+      form.reset({ title: "", message: "", type: "all", targetRoles: [], targetUserId: "" });
       toast({ title: "Notification sent", description: "Notification has been sent successfully." });
     },
     onError: () => {
@@ -108,9 +122,17 @@ export default function AdminNotifications() {
     createMutation.mutate(data);
   };
 
+  const getRoleLabel = (role: string | null) => {
+    if (role === "employer") return "Employers";
+    if (role === "agent") return "Agents";
+    if (role === "applicant") return "Applicants";
+    if (role === "admin") return "Admins";
+    return role || "Unknown";
+  };
+
   const getTypeBadge = (type: string, targetRole: string | null) => {
     if (type === "all") return <Badge variant="secondary" className="gap-1"><Globe className="w-3 h-3" />All Users</Badge>;
-    if (type === "role") return <Badge variant="outline" className="gap-1"><Users className="w-3 h-3" />{targetRole === "employer" ? "Employers" : "Applicants"}</Badge>;
+    if (type === "role") return <Badge variant="outline" className="gap-1"><Users className="w-3 h-3" />{getRoleLabel(targetRole)}</Badge>;
     return <Badge variant="outline" className="gap-1"><User className="w-3 h-3" />Individual</Badge>;
   };
 
@@ -185,21 +207,39 @@ export default function AdminNotifications() {
                   {selectedType === "role" && (
                     <FormField
                       control={form.control}
-                      name="targetRole"
-                      render={({ field }) => (
+                      name="targetRoles"
+                      render={() => (
                         <FormItem>
-                          <FormLabel>Target Role</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-target-role">
-                                <SelectValue placeholder="Select role" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="applicant">Applicants</SelectItem>
-                              <SelectItem value="employer">Employers</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormLabel>Target Roles</FormLabel>
+                          <div className="flex flex-wrap gap-4 pt-1">
+                            {[
+                              { value: "applicant", label: "Applicants" },
+                              { value: "employer", label: "Employers" },
+                              { value: "agent", label: "Agents" },
+                            ].map((role) => {
+                              const isChecked = selectedRoles.includes(role.value);
+                              return (
+                                <label
+                                  key={role.value}
+                                  className="flex items-center gap-2 cursor-pointer"
+                                  data-testid={`checkbox-role-${role.value}`}
+                                >
+                                  <Checkbox
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      const current = form.getValues("targetRoles") || [];
+                                      if (checked) {
+                                        form.setValue("targetRoles", [...current, role.value], { shouldValidate: true });
+                                      } else {
+                                        form.setValue("targetRoles", current.filter((r) => r !== role.value), { shouldValidate: true });
+                                      }
+                                    }}
+                                  />
+                                  <span className="text-sm font-medium">{role.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
