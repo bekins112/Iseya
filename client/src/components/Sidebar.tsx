@@ -137,6 +137,12 @@ export function Sidebar() {
 
   return (
     <>
+      {/* Mobile Top Header */}
+      <div className="fixed top-0 left-0 right-0 h-14 bg-background/95 backdrop-blur-lg border-b z-50 md:hidden flex items-center justify-between px-4">
+        <img src={iseyaLogo} alt="Iseya" className="h-5 w-auto" />
+        <NotificationBell />
+      </div>
+
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t z-50 md:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-around h-16 px-2">
@@ -158,10 +164,6 @@ export function Sidebar() {
               </Link>
             );
           })}
-
-          <div className="flex flex-col items-center justify-center gap-0.5 w-16">
-            <NotificationBell mobile />
-          </div>
 
           <button
             className={cn(
