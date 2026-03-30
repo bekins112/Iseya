@@ -1979,11 +1979,11 @@ export async function registerRoutes(
     res.json(validScored);
   });
 
-  // Schedule interview (employer or admin)
+  // Schedule interview (employer, agent, or admin)
   app.post("/api/interviews", isAuthenticated, async (req, res) => {
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
-    if (employer?.role !== "employer" && employer?.role !== "admin") return res.status(403).json({ message: "Only employers can schedule interviews" });
+    if (employer?.role !== "employer" && employer?.role !== "admin" && employer?.role !== "agent") return res.status(403).json({ message: "Only employers or agents can schedule interviews" });
 
     try {
       const interviewSchema = z.object({
@@ -2001,7 +2001,8 @@ export async function registerRoutes(
       if (!application) return res.status(404).json({ message: "Application not found" });
 
       const job = await storage.getJob(application.jobId);
-      if (!job || (job.employerId !== employerId && employer?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
+      const isJobOwner = job && (job.employerId === employerId || job.agentId === employerId);
+      if (!job || (!isJobOwner && employer?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
       if (application.status !== "pending" && application.status !== "offered") {
         return res.status(400).json({ message: "Can only schedule interviews for pending or offered applicants" });
@@ -2011,6 +2012,7 @@ export async function registerRoutes(
       if (existingInterview) return res.status(400).json({ message: "An interview is already scheduled for this application" });
 
       const isAdminScheduling = employer?.role === "admin";
+      const isAgentScheduling = employer?.role === "agent";
       const actualEmployerId = job.employerId;
 
       const interview = await storage.createInterview({
@@ -2031,8 +2033,13 @@ export async function registerRoutes(
 
       const applicant = await storage.getUser(application.applicantId);
       const jobEmployer = await storage.getUser(actualEmployerId);
+      const agentName = isAgentScheduling
+        ? (employer?.agencyName || `${employer?.firstName || ""} ${employer?.lastName || ""}`.trim() || "Agent")
+        : null;
       const schedulerName = isAdminScheduling
         ? "Iṣéyá Team"
+        : isAgentScheduling
+        ? agentName!
         : (jobEmployer?.companyName || `${jobEmployer?.firstName || ""} ${jobEmployer?.lastName || ""}`.trim() || "Employer");
 
       if (applicant && job) {
@@ -2076,6 +2083,28 @@ export async function registerRoutes(
             ).catch(() => {});
           }
         }
+
+        if (isAgentScheduling && jobEmployer) {
+          const employerDisplayName = `${jobEmployer.firstName || ""} ${jobEmployer.lastName || ""}`.trim() || "Employer";
+
+          storage.createNotification({
+            title: "Interview Scheduled by Agent",
+            message: `Your agent ${agentName} has scheduled a ${input.interviewType} interview with ${applicantName} for your job "${job.title}" on ${input.interviewDate} at ${input.interviewTime}.`,
+            type: "individual",
+            targetRole: null,
+            targetUserId: actualEmployerId,
+            createdBy: employerId,
+          }).catch(() => {});
+
+          if (jobEmployer.email) {
+            sendInterviewScheduledEmail(
+              jobEmployer.email, employerDisplayName, job.title, `${agentName} (your agent)`,
+              input.interviewDate, input.interviewTime, input.interviewType,
+              input.location, input.meetingLink,
+              `Your agent ${agentName} has scheduled this interview with applicant ${applicantName} for your job posting.`
+            ).catch(() => {});
+          }
+        }
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -2092,7 +2121,8 @@ export async function registerRoutes(
     const jobId = Number(req.params.jobId);
     if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     const job = await storage.getJob(jobId);
-    if (!job || (job.employerId !== employerId && currentUser?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
+    const isJobOwner = job && (job.employerId === employerId || job.agentId === employerId);
+    if (!job || (!isJobOwner && currentUser?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
     const interviewList = await storage.getInterviewsForJob(jobId);
     const enriched = await Promise.all(interviewList.map(async (interview) => {
@@ -2150,12 +2180,14 @@ export async function registerRoutes(
       const isEmployer = interview.employerId === userId;
       const isAdmin = updatingUser?.role === "admin";
       const isApplicant = interview.applicantId === userId;
+      const job = await storage.getJob(interview.jobId);
+      const isAgent = updatingUser?.role === "agent" && job?.agentId === userId;
 
       if (isApplicant) {
         if (Object.keys(input).length !== 1 || input.status !== "completed") {
           return res.status(403).json({ message: "Applicants can only confirm interviews as completed" });
         }
-      } else if (!isEmployer && !isAdmin) {
+      } else if (!isEmployer && !isAdmin && !isAgent) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
