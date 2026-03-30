@@ -15,7 +15,7 @@ interface NotificationItem {
   createdAt: string;
 }
 
-export function NotificationBell() {
+export function NotificationBell({ mobile }: { mobile?: boolean } = {}) {
   const [open, setOpen] = useState(false);
   const bellRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -220,6 +220,33 @@ export function NotificationBell() {
       </div>
     </div>
   ) : null;
+
+  if (mobile) {
+    return (
+      <>
+        <button
+          ref={bellRef}
+          className="flex flex-col items-center justify-center gap-0.5 transition-all w-16 text-muted-foreground relative"
+          onClick={() => setOpen(!open)}
+          data-testid="mobile-nav-notifications"
+        >
+          <div className="relative">
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-1.5 -right-2 w-4 h-4 bg-red-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center"
+                data-testid="badge-unread-count-mobile"
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-semibold">Alerts</span>
+        </button>
+        {dropdown && createPortal(dropdown, document.body)}
+      </>
+    );
+  }
 
   return (
     <>

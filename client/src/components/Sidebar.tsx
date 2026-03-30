@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
@@ -25,6 +26,8 @@ import {
   HelpCircle,
   Megaphone,
   Coins,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -34,6 +37,7 @@ import type { AdminPermissions } from "@shared/schema";
 export function Sidebar() {
   const { user, logout } = useAuth();
   const [location] = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const isEmployer = user?.role === "employer";
   const isAgent = user?.role === "agent";
@@ -72,7 +76,7 @@ export function Sidebar() {
 
   const filteredAdminLinks = adminLinks.filter(link => !link.perm || hasPerm(link.perm));
 
-  const links: { href: string; label: string; icon: any; subtitle?: string }[] = [
+  const allLinks: { href: string; label: string; icon: any; subtitle?: string }[] = [
     ...(!isAdmin ? [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }] : []),
     ...(isAdmin ? filteredAdminLinks : (isEmployer || isAgent) ? [
       { href: "/manage-jobs", label: "Manage Jobs", icon: ClipboardList },
@@ -87,45 +91,142 @@ export function Sidebar() {
     { href: "/profile", label: "Profile", icon: User },
   ];
 
+  const getMobileNav = () => {
+    if (isAdmin) {
+      return {
+        primary: [
+          { href: "/admin/dashboard", label: "Panel", icon: Shield },
+          { href: "/admin/users", label: "Users", icon: Users },
+          { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
+        ],
+        overflow: filteredAdminLinks.filter(l => 
+          !["/admin/dashboard", "/admin/users", "/admin/jobs"].includes(l.href)
+        ).concat([{ href: "/profile", label: "Profile", icon: User }]),
+      };
+    }
+    if (isEmployer || isAgent) {
+      return {
+        primary: [
+          { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+          { href: "/manage-jobs", label: "Jobs", icon: ClipboardList },
+          { href: "/post-job", label: "Post", icon: PlusCircle },
+        ],
+        overflow: [
+          { href: "/subscription", label: "Subscription", icon: Crown },
+          { href: "/support", label: "Support", icon: HelpCircle },
+          { href: "/profile", label: "Profile", icon: User },
+        ],
+      };
+    }
+    return {
+      primary: [
+        { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+        { href: "/jobs", label: "Jobs", icon: Briefcase },
+        { href: "/my-applications", label: "Applied", icon: FolderOpen },
+      ],
+      overflow: [
+        { href: "/verification", label: user?.isVerified ? "Verified" : "Get Verified", icon: ShieldCheck },
+        { href: "/support", label: "Support", icon: HelpCircle },
+        { href: "/profile", label: "Profile", icon: User },
+      ],
+    };
+  };
+
+  const { primary: mobilePrimary, overflow: mobileOverflow } = getMobileNav();
+  const isOverflowActive = mobileOverflow.some(l => location === l.href);
+
   return (
     <>
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t z-50 md:hidden h-16 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center h-full px-2 overflow-x-auto scrollbar-hide gap-1">
-          {links.map((link) => {
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t z-50 md:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-around h-16 px-2">
+          {mobilePrimary.map((link) => {
             const Icon = link.icon;
             const isActive = location === link.href;
             return (
               <Link key={link.href} href={link.href}>
-                <button className={cn(
-                  "flex flex-col items-center justify-center gap-1 transition-all min-w-[56px] px-1",
-                  isActive ? "text-primary scale-110" : "text-muted-foreground"
-                )} data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <button
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-0.5 transition-all w-16",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}
+                  data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+                >
                   <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5px]")} />
-                  <span className="text-[9px] font-bold uppercase tracking-tighter whitespace-nowrap">{link.label.split(' ')[0]}</span>
+                  <span className="text-[10px] font-semibold">{link.label}</span>
                 </button>
               </Link>
             );
           })}
+
+          <div className="flex flex-col items-center justify-center gap-0.5 w-16">
+            <NotificationBell mobile />
+          </div>
+
           <button
-            className="flex flex-col items-center justify-center gap-1 transition-all text-red-500 min-w-[56px] px-1"
-            onClick={() => logout()}
-            data-testid="mobile-nav-logout"
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 transition-all w-16",
+              (moreOpen || isOverflowActive) ? "text-primary" : "text-muted-foreground"
+            )}
+            onClick={() => setMoreOpen(!moreOpen)}
+            data-testid="mobile-nav-more"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="text-[9px] font-bold uppercase tracking-tighter">Logout</span>
+            {moreOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <span className="text-[10px] font-semibold">More</span>
           </button>
         </div>
       </nav>
 
+      {/* Mobile "More" Menu Overlay */}
+      {moreOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-40 md:hidden"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="fixed bottom-16 left-0 right-0 z-40 md:hidden p-3">
+            <div className="bg-card border rounded-2xl shadow-2xl p-3 space-y-1 max-w-sm mx-auto">
+              {mobileOverflow.map((link) => {
+                const Icon = link.icon;
+                const isActive = location === link.href;
+                return (
+                  <Link key={link.href} href={link.href}>
+                    <button
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
+                        isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                      )}
+                      onClick={() => setMoreOpen(false)}
+                      data-testid={`mobile-more-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{link.label}</span>
+                    </button>
+                  </Link>
+                );
+              })}
+              <button
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                onClick={() => { logout(); setMoreOpen(false); }}
+                data-testid="mobile-more-logout"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 bottom-0 w-64 border-r bg-background hidden md:flex flex-col z-30">
       <div className="h-16 flex items-center justify-between px-6 border-b">
-         <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
+         <img src={iseyaLogo} alt="Iseya" className="h-6 w-auto" />
          <NotificationBell />
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {links.map((link) => {
+        {allLinks.map((link) => {
           const Icon = link.icon;
           const isActive = location === link.href;
           return (
