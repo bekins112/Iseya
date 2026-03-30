@@ -56,6 +56,7 @@ import ForEmployers from "@/pages/ForEmployers";
 import ForApplicants from "@/pages/ForApplicants";
 import ForAgents from "@/pages/ForAgents";
 import CookieConsent from "@/components/CookieConsent";
+import InstallPrompt from "@/components/InstallPrompt";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -305,6 +306,7 @@ function App() {
         <Toaster />
         <Router />
         <CookieConsent />
+        <InstallPrompt />
       </TooltipProvider>
     </QueryClientProvider>
   );
