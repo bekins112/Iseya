@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import Footer from "@/components/Footer";
 import {
   Building2, Briefcase, Users, Search, Shield, Clock,
   Star, ArrowRight, CheckCircle2, Zap, Crown, CreditCard,
@@ -241,17 +242,7 @@ export default function ForEmployers() {
         </div>
       </section>
 
-      <footer className="py-8 border-t">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">© 2026 Iṣéyá by RenownedTech. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="footer-link-home">Home</Link>
-            <Link href="/for-applicants" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="footer-link-for-applicants">For Applicants</Link>
-            <Link href="/for-agents" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="footer-link-for-agents">For Agents</Link>
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors" data-testid="footer-link-about">About</Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

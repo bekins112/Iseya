@@ -454,26 +454,7 @@ export default function BrowseJobs() {
         <PageAds page="browse-jobs" position="bottom" />
       </div>
 
-      {/* Footer */}
-      <footer className="py-8 border-t">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-            <span className="text-sm text-muted-foreground">© 2026 Iṣéyá by RenownedTech. All rights reserved.</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              About
-            </Link>
-            <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQs
-            </Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Contact
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       <NewsletterBar />
     </div>
