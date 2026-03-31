@@ -64,7 +64,7 @@ function formatSalary(min: number, max: number, wage: string) {
 }
 
 export default function JobDetails() {
-  const [, params] = useRoute("/jobs/:id");
+  const [, params] = useRoute("/jobs/:id/:slug?");
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0");
   const { data: job, isLoading } = useJob(id);

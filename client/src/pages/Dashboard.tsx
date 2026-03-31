@@ -283,7 +283,7 @@ export default function Dashboard() {
           <h2 className="text-2xl font-display font-bold flex items-center gap-2">
             {isAgent ? "Your Client Postings" : isEmployer ? "Your Recent Postings" : "Recent Opportunities"}
           </h2>
-          <Link href={(isEmployer || isAgent) ? "/my-jobs" : "/jobs"}>
+          <Link href={(isEmployer || isAgent) ? "/manage-jobs" : "/browse-jobs"}>
             <Button variant="ghost" className="text-primary font-bold group" data-testid="button-view-all-jobs">
               View All <TrendingUp className="ml-2 w-4 h-4 group-hover:-translate-y-1 transition-transform" />
             </Button>
