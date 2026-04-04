@@ -35,6 +35,7 @@ import { jobSectors } from "@/lib/job-categories";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 const JOBS_PER_PAGE = 12;
+const SEGMENT_SIZE = 6;
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
   if (!date) return "Recently";
@@ -61,6 +62,93 @@ const jobTypeBadgeColor: Record<string, string> = {
   "Remote": "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
   "Freelance": "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
 };
+
+function JobCard({ job, index, formatSalary }: { job: Job; index: number; formatSalary: (min: number, max: number) => string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.03 }}
+    >
+      <div className="group border rounded-lg bg-card hover:border-primary/40 hover:shadow-md transition-all" data-testid={`card-job-${job.id}`}>
+        <Link href={`/jobs/${job.id}`} className="block p-4 sm:p-5">
+          <div className="flex gap-4">
+            <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Briefcase className="w-5 h-5 text-primary" />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-base group-hover:text-primary transition-colors truncate" data-testid={`text-job-title-${job.id}`}>
+                    {job.title}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1 truncate">
+                      <Building2 className="w-3.5 h-3.5 shrink-0" />
+                      {(job as any).employerName || "Employer"}
+                    </span>
+                    <span className="text-border hidden sm:inline">|</span>
+                    <span className="flex items-center gap-1 truncate">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      {job.state ? `${job.city ? job.city + ", " : ""}${job.state}` : job.location}
+                    </span>
+                  </div>
+                </div>
+                <span className="hidden sm:block font-bold text-primary text-sm shrink-0" data-testid={`text-job-salary-${job.id}`}>
+                  {formatSalary(job.salaryMin, job.salaryMax)}
+                </span>
+              </div>
+
+              <p className="text-sm text-muted-foreground line-clamp-2 mt-2 leading-relaxed">
+                {job.description}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${jobTypeBadgeColor[job.jobType] || "bg-muted text-muted-foreground"}`} data-testid={`badge-job-type-${job.id}`}>
+                  {job.jobType}
+                </span>
+                <Badge variant="outline" className="text-[11px] h-5 px-1.5 gap-1 font-normal">
+                  {job.category}
+                </Badge>
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {formatTimeAgo(job.createdAt)}
+                </span>
+                <span className="sm:hidden font-bold text-primary text-xs ml-auto" data-testid={`text-job-salary-mobile-${job.id}`}>
+                  {formatSalary(job.salaryMin, job.salaryMax)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        <div className="flex items-center justify-between px-4 sm:px-5 pb-3 pt-0">
+          <div className="flex items-center gap-2">
+            <Banknote className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              {job.jobType === "Remote" ? "Remote" : job.state || job.location}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href={`/jobs/${job.id}`}>
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" data-testid={`button-view-job-${job.id}`}>
+                View Details
+                <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </Link>
+            <Link href={`/jobs/${job.id}`}>
+              <Button size="sm" className="h-8 text-xs gap-1.5" data-testid={`button-apply-job-${job.id}`}>
+                <Send className="w-3.5 h-3.5" />
+                Apply Now
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function BrowseJobs() {
   usePageTitle("Browse Jobs");
@@ -382,101 +470,40 @@ export default function BrowseJobs() {
                   </p>
                 </div>
 
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                  {paginatedJobs.map((job, index) => (
-                    <motion.div
-                      key={job.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                    >
-                      <div className="group border rounded-lg bg-card hover:border-primary/40 hover:shadow-md transition-all" data-testid={`card-job-${job.id}`}>
-                        <Link href={`/jobs/${job.id}`} className="block p-4 sm:p-5">
-                          <div className="flex gap-4">
-                            <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                              <Briefcase className="w-5 h-5 text-primary" />
-                            </div>
+                {(() => {
+                  const segment1 = paginatedJobs.slice(0, SEGMENT_SIZE);
+                  const segment2 = paginatedJobs.slice(SEGMENT_SIZE);
+                  return (
+                    <>
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                        {segment1.map((job, index) => (
+                          <JobCard key={job.id} job={job} index={index} formatSalary={formatSalary} />
+                        ))}
+                      </motion.div>
 
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <h3 className="font-semibold text-base group-hover:text-primary transition-colors truncate" data-testid={`text-job-title-${job.id}`}>
-                                    {job.title}
-                                  </h3>
-                                  <div className="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground flex-wrap">
-                                    <span className="flex items-center gap-1 truncate">
-                                      <Building2 className="w-3.5 h-3.5 shrink-0" />
-                                      {(job as any).employerName || "Employer"}
-                                    </span>
-                                    <span className="text-border hidden sm:inline">|</span>
-                                    <span className="flex items-center gap-1 truncate">
-                                      <MapPin className="w-3.5 h-3.5 shrink-0" />
-                                      {job.state ? `${job.city ? job.city + ", " : ""}${job.state}` : job.location}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <span className="hidden sm:block font-bold text-primary text-sm shrink-0" data-testid={`text-job-salary-${job.id}`}>
-                                  {formatSalary(job.salaryMin, job.salaryMax)}
-                                </span>
-                              </div>
-
-                              <p className="text-sm text-muted-foreground line-clamp-2 mt-2 leading-relaxed">
-                                {job.description}
-                              </p>
-
-                              <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${jobTypeBadgeColor[job.jobType] || "bg-muted text-muted-foreground"}`} data-testid={`badge-job-type-${job.id}`}>
-                                  {job.jobType}
-                                </span>
-                                <Badge variant="outline" className="text-[11px] h-5 px-1.5 gap-1 font-normal">
-                                  {job.category}
-                                </Badge>
-                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {formatTimeAgo(job.createdAt)}
-                                </span>
-                                <span className="sm:hidden font-bold text-primary text-xs ml-auto" data-testid={`text-job-salary-mobile-${job.id}`}>
-                                  {formatSalary(job.salaryMin, job.salaryMax)}
-                                </span>
-                              </div>
-                            </div>
+                      {segment2.length > 0 && (
+                        <>
+                          <div className="my-5">
+                            <PageAds page="browse-jobs" position="middle" />
                           </div>
-                        </Link>
 
-                        <div className="flex items-center justify-between px-4 sm:px-5 pb-3 pt-0">
-                          <div className="flex items-center gap-2">
-                            <Banknote className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {job.jobType === "Remote" ? "Remote" : job.state || job.location}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Link href={`/jobs/${job.id}`}>
-                              <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" data-testid={`button-view-job-${job.id}`}>
-                                View Details
-                                <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                              </Button>
-                            </Link>
-                            <Link href={`/jobs/${job.id}`}>
-                              <Button size="sm" className="h-8 text-xs gap-1.5" data-testid={`button-apply-job-${job.id}`}>
-                                <Send className="w-3.5 h-3.5" />
-                                Apply Now
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                            {segment2.map((job, index) => (
+                              <JobCard key={job.id} job={job} index={index + SEGMENT_SIZE} formatSalary={formatSalary} />
+                            ))}
+                          </motion.div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {totalPages > 1 && (
-                  <nav className="flex items-center justify-center gap-1 mt-8" aria-label="Pagination" data-testid="pagination">
-                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === 1} onClick={() => setCurrentPage(1)} data-testid="button-page-first" aria-label="First page">
+                  <nav className="flex items-center justify-center gap-1 mt-8 pt-6 border-t" aria-label="Pagination" data-testid="pagination">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === 1} onClick={() => { setCurrentPage(1); window.scrollTo({ top: 0, behavior: "smooth" }); }} data-testid="button-page-first" aria-label="First page">
                       <ChevronsLeft className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} data-testid="button-page-prev" aria-label="Previous page">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === 1} onClick={() => { setCurrentPage(p => p - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} data-testid="button-page-prev" aria-label="Previous page">
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
 
@@ -489,7 +516,7 @@ export default function BrowseJobs() {
                           variant={currentPage === p ? "default" : "ghost"}
                           size="icon"
                           className="h-9 w-9 text-sm"
-                          onClick={() => setCurrentPage(p as number)}
+                          onClick={() => { setCurrentPage(p as number); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                           data-testid={`button-page-${p}`}
                           aria-label={`Page ${p}`}
                           aria-current={currentPage === p ? "page" : undefined}
@@ -499,14 +526,18 @@ export default function BrowseJobs() {
                       )
                     )}
 
-                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} data-testid="button-page-next" aria-label="Next page">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === totalPages} onClick={() => { setCurrentPage(p => p + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} data-testid="button-page-next" aria-label="Next page">
                       <ChevronRight className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === totalPages} onClick={() => setCurrentPage(totalPages)} data-testid="button-page-last" aria-label="Last page">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={currentPage === totalPages} onClick={() => { setCurrentPage(totalPages); window.scrollTo({ top: 0, behavior: "smooth" }); }} data-testid="button-page-last" aria-label="Last page">
                       <ChevronsRight className="w-4 h-4" />
                     </Button>
                   </nav>
                 )}
+
+                <p className="text-center text-xs text-muted-foreground mt-3">
+                  Page {currentPage} of {totalPages}
+                </p>
               </>
             )}
 
@@ -547,7 +578,6 @@ export default function BrowseJobs() {
               </Card>
 
               <PageAds page="browse-jobs" position="top" />
-              <PageAds page="browse-jobs" position="middle" />
               <PageAds page="browse-jobs" position="bottom" />
             </div>
           </aside>
