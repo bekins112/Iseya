@@ -11,6 +11,7 @@ import type { Transaction } from "@shared/schema";
 import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
 import { checkApplicantProfile, checkEmployerProfile, checkAgentProfile } from "@/lib/profile-utils";
+import PageAds from "@/components/PageAds";
 
 
 export default function Dashboard() {
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const isAgent = user?.role === "agent";
   const isEmployer = user?.role === "employer" || isAgent;
   const isApplicant = user?.role === "applicant";
+  const dashboardAdPage = isAgent ? "dashboard-agent" : isEmployer ? "dashboard-employer" : "dashboard-applicant";
 
   const { data: jobs, isLoading: jobsLoading } = useJobs();
   const { data: myApplications } = useMyApplications();
@@ -80,6 +82,8 @@ export default function Dashboard() {
           }
         />
       </motion.div>
+
+      <PageAds page={dashboardAdPage} position="top" />
 
       {(() => {
         if (!user) return null;
@@ -185,6 +189,8 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </motion.div>
+
+      <PageAds page={dashboardAdPage} position="middle" />
 
       {(isEmployer || isAgent) && (
         <motion.div
@@ -320,6 +326,8 @@ export default function Dashboard() {
           </div>
         )}
       </motion.div>
+
+      <PageAds page={dashboardAdPage} position="bottom" />
     </div>
   );
 }

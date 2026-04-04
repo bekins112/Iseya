@@ -27,6 +27,9 @@ const TARGET_PAGE_OPTIONS = [
   { value: "landing", label: "Landing Page" },
   { value: "browse-jobs", label: "Browse Jobs" },
   { value: "job-details", label: "Job Details" },
+  { value: "dashboard-employer", label: "Employer Dashboard" },
+  { value: "dashboard-agent", label: "Agent Dashboard" },
+  { value: "dashboard-applicant", label: "Applicant Dashboard" },
 ];
 
 const POSITION_OPTIONS = [
