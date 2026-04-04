@@ -1,42 +1,22 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui-extension";
-import { Bell, Send, Trash2, Users, User, Globe } from "lucide-react";
+import { Bell, Send, Trash2, Users, User, Globe, Mail, Monitor, ImageIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { usePageTitle } from "@/hooks/use-page-title";
-
-const notificationSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  message: z.string().min(1, "Message is required"),
-  type: z.enum(["all", "role", "individual"]),
-  targetRoles: z.array(z.string()).optional(),
-  targetUserId: z.string().optional(),
-}).refine((data) => {
-  if (data.type === "role" && (!data.targetRoles || data.targetRoles.length === 0)) return false;
-  if (data.type === "individual" && !data.targetUserId) return false;
-  return true;
-}, {
-  message: "Please select at least one role",
-  path: ["targetRoles"],
-});
-
-type NotificationFormValues = z.infer<typeof notificationSchema>;
 
 interface NotificationItem {
   id: number;
@@ -55,6 +35,15 @@ export default function AdminNotifications() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [type, setType] = useState("all");
+  const [targetRoles, setTargetRoles] = useState<string[]>([]);
+  const [targetEmail, setTargetEmail] = useState("");
+  const [delivery, setDelivery] = useState("internal");
+  const [promoImage, setPromoImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   if (user?.role !== "admin") {
     setLocation("/dashboard");
     return null;
@@ -64,55 +53,72 @@ export default function AdminNotifications() {
     queryKey: ["/api/admin/notifications"],
   });
 
-  const form = useForm<NotificationFormValues>({
-    resolver: zodResolver(notificationSchema),
-    defaultValues: {
-      title: "",
-      message: "",
-      type: "all",
-      targetRoles: [],
-      targetUserId: "",
-    },
-  });
-
-  const selectedType = form.watch("type");
-  const selectedRoles = form.watch("targetRoles") || [];
+  const sendExternal = delivery === "external" || delivery === "both";
 
   const createMutation = useMutation({
-    mutationFn: async (data: NotificationFormValues) => {
-      if (data.type === "role" && data.targetRoles && data.targetRoles.length > 0) {
-        for (const role of data.targetRoles) {
-          await apiRequest("POST", "/api/admin/notifications", {
-            title: data.title,
-            message: data.message,
-            type: "role",
-            targetRole: role,
-            targetUserId: null,
+    mutationFn: async () => {
+      if (type === "role" && targetRoles.length > 0) {
+        for (const role of targetRoles) {
+          const formData = new FormData();
+          formData.append("title", title);
+          formData.append("message", message);
+          formData.append("type", "role");
+          formData.append("targetRole", role);
+          formData.append("delivery", delivery);
+          if (promoImage && sendExternal) formData.append("image", promoImage);
+          const res = await fetch("/api/admin/notifications", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
           });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ message: "Failed" }));
+            throw new Error(err.message);
+          }
         }
       } else {
-        await apiRequest("POST", "/api/admin/notifications", {
-          title: data.title,
-          message: data.message,
-          type: data.type,
-          targetRole: null,
-          targetUserId: data.type === "individual" ? data.targetUserId : null,
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("message", message);
+        formData.append("type", type);
+        formData.append("delivery", delivery);
+        if (type === "individual") {
+          formData.append("targetEmail", targetEmail);
+        }
+        if (promoImage && sendExternal) formData.append("image", promoImage);
+        const res = await fetch("/api/admin/notifications", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
         });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ message: "Failed" }));
+          throw new Error(err.message);
+        }
+        return res.json();
       }
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
-      form.reset({ title: "", message: "", type: "all", targetRoles: [], targetUserId: "" });
-      toast({ title: "Notification sent", description: "Notification has been sent successfully." });
+      setTitle("");
+      setMessage("");
+      setType("all");
+      setTargetRoles([]);
+      setTargetEmail("");
+      setPromoImage(null);
+      setImagePreview(null);
+      const desc = data?.message || "Notification has been sent successfully.";
+      toast({ title: "Notification sent", description: desc });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to send notification.", variant: "destructive" });
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message || "Failed to send notification.", variant: "destructive" });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/notifications/${id}`);
+      const res = await fetch(`/api/admin/notifications/${id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Failed to delete");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
@@ -120,9 +126,9 @@ export default function AdminNotifications() {
     },
   });
 
-  const onSubmit = (data: NotificationFormValues) => {
-    createMutation.mutate(data);
-  };
+  const canSubmit = title.trim() && message.trim() &&
+    (type !== "role" || targetRoles.length > 0) &&
+    (type !== "individual" || targetEmail.trim());
 
   const getRoleLabel = (role: string | null) => {
     if (role === "employer") return "Employers";
@@ -132,9 +138,9 @@ export default function AdminNotifications() {
     return role || "Unknown";
   };
 
-  const getTypeBadge = (type: string, targetRole: string | null) => {
-    if (type === "all") return <Badge variant="secondary" className="gap-1"><Globe className="w-3 h-3" />All Users</Badge>;
-    if (type === "role") return <Badge variant="outline" className="gap-1"><Users className="w-3 h-3" />{getRoleLabel(targetRole)}</Badge>;
+  const getTypeBadge = (notifType: string, targetRole: string | null) => {
+    if (notifType === "all") return <Badge variant="secondary" className="gap-1"><Globe className="w-3 h-3" />All Users</Badge>;
+    if (notifType === "role") return <Badge variant="outline" className="gap-1"><Users className="w-3 h-3" />{getRoleLabel(targetRole)}</Badge>;
     return <Badge variant="outline" className="gap-1"><User className="w-3 h-3" />Individual</Badge>;
   };
 
@@ -156,122 +162,168 @@ export default function AdminNotifications() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Notification title" {...field} data-testid="input-notification-title" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <div className="space-y-4">
+                <div>
+                  <Label>Title</Label>
+                  <Input
+                    placeholder="Notification title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    data-testid="input-notification-title"
                   />
-                  <FormField
-                    control={form.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Message</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Write your notification message..." className="min-h-[100px] resize-none" {...field} data-testid="input-notification-message" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                </div>
+
+                <div>
+                  <Label>Message</Label>
+                  <Textarea
+                    placeholder="Write your notification message..."
+                    className="min-h-[100px] resize-none"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    data-testid="input-notification-message"
                   />
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Send To</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-notification-type">
-                              <SelectValue placeholder="Select target" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="all">All Users</SelectItem>
-                            <SelectItem value="role">By Role</SelectItem>
-                            <SelectItem value="individual">Individual User</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {selectedType === "role" && (
-                    <FormField
-                      control={form.control}
-                      name="targetRoles"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel>Target Roles</FormLabel>
-                          <div className="flex flex-wrap gap-4 pt-1">
-                            {[
-                              { value: "applicant", label: "Applicants" },
-                              { value: "employer", label: "Employers" },
-                              { value: "agent", label: "Agents" },
-                            ].map((role) => {
-                              const isChecked = selectedRoles.includes(role.value);
-                              return (
-                                <label
-                                  key={role.value}
-                                  className="flex items-center gap-2 cursor-pointer"
-                                  data-testid={`checkbox-role-${role.value}`}
-                                >
-                                  <Checkbox
-                                    checked={isChecked}
-                                    onCheckedChange={(checked) => {
-                                      const current = form.getValues("targetRoles") || [];
-                                      if (checked) {
-                                        form.setValue("targetRoles", [...current, role.value], { shouldValidate: true });
-                                      } else {
-                                        form.setValue("targetRoles", current.filter((r) => r !== role.value), { shouldValidate: true });
-                                      }
-                                    }}
-                                  />
-                                  <span className="text-sm font-medium">{role.label}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                </div>
+
+                <div>
+                  <Label>Send To</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger data-testid="select-notification-type">
+                      <SelectValue placeholder="Select target" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Users</SelectItem>
+                      <SelectItem value="role">By Role</SelectItem>
+                      <SelectItem value="individual">Individual User</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {type === "role" && (
+                  <div>
+                    <Label>Target Roles</Label>
+                    <div className="flex flex-wrap gap-4 pt-1">
+                      {[
+                        { value: "applicant", label: "Applicants" },
+                        { value: "employer", label: "Employers" },
+                        { value: "agent", label: "Agents" },
+                      ].map((role) => {
+                        const isChecked = targetRoles.includes(role.value);
+                        return (
+                          <label
+                            key={role.value}
+                            className="flex items-center gap-2 cursor-pointer"
+                            data-testid={`checkbox-role-${role.value}`}
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setTargetRoles([...targetRoles, role.value]);
+                                } else {
+                                  setTargetRoles(targetRoles.filter((r) => r !== role.value));
+                                }
+                              }}
+                            />
+                            <span className="text-sm font-medium">{role.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {type === "individual" && (
+                  <div>
+                    <Label>User Email</Label>
+                    <Input
+                      type="email"
+                      placeholder="Enter the user's email address"
+                      value={targetEmail}
+                      onChange={(e) => setTargetEmail(e.target.value)}
+                      data-testid="input-target-user-email"
                     />
-                  )}
-                  {selectedType === "individual" && (
-                    <FormField
-                      control={form.control}
-                      name="targetUserId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>User ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter the user's ID" {...field} data-testid="input-target-user-id" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                  </div>
+                )}
+
+                <div>
+                  <Label>Delivery Method</Label>
+                  <Select value={delivery} onValueChange={setDelivery}>
+                    <SelectTrigger data-testid="select-delivery-method">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="internal">
+                        <span className="flex items-center gap-2"><Monitor className="w-3.5 h-3.5" /> Internal (In-App Only)</span>
+                      </SelectItem>
+                      <SelectItem value="external">
+                        <span className="flex items-center gap-2"><Mail className="w-3.5 h-3.5" /> External (Email Only)</span>
+                      </SelectItem>
+                      <SelectItem value="both">
+                        <span className="flex items-center gap-2"><Bell className="w-3.5 h-3.5" /> Both (In-App + Email)</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {sendExternal && (
+                  <div>
+                    <Label>Attach Image (optional)</Label>
+                    <div className="mt-1">
+                      {imagePreview ? (
+                        <div className="relative inline-block">
+                          <img src={imagePreview} alt="Preview" className="max-h-32 rounded-lg border" />
+                          <button
+                            type="button"
+                            data-testid="button-remove-notif-image"
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow"
+                            onClick={() => { setPromoImage(null); setImagePreview(null); }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <label
+                          className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg p-3 cursor-pointer hover:bg-muted/30 transition-colors text-xs text-muted-foreground"
+                          data-testid="label-upload-notif-image"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                          <span>Upload image (JPG, PNG, WEBP, GIF — max 5MB)</span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="hidden"
+                            data-testid="input-notif-image"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 5 * 1024 * 1024) {
+                                  toast({ title: "File too large", description: "Max 5MB allowed", variant: "destructive" });
+                                  return;
+                                }
+                                setPromoImage(file);
+                                setImagePreview(URL.createObjectURL(file));
+                              }
+                            }}
+                          />
+                        </label>
                       )}
-                    />
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  className="w-full"
+                  disabled={createMutation.isPending || !canSubmit}
+                  onClick={() => createMutation.mutate()}
+                  data-testid="button-send-notification"
+                >
+                  {createMutation.isPending ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending...</>
+                  ) : (
+                    "Send Notification"
                   )}
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={createMutation.isPending}
-                    data-testid="button-send-notification"
-                  >
-                    {createMutation.isPending ? "Sending..." : "Send Notification"}
-                  </Button>
-                </form>
-              </Form>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

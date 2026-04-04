@@ -3412,26 +3412,99 @@ export async function registerRoutes(
     res.json(notifs);
   });
 
-  app.post("/api/admin/notifications", isAuthenticated, isAdmin, async (req: any, res) => {
+  app.post("/api/admin/notifications", isAuthenticated, isAdmin, uploadEmailPromo.single("image"), async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
       return res.status(403).json({ message: "You do not have permission to manage notifications" });
     }
-    const userId = req.session.userId!;
-    const { title, message, type, targetRole, targetUserId } = req.body;
+    const adminUserId = req.session.userId!;
+    const { title, message, type, targetRole, targetEmail, delivery } = req.body;
     if (!title || !message) return res.status(400).json({ message: "Title and message are required" });
     const validTypes = ["all", "role", "individual"];
     if (type && !validTypes.includes(type)) return res.status(400).json({ message: "Invalid notification type" });
     if (type === "role" && !targetRole) return res.status(400).json({ message: "Target role is required for role-based notifications" });
-    if (type === "individual" && !targetUserId) return res.status(400).json({ message: "Target user ID is required for individual notifications" });
-    const notification = await storage.createNotification({
-      title,
-      message,
-      type: type || "all",
-      targetRole: targetRole || null,
-      targetUserId: targetUserId || null,
-      createdBy: userId,
-    });
-    res.json(notification);
+
+    let targetUserId: string | null = null;
+    if (type === "individual") {
+      if (!targetEmail) return res.status(400).json({ message: "Email is required for individual notifications" });
+      const [foundUser] = await db.select().from(users).where(eq(users.email, targetEmail.trim().toLowerCase()));
+      if (!foundUser) return res.status(404).json({ message: `No user found with email: ${targetEmail}` });
+      targetUserId = foundUser.id;
+    }
+
+    const deliveryMethod = delivery || "internal";
+    const sendInternal = deliveryMethod === "internal" || deliveryMethod === "both";
+    const sendExternal = deliveryMethod === "external" || deliveryMethod === "both";
+    const imagePath = req.file ? req.file.path : undefined;
+
+    let notification = null;
+    if (sendInternal) {
+      notification = await storage.createNotification({
+        title,
+        message,
+        type: type || "all",
+        targetRole: targetRole || null,
+        targetUserId,
+        createdBy: adminUserId,
+      });
+    }
+
+    let emailResult = { sent: 0, total: 0 };
+    if (sendExternal) {
+      const { runNewsPush } = await import("./scheduler");
+      if (type === "individual" && targetUserId) {
+        const targetUser = await storage.getUser(targetUserId);
+        if (targetUser?.email) {
+          const { Resend } = await import("resend");
+          const apiKey = process.env.RESEND_API_KEY;
+          if (apiKey) {
+            try {
+              const client = new Resend(apiKey);
+              const emailPayload: any = {
+                from: "Iseya <support@iseya.ng>",
+                to: [targetUser.email],
+                subject: `${title} | Iṣéyá`,
+                html: `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff;">
+                  <div style="background:#d4a017;padding:24px 32px;text-align:center;">
+                    <h2 style="color:#fff;margin:0;font-size:20px;">Iṣéyá</h2>
+                    <p style="color:rgba(255,255,255,0.85);margin:4px 0 0;font-size:13px;">Hire Talent, Get Hired</p>
+                  </div>
+                  <div style="padding:32px 32px 16px;">
+                    <h2 style="color:#333;margin:0 0 16px;font-size:20px;">${title}</h2>
+                    <div style="color:#555;font-size:14px;line-height:1.6;">${message}</div>
+                  </div>
+                  <div style="border-top:1px solid #eee;padding:20px 32px;text-align:center;">
+                    <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} Iṣéyá. All rights reserved.</p>
+                  </div>
+                </div>`,
+              };
+              if (imagePath) {
+                const fsSync = await import("fs");
+                const pathMod = await import("path");
+                if (fsSync.existsSync(imagePath)) {
+                  emailPayload.attachments = [{
+                    filename: pathMod.basename(imagePath),
+                    content: fsSync.readFileSync(imagePath),
+                  }];
+                }
+              }
+              const { error } = await client.emails.send(emailPayload);
+              emailResult = { sent: error ? 0 : 1, total: 1 };
+            } catch (e) {
+              console.error("Individual email send error:", e);
+            }
+          }
+        }
+      } else {
+        const role = type === "role" ? targetRole : undefined;
+        emailResult = await runNewsPush(title, message, role, imagePath);
+      }
+    }
+
+    const responseMsg = [];
+    if (sendInternal) responseMsg.push("In-app notification sent");
+    if (sendExternal) responseMsg.push(`Email sent to ${emailResult.sent}/${emailResult.total} users`);
+
+    res.json({ notification, message: responseMsg.join(". "), emailResult });
   });
 
   app.delete("/api/admin/notifications/:id", isAuthenticated, isAdmin, async (req: any, res) => {
