@@ -22,72 +22,13 @@ import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase, Building2, 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { nigerianStates } from "@/lib/nigerian-locations";
+import { jobSectors, allJobCategories, businessCategories } from "@/lib/job-categories";
 import { usePageTitle } from "@/hooks/use-page-title";
-
-const businessCategories = [
-  "Restaurant & Food Service",
-  "Hospitality & Hotels",
-  "Retail & Sales",
-  "Construction & Labour",
-  "Cleaning & Maintenance",
-  "Logistics & Delivery",
-  "Agriculture & Farming",
-  "Event Management",
-  "Domestic & Household",
-  "Manufacturing",
-  "Security Services",
-  "Healthcare & Wellness",
-  "Education & Tutoring",
-  "Transportation",
-  "Other",
-];
 
 const JOB_TYPE_OPTIONS = [
   "Full-time",
   "Part-time",
   "Contract",
-];
-
-const JOB_CATEGORY_OPTIONS = [
-  "Waiter / Waitress",
-  "Barman / Bartender",
-  "Housekeeper / Room Attendant",
-  "Kitchen Assistant / Steward",
-  "Cook",
-  "Porter / Luggage Handler",
-  "Spa Therapist / Attendant",
-  "Receptionist",
-  "Sales Assistant / Attendant",
-  "Cashier",
-  "Shelf Attendant / Merchandiser",
-  "Store Keeper / Inventory Officer",
-  "Line Cook / Prep Cook",
-  "Barista",
-  "Fast Food Attendant",
-  "Kitchen Manager",
-  "Server",
-  "Factory Worker / Casual Labourer",
-  "Cleaner / Janitor",
-  "Driver (Casual)",
-  "Nanny / Caregiver",
-  "Security Guard",
-  "Tailor / Fashion Designer Assistant",
-  "Box Production Worker",
-  "Stylist (Fashion)",
-  "Stylist (Unisex)",
-  "Stylist (Ladies)",
-  "Stylist (Barbing)",
-  "Stylist (Spa)",
-  "Funeral Service Worker",
-  "Tour & Travel Guide",
-  "Childcare Worker",
-  "Personal Care Aide",
-  "Recreation & Fitness Worker",
-  "Residential Advisor",
-  "Repair Technician",
-  "Maintenance Man",
-  "Office Assistant",
-  "Other",
 ];
 
 const profileSchema = insertUserSchema.pick({
@@ -1019,19 +960,24 @@ export default function Profile() {
                                 </FormControl>
                               </PopoverTrigger>
                               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                                <div className="max-h-[280px] overflow-y-auto p-2 space-y-0.5">
-                                  {JOB_CATEGORY_OPTIONS.map((cat) => (
-                                    <label
-                                      key={cat}
-                                      className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted/60 cursor-pointer transition-colors"
-                                      data-testid={`checkbox-category-${cat.toLowerCase().replace(/[\s\/&()]+/g, "-")}`}
-                                    >
-                                      <Checkbox
-                                        checked={selected.includes(cat)}
-                                        onCheckedChange={() => toggleCat(cat)}
-                                      />
-                                      <span className="text-sm">{cat}</span>
-                                    </label>
+                                <div className="max-h-[280px] overflow-y-auto p-2 space-y-1">
+                                  {jobSectors.map((sector) => (
+                                    <div key={sector.name}>
+                                      <p className="px-3 py-1.5 text-xs font-bold text-primary uppercase tracking-wide">{sector.name}</p>
+                                      {sector.subcategories.map((cat) => (
+                                        <label
+                                          key={cat}
+                                          className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-muted/60 cursor-pointer transition-colors"
+                                          data-testid={`checkbox-category-${cat.toLowerCase().replace(/[\s\/&()]+/g, "-")}`}
+                                        >
+                                          <Checkbox
+                                            checked={selected.includes(cat)}
+                                            onCheckedChange={() => toggleCat(cat)}
+                                          />
+                                          <span className="text-sm">{cat}</span>
+                                        </label>
+                                      ))}
+                                    </div>
                                   ))}
                                 </div>
                                 {selected.length > 0 && (

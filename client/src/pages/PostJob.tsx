@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,51 +20,10 @@ import { AlertTriangle, ArrowUpCircle, CalendarClock, CreditCard, UserCircle2, P
 import { cn } from "@/lib/utils";
 import { checkEmployerProfile, checkAgentProfile } from "@/lib/profile-utils";
 import { nigerianStates } from "@/lib/nigerian-locations";
+import { jobSectors } from "@/lib/job-categories";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/use-page-title";
-
-const categories = [
-  "Waiter / Waitress",
-  "Barman / Bartender",
-  "Housekeeper / Room Attendant",
-  "Kitchen Assistant / Steward",
-  "Cook",
-  "Porter / Luggage Handler",
-  "Spa Therapist / Attendant",
-  "Receptionist",
-  "Sales Assistant / Attendant",
-  "Cashier",
-  "Shelf Attendant / Merchandiser",
-  "Store Keeper / Inventory Officer",
-  "Line Cook / Prep Cook",
-  "Barista",
-  "Fast Food Attendant",
-  "Kitchen Manager",
-  "Server",
-  "Factory Worker / Casual Labourer",
-  "Cleaner / Janitor",
-  "Driver (Casual)",
-  "Nanny / Caregiver",
-  "Security Guard",
-  "Tailor / Fashion Designer Assistant",
-  "Box Production Worker",
-  "Stylist (Fashion)",
-  "Stylist (Unisex)",
-  "Stylist (Ladies)",
-  "Stylist (Barbing)",
-  "Stylist (Spa)",
-  "Funeral Service Worker",
-  "Tour & Travel Guide",
-  "Childcare Worker",
-  "Personal Care Aide",
-  "Recreation & Fitness Worker",
-  "Residential Advisor",
-  "Repair Technician",
-  "Maintenance Man",
-  "Office Assistant",
-  "Other",
-];
 
 const postJobSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
@@ -411,9 +370,14 @@ export default function PostJob() {
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        <SelectContent className="max-h-80">
+                          {jobSectors.map((sector) => (
+                            <SelectGroup key={sector.name}>
+                              <SelectLabel className="font-bold text-xs text-primary">{sector.name}</SelectLabel>
+                              {sector.subcategories.map((cat) => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))}
+                            </SelectGroup>
                           ))}
                         </SelectContent>
                       </Select>

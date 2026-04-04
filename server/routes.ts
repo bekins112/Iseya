@@ -3438,6 +3438,10 @@ export async function registerRoutes(
     const request = await storage.getVerificationRequest(requestId);
     if (!request) return res.status(404).json({ message: "Verification request not found" });
 
+    if (request.status === "awaiting_payment") {
+      return res.status(400).json({ message: "Cannot review this request — applicant has not completed payment yet" });
+    }
+
     const updated = await storage.updateVerificationRequest(request.id, {
       status,
       adminNotes: adminNotes || null,

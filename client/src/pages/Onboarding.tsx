@@ -11,25 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertCircle, Briefcase, Search, Building2, UserCheck, Users } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { nigerianStates } from "@/lib/nigerian-locations";
+import { businessCategories } from "@/lib/job-categories";
 import { usePageTitle } from "@/hooks/use-page-title";
-
-const businessCategories = [
-  "Restaurant & Food Service",
-  "Hospitality & Hotels",
-  "Retail & Sales",
-  "Construction & Labour",
-  "Cleaning & Maintenance",
-  "Logistics & Delivery",
-  "Agriculture & Farming",
-  "Event Management",
-  "Domestic & Household",
-  "Manufacturing",
-  "Security Services",
-  "Healthcare & Wellness",
-  "Education & Tutoring",
-  "Transportation",
-  "Other",
-];
 
 export default function Onboarding() {
   usePageTitle("Get Started");
