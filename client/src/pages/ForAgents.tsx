@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 import {
   Briefcase, Users, Shield, ArrowRight, CheckCircle2,
   CreditCard, Crown, Building2, Handshake, FileText,
@@ -65,21 +66,7 @@ const benefits = [
 export default function ForAgents() {
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/">
-            <img src={iseyaLogo} alt="Iseya" className="h-8 w-auto cursor-pointer" />
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" data-testid="button-agent-login">Login</Button>
-            </Link>
-            <Link href="/register">
-              <Button size="sm" data-testid="button-agent-signup">Become an Agent</Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <section className="pt-28 pb-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-primary/5" />

@@ -4,6 +4,8 @@ import { Link } from "wouter";
 import { ArrowLeft, Copyright as CopyrightIcon, Shield, FileText, AlertCircle, Globe, Scale, BookOpen } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 
 export default function CopyrightPage() {
   const container = {
@@ -69,27 +71,7 @@ export default function CopyrightPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/browse-jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Browse Jobs
-            </Link>
-            <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              About
-            </Link>
-            <Link href="/faqs" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              FAQs
-            </Link>
-            <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Contact
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <div className="pt-24 pb-16 px-4 md:px-8 max-w-4xl mx-auto">
         <motion.div
@@ -174,42 +156,7 @@ export default function CopyrightPage() {
         </motion.div>
       </div>
 
-      <footer className="border-t py-8 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-              <span className="text-sm text-muted-foreground">© 2026 Iṣéyá by RenownedTech. All rights reserved.</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <a href="https://instagram.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Instagram"><SiInstagram className="w-3.5 h-3.5" /></a>
-              <a href="https://linkedin.com/company/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="LinkedIn"><SiLinkedin className="w-3.5 h-3.5" /></a>
-              <a href="https://x.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="X (Twitter)"><SiX className="w-3.5 h-3.5" /></a>
-              <a href="https://facebook.com/iseyaofficial" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="Facebook"><SiFacebook className="w-3.5 h-3.5" /></a>
-            </div>
-          </div>
-          <div className="flex items-center gap-6 flex-wrap">
-            <Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground">
-              Browse Jobs
-            </Link>
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground">
-              About
-            </Link>
-            <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground">
-              FAQs
-            </Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
-              Contact
-            </Link>
-            <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-foreground">
-              Disclaimer
-            </Link>
-            <Link href="/copyright" className="text-sm text-primary font-medium">
-              Copyright
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,30 +75,7 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground" data-testid="link-home">
-              Home
-            </Link>
-            <Link href="/browse-jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Browse Jobs
-            </Link>
-            <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              About
-            </Link>
-            <Link href="/faqs" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              FAQs
-            </Link>
-            <Link href="/contact" className="text-sm font-medium text-primary">
-              Contact
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <div className="pt-24 pb-16 px-4 md:px-8 max-w-7xl mx-auto">
         <motion.div

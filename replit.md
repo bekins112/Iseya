@@ -16,8 +16,10 @@ Preferred communication style: Simple, everyday language.
 - **Animations**: Framer Motion
 - **Build Tool**: Vite
 - **Architecture**: Page-based with shared components, custom hooks for API abstraction, and role-based UI rendering, including an onboarding flow.
-- **Landing Page**: Features a banner carousel, job search/filter bar, recently posted jobs grid, "How It Works" section, testimonials, "Become an Agent" CTA section, and footer. Navigation includes a "Discover" dropdown menu linking to role-specific pages.
-- **Role Pages**: Dedicated landing pages for each role: `/for-employers`, `/for-applicants`, `/for-agents`. Each features hero section, feature highlights, "How It Works" steps, benefits, and CTAs. Accessible via nav dropdown and footer links.
+- **Shared Header**: `client/src/components/Header.tsx` — consistent nav across all public pages with logo, Browse Jobs, Discover dropdown (Job Seekers/Employers/Agents), Company dropdown (About/FAQs/Contact), mobile hamburger menu, and auth buttons (Login/Sign Up or Dashboard/Logout).
+- **Shared Footer**: `client/src/components/Footer.tsx` — consistent footer across all public pages with logo, 4-column links, social icons, legal links, and newsletter bar.
+- **Landing Page**: Features a banner carousel, job search/filter bar, recently posted jobs grid, "How It Works" section, testimonials, "Become an Agent" CTA section. Uses shared Header and Footer.
+- **Role Pages**: Dedicated landing pages for each role: `/for-employers`, `/for-applicants`, `/for-agents`. Each features hero section, feature highlights, "How It Works" steps, benefits, and CTAs. Uses shared Header and Footer.
 - **UI/UX**: Consistent styling across legal pages, cookie consent banner with framer-motion animations, newsletter subscription bar.
 
 ### Backend

@@ -1,5 +1,7 @@
 import { useRoute, Link, useLocation } from "wouter";
 import PageAds from "@/components/PageAds";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 import { useQuery } from "@tanstack/react-query";
 import { useJob, useCreateApplication, useUploadCV } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
@@ -152,13 +154,7 @@ export default function JobDetails() {
   if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
-            <Link href="/" className="flex items-center gap-2">
-              <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
-            </Link>
-          </div>
-        </nav>
+        <Header />
         <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/4" />
@@ -173,13 +169,7 @@ export default function JobDetails() {
   if (!job) {
     return (
       <div className="min-h-screen bg-background">
-        <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
-            <Link href="/" className="flex items-center gap-2">
-              <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
-            </Link>
-          </div>
-        </nav>
+        <Header />
         <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto text-center">
           <Briefcase className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Job Not Found</h1>
@@ -198,21 +188,7 @@ export default function JobDetails() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/browse-jobs">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Jobs
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
         <PageAds page="job-details" position="top" />
@@ -694,28 +670,7 @@ export default function JobDetails() {
         <PageAds page="job-details" position="bottom" />
       </div>
 
-      <footer className="py-8 border-t">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-6 w-auto" />
-            <span className="text-sm text-muted-foreground">© 2026 Iṣéyá by RenownedTech. All rights reserved.</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/browse-jobs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Browse Jobs
-            </Link>
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              About
-            </Link>
-            <Link href="/faqs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              FAQs
-            </Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Contact
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

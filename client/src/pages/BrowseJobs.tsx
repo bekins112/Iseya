@@ -23,6 +23,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 import { nigerianStates } from "@/lib/nigerian-locations";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
@@ -146,33 +148,7 @@ export default function BrowseJobs() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src={iseyaLogo} alt="Iṣéyá" className="h-8 w-auto" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-4">
-              <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                About
-              </Link>
-              <Link href="/faqs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                FAQs
-              </Link>
-              <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Contact
-              </Link>
-            </div>
-            <Link href="/">
-              <Button variant="outline" size="sm" data-testid="button-back-home">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Home
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <main className="pt-24 pb-16 px-4 max-w-7xl mx-auto">
         {/* Header */}
