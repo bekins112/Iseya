@@ -4,7 +4,17 @@ import { eq, and, desc, gte } from "drizzle-orm";
 import { jobs, applications, users } from "@shared/schema";
 import type { Job, User } from "@shared/schema";
 
-const BASE_URL = "https://iseya-ng.replit.app";
+function getBaseUrl(): string {
+  if (process.env.REPLIT_DEPLOYMENT) {
+    return "https://iseya-ng.replit.app";
+  }
+  const replitDomains = process.env.REPLIT_DOMAINS;
+  if (replitDomains) {
+    return `https://${replitDomains.split(",")[0]}`;
+  }
+  return "https://iseya-ng.replit.app";
+}
+const BASE_URL = getBaseUrl();
 
 async function getSettingValue(key: string): Promise<string> {
   const val = await storage.getSetting(key);

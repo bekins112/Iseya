@@ -9,8 +9,19 @@ function getResendClient() {
   return new Resend(apiKey);
 }
 
+function getBaseUrl(): string {
+  if (process.env.REPLIT_DEPLOYMENT) {
+    return "https://iseya-ng.replit.app";
+  }
+  const replitDomains = process.env.REPLIT_DOMAINS;
+  if (replitDomains) {
+    return `https://${replitDomains.split(",")[0]}`;
+  }
+  return "https://iseya-ng.replit.app";
+}
+
 function getLogoUrl(): string {
-  return "https://iseya-ng.replit.app/email-logo.png";
+  return `${getBaseUrl()}/email-logo.png`;
 }
 
 function emailWrapper(content: string): string {
@@ -81,7 +92,7 @@ export async function sendWelcomeEmail(to: string, name: string, role: string): 
 }
 
 async function sendApplicantWelcomeEmail(to: string, name: string): Promise<boolean> {
-  const baseUrl = "https://iseya-ng.replit.app";
+  const baseUrl = getBaseUrl();
   const logoImg = `${baseUrl}/email-logo-color.png`;
   const heroImg = `${baseUrl}/email-applicant-hero.png`;
   const celebrateImg = `${baseUrl}/email-applicant-celebrate.png`;
@@ -199,7 +210,7 @@ async function sendApplicantWelcomeEmail(to: string, name: string): Promise<bool
 }
 
 async function sendEmployerWelcomeEmail(to: string, name: string): Promise<boolean> {
-  const baseUrl = "https://iseya-ng.replit.app";
+  const baseUrl = getBaseUrl();
   const logoImg = `${baseUrl}/email-logo-color.png`;
   const heroImg = `${baseUrl}/email-employer-hero.png`;
   const celebrateImg = `${baseUrl}/email-applicant-celebrate.png`;
@@ -313,7 +324,7 @@ async function sendEmployerWelcomeEmail(to: string, name: string): Promise<boole
 }
 
 async function sendAgentWelcomeEmail(to: string, name: string): Promise<boolean> {
-  const baseUrl = "https://iseya-ng.replit.app";
+  const baseUrl = getBaseUrl();
   const logoImg = `${baseUrl}/email-logo-color.png`;
   const heroImg = `${baseUrl}/email-agent-hero.png`;
   const celebrateImg = `${baseUrl}/email-applicant-celebrate.png`;
