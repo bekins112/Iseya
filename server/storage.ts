@@ -491,9 +491,13 @@ export class DatabaseStorage implements IStorage {
     const rows = await query;
     return rows.map(r => ({
       ...r.ticket,
-      senderName: `${r.senderFirstName || ""} ${r.senderLastName || ""}`.trim() || "Unknown",
-      senderEmail: r.senderEmail || undefined,
-      senderRole: r.senderRole || undefined,
+      senderName: r.ticket.isExternal
+        ? r.ticket.externalName || "External Contact"
+        : `${r.senderFirstName || ""} ${r.senderLastName || ""}`.trim() || "Unknown",
+      senderEmail: r.ticket.isExternal
+        ? r.ticket.externalEmail || undefined
+        : r.senderEmail || undefined,
+      senderRole: r.ticket.isExternal ? "external" : r.senderRole || undefined,
     }));
   }
 

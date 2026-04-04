@@ -142,7 +142,7 @@ export default function AdminTickets() {
   const openCount = tickets.filter(t => t.status === "open").length;
   const inProgressCount = tickets.filter(t => t.status === "in_progress").length;
   const resolvedCount = tickets.filter(t => t.status === "resolved").length;
-  const urgentCount = tickets.filter(t => t.priority === "urgent" || t.priority === "high").length;
+  const externalCount = tickets.filter(t => t.isExternal).length;
 
   const getStatusIcon = (status: string | null) => {
     switch (status) {
@@ -230,10 +230,10 @@ export default function AdminTickets() {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-1">
-              <AlertCircle className="w-4 h-4 text-red-600" />
-              <span className="text-sm text-muted-foreground">Urgent/High</span>
+              <Mail className="w-4 h-4 text-purple-600" />
+              <span className="text-sm text-muted-foreground">External</span>
             </div>
-            <p className="text-2xl font-bold">{urgentCount}</p>
+            <p className="text-2xl font-bold">{externalCount}</p>
           </CardContent>
         </Card>
       </div>
@@ -311,6 +311,12 @@ export default function AdminTickets() {
                         <Badge className={getPriorityColor(ticket.priority)} variant="secondary">
                           <span className="capitalize">{ticket.priority}</span>
                         </Badge>
+                        {ticket.isExternal && (
+                          <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" variant="secondary">
+                            <Mail className="w-3 h-3 mr-1" />
+                            External
+                          </Badge>
+                        )}
                         {unread > 0 && (
                           <Badge className="bg-red-500 text-white text-[10px] animate-pulse">
                             {unread} new
@@ -391,19 +397,25 @@ export default function AdminTickets() {
                   <Badge className={`${getPriorityColor(selectedTicket.priority)} text-[10px]`}>
                     {selectedTicket.priority}
                   </Badge>
+                  {selectedTicket.isExternal && (
+                    <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-[10px]">
+                      <Mail className="w-3 h-3 mr-1" />
+                      External (Contact Form)
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
                   <span className="flex items-center gap-1">
                     <User className="w-3 h-3" />
-                    {selectedTicket.senderName || "Unknown"}
+                    {selectedTicket.isExternal ? selectedTicket.externalName || "External Contact" : selectedTicket.senderName || "Unknown"}
                   </span>
-                  {selectedTicket.senderEmail && (
+                  {(selectedTicket.isExternal ? selectedTicket.externalEmail : selectedTicket.senderEmail) && (
                     <span className="flex items-center gap-1">
                       <Mail className="w-3 h-3" />
-                      {selectedTicket.senderEmail}
+                      {selectedTicket.isExternal ? selectedTicket.externalEmail : selectedTicket.senderEmail}
                     </span>
                   )}
-                  {selectedTicket.senderRole && (
+                  {selectedTicket.senderRole && !selectedTicket.isExternal && (
                     <Badge variant="outline" className="capitalize text-[10px]">{selectedTicket.senderRole}</Badge>
                   )}
                   <Button
@@ -497,7 +509,12 @@ export default function AdminTickets() {
                           ) : (
                             <>
                               <User className="w-3 h-3 text-muted-foreground" />
-                              <span className="text-[10px] font-semibold text-muted-foreground">{selectedTicket.senderName || "User"}</span>
+                              <span className="text-[10px] font-semibold text-muted-foreground">
+                                {selectedTicket.isExternal ? (selectedTicket.externalName || "External Contact") : (selectedTicket.senderName || "User")}
+                              </span>
+                              {msg.senderRole === "external" && (
+                                <span className="text-[9px] text-purple-600 dark:text-purple-400">(via Contact Form)</span>
+                              )}
                             </>
                           )}
                         </div>
@@ -542,6 +559,12 @@ export default function AdminTickets() {
 
               {/* Reply input */}
               <div className="px-6 py-3 border-t shrink-0">
+                {selectedTicket?.isExternal && (
+                  <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-purple-50 dark:bg-purple-950/30 rounded-lg text-xs text-purple-700 dark:text-purple-300">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    <span>Replies will be sent via email to <strong>{selectedTicket.externalEmail}</strong></span>
+                  </div>
+                )}
                 {attachedFile && (
                   <div className="flex items-center gap-2 mb-2 px-3 py-2 bg-muted rounded-lg text-xs">
                     {/\.(jpg|jpeg|png|webp|gif)$/i.test(attachedFile.name) ? (
@@ -595,7 +618,7 @@ export default function AdminTickets() {
                   <Textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Type your reply to the user..."
+                    placeholder={selectedTicket?.isExternal ? "Type your reply (will be sent via email)..." : "Type your reply to the user..."}
                     className="min-h-[44px] max-h-[100px] resize-none text-sm"
                     rows={1}
                     onKeyDown={(e) => {

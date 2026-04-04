@@ -1,7 +1,7 @@
 # Iṣéyá - Job Marketplace Platform
 
 ## Overview
-Iṣéyá is a job marketplace platform designed to connect casual workers with employers for short-term or part-time job opportunities. The platform aims to streamline the process of finding and offering casual work, fostering a dynamic marketplace with features like role-based access, job browsing and application for workers, and job posting and management for employers.
+Iṣéyá is a job marketplace platform connecting casual workers with employers for short-term or part-time job opportunities. It aims to streamline casual work, offering features like role-based access, job browsing and application for workers, and job posting and management for employers. The platform seeks to foster a dynamic marketplace, enhance user experience, and provide robust administrative controls.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -9,119 +9,42 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend
-- **Framework**: React 18 with TypeScript
-- **Routing**: Wouter
-- **State Management**: TanStack React Query
-- **Styling**: Tailwind CSS with shadcn/ui (New York variant)
-- **Animations**: Framer Motion
-- **Build Tool**: Vite
-- **Architecture**: Page-based with shared components, custom hooks for API abstraction, and role-based UI rendering, including an onboarding flow.
-- **Shared Header**: `client/src/components/Header.tsx` — consistent nav across all public pages with logo, Browse Jobs, Discover dropdown (Job Seekers/Employers/Agents), Company dropdown (About/FAQs/Contact), mobile hamburger menu, and auth buttons (Login/Sign Up or Dashboard/Logout).
-- **Shared Footer**: `client/src/components/Footer.tsx` — consistent footer across all public pages with logo, 4-column links, social icons, legal links, and newsletter bar.
-- **Landing Page**: Features a banner carousel, job search/filter bar, recently posted jobs grid, "How It Works" section, testimonials, "Become an Agent" CTA section. Uses shared Header and Footer.
-- **Role Pages**: Dedicated landing pages for each role: `/for-employers`, `/for-applicants`, `/for-agents`. Each features hero section, feature highlights, "How It Works" steps, benefits, and CTAs. Uses shared Header and Footer.
-- **UI/UX**: Consistent styling across legal pages, cookie consent banner with framer-motion animations, newsletter subscription bar.
+- **Frameworks & Libraries**: React 18 with TypeScript, Wouter for routing, TanStack React Query for state management, Tailwind CSS with shadcn/ui (New York variant) for styling, Framer Motion for animations, and Vite for building.
+- **Architecture**: Page-based with shared components, custom hooks for API abstraction, and role-based UI rendering, including an onboarding flow. Features a consistent header and footer across all public pages, a dynamic landing page, and dedicated role-specific pages (`/for-employers`, `/for-applicants`, `/for-agents`).
+- **UI/UX**: Emphasizes consistent styling, accessibility, and dynamic content presentation.
 
 ### Backend
-- **Framework**: Express.js with TypeScript
-- **Database ORM**: Drizzle ORM with PostgreSQL
-- **Session Management**: express-session with connect-pg-simple
-- **Authentication**: Replit Auth (OpenID Connect) via Passport.js
-- **API**: Routes defined in `server/routes.ts` with shared contracts in `shared/routes.ts` using Zod for validation. Database operations are abstracted by a storage layer (`server/storage.ts`).
+- **Framework & Database ORM**: Express.js with TypeScript, Drizzle ORM with PostgreSQL.
+- **API**: Organized routes with shared contracts and Zod for validation. Database operations are abstracted through a storage layer.
+- **Session Management**: `express-session` with `connect-pg-simple` for PostgreSQL-stored sessions.
+- **Authentication**: Replit Auth (OpenID Connect) via Passport.js, supplemented by custom email/password authentication with bcrypt hashing and CAPTCHA protection. Includes Google OAuth integration and a secure password reset flow.
+- **Role-Based Access Control**: Granular permissions for users, employers, agents, and administrators. New users undergo an onboarding process. Features include agent job posting capabilities with credit-based or subscription models, and configurable gating for unverified applicants and free-tier employers via admin settings.
+- **Admin Features**: Comprehensive admin dashboard for managing users (CRUD, suspension, data export), jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, internal ads, and platform settings. Admin can rate applicants and manage external support tickets.
 
 ### Data Storage
-- **Database**: PostgreSQL
-- **Key Tables**: `users`, `jobs`, `applications`, `sessions`, `notifications`, `notification_reads`, `platform_settings`, `verification_requests`, `tickets`, `ticket_messages`, `internal_ads`, `newsletter_subscribers`.
-
-### Authentication & Access Control
-- Custom email/password authentication with bcrypt hashing, CAPTCHA protection, and Google OAuth via Passport.js. Sessions are PostgreSQL-stored.
-- **Password Reset**: Forgot password flow with email-based reset tokens (1-hour expiry). Pages: `/forgot-password`, `/reset-password?token=...`. API: `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`.
-- **Admin Login**: Dedicated admin login page at `/admin/login` with separate email/password/CAPTCHA form. Redirects to `/admin/dashboard` on success.
-- New users complete an onboarding process.
-- **Agent Role**: Agents can post jobs on behalf of employers. They use either a subscription (same tiers as employers) or pay-per-post credits (`agentPostCredits`). The per-post fee is configured via `agent_job_post_fee` in platform_settings (default ₦5,000). Free-tier agents with credits > 0 can post; credits decrement on successful post. Payment routes: `/api/agent/buy-post-credits/paystack`, `/api/agent/buy-post-credits/flutterwave`, and corresponding verify routes. Agent profile requires: first name, last name, agency name, phone, state.
-- **Gating**: Non-verified applicants have restricted application management and masked contact info. Free-tier employers have job posting limits and restricted job/applicant management. Both behaviors are admin-configurable via platform settings toggles.
-- **Admin Toggle Settings**: Two toggle switches on admin pages control gating behavior:
-  - `hide_unverified_details` (AdminVerifications page): When enabled (default), employers/agents cannot see unverified applicants' contact info, email, or CV across all relevant endpoints (applicant listing, profile view, recommendations, interviews, CV download).
-  - `restrict_free_employer_management` (AdminSubscriptions page): When enabled (default), free-tier employers cannot manage jobs, update applicant status, send offers, or respond to counter-offers. Stored as platform settings ("true"/"false") via `/api/admin/settings`.
-- **Admin Dashboard**: Role-based access with granular permissions for managing users, jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, ads/popups, and settings. Admin can bypass ownership checks for application management. Dashboard stats include totalAgents. AdminUsers supports agent role filter/icon/color. AdminJobs shows "Via Agent" badge for agent-posted jobs. AdminSubscriptions includes agents alongside employers. AdminStatistics includes agent count card. AdminVerifications supports "awaiting_payment" status filter with proper styling.
-- **Admin User Management**: Full CRUD on `/admin/users` — view details (profile, contact, subscription, company info), edit (basic info, role, verification, subscription tier/expiry), suspend/unsuspend with reason, and permanently delete users (cascading deletion of all related records). Suspended users are blocked from login and existing sessions are invalidated.
-- **Admin Data Export**: Admin Users, Transactions, and Reports pages support exporting filtered/unfiltered data to Excel (.xls), CSV, and JSON formats via a dropdown Export button. Shared utility: `client/src/lib/export-utils.ts`, component: `client/src/components/ExportButton.tsx`. Includes spreadsheet formula injection protection.
-- **User Suspension**: `isSuspended`, `suspendedAt`, `suspendedReason` columns on users table. Suspension blocks login and destroys active sessions via `isAuthenticated` middleware check.
+- **Database**: PostgreSQL.
+- **Key Tables**: `users`, `jobs`, `applications`, `sessions`, `notifications`, `platform_settings`, `tickets`, `internal_ads`, `newsletter_subscribers`, and more for comprehensive platform functionality.
 
 ### Subscription System
-- Supports `free`, `standard`, `premium`, `enterprise` tiers with varying job posting limits and feature access.
-- Dynamic, admin-configurable pricing with per-tier discounts, job posting limits, and interview credits (all managed from Platform Settings).
-- **Platform Settings** also includes: App contact info (phone, email, address), social media links (Facebook, Twitter, Instagram, LinkedIn, TikTok), and payment gateway keys (Paystack and Flutterwave public/secret keys). All managed from `/admin/settings`. Contact info and social links are exposed via `/api/settings/public` (payment keys excluded for security) and used dynamically by the Landing page footer and Contact page.
-- Payment gateways: Paystack and Flutterwave.
-- **Transaction History**: Users can view their transaction history. Failed/pending transactions are recorded and can be resolved by admins.
-- **Interview Credits**: Premium/Enterprise employers receive interview credits, tracked against billing periods. Admin-scheduled interviews count against employer credits.
-- **Applicant Recommendations**: Premium/Enterprise employers receive "Iṣéyá Recommendations" based on applicant scoring (verification, CV, bio, experience, location, profile photo, phone, age, gender, job history, admin rating). Scores categorize applicants into "Excellent", "Good", "Fair", "Basic" match levels.
-- **Admin Assessment**: Admins can rate applicants (1-5 stars) and add notes post-interview/background check, displayed on applicant and recommendation cards.
+- Supports `free`, `standard`, `premium`, `enterprise` tiers with dynamic, admin-configurable pricing, job posting limits, and interview credits.
+- Integrates Paystack and Flutterwave for payment processing.
+- Includes a user transaction history and robust interview credit tracking for premium tiers.
+- Features an applicant recommendation system for premium employers, based on a comprehensive scoring model.
 
-### Email System
-- Uses Resend for transactional emails (e.g., welcome, application notifications, subscription updates, password reset, verification, support tickets, interview cancelled, counter offer).
-- Requires `RESEND_API_KEY` and `RESEND_SENDER_EMAIL` environment variables.
-- All emails use branded HTML templates.
-- Interview cancellation triggers email+notification to applicant (and employer if cancelled by admin).
-- Application rejection triggers email+notification to applicant via `sendApplicationStatusEmail`.
+### Communication & Notification
+- **Email System**: Uses Resend for transactional emails (e.g., welcome, application status, password reset, support tickets), all using branded HTML templates.
+- **Notification System**: In-app notifications for various events (application status changes, offers, interview scheduling, ticket updates) with unread counts and management options. Admin can send notifications to specific users or roles.
 
-### Counter-Offer System
-- Applicants can submit counter-offers when responding to job offers (salary, compensation, note).
-- Offer status flow: `pending` → `accepted` / `declined` / `countered`.
-- Counter offer flow: applicant submits → employer sees details + accept/decline buttons → notification+email sent to both parties.
-- Schema: `offers` table has `counter_salary`, `counter_compensation`, `counter_note` columns.
-- Routes: `PATCH /api/offers/:id/counter` (applicant submits), `PATCH /api/offers/:id/respond-counter` (employer responds).
-- When employer accepts counter: offer salary updates to counter amount, application status → accepted, job → filled.
-- When employer declines counter: offer status → declined, application status → pending.
-
-### Facebook Auto-Posting
-- When premium or enterprise employers post jobs, they are automatically shared to the Iṣéyá Facebook Page via the Graph API.
-- Requires `FACEBOOK_PAGE_ACCESS_TOKEN` and `FACEBOOK_PAGE_ID` environment variables.
-- Posts include job title, state/city/location, category, type, salary, employer name, description excerpt, apply link, and hashtags.
-- Runs asynchronously (non-blocking) — job creation succeeds regardless of Facebook API result.
-- Implementation: `server/facebook.ts`, triggered from job creation route in `server/routes.ts`.
-
-### Location System
-- Jobs and user profiles use a 3-level location system: State (select from 36 states + FCT), City/Town (text input), Address/Area (text input).
-- Nigerian states list: `client/src/lib/nigerian-locations.ts`.
-- Job cards show "State, City" with address as secondary info. Job details show all three fields separately.
-- BrowseJobs search covers state, city, and location/address text.
-
-### Profile Management
-- Centralized `/profile` page for all user profile management.
-- **All users**: First name, last name, role, state, city, location/address, bio, profile photo.
-- **Applicants**: Gender, age, phone, email, expected salary range, preferred job types/categories, CV upload, job history.
-- **Employers**: Company name, business category, company email, company phone, company address, CAC registration.
-- Applicants can select multiple preferred job types and categories, stored as text array columns, for future job alerts.
-
-### Applicant Verification System
-- Applicants can submit government ID and pay a fee for verification, valid for 30 days. Provides a verified badge, priority, and background checks.
-- Admin reviews and approves/rejects requests.
-
-### Notification System
-- Admin can send notifications to all users, specific roles, or individuals.
-- Users receive in-app notifications with unread counts and management options (mark as read, mark all read).
-- **Automated Workflow Notifications**: System sends notifications for application status changes, offers, interview scheduling, and support ticket updates.
-
-### Support Ticket System
-- Users can submit and track support tickets via a `/support` page.
-- Features a conversation thread for user-admin communication.
-- New message indicators and in-app notifications for ticket updates.
-- Admin manages tickets from `/admin/tickets`, including status/priority editing and replying.
-
-### Legal & Policy Pages
-- Comprehensive legal pages: `/terms` (Terms of Use), `/cookies` (Cookie Policy), `/privacy` (Privacy Policy - NDPR compliant), `/disclaimer`, `/copyright`.
-- Registration requires agreement to Terms of Use. Optional newsletter subscription.
-
-### Internal Ads & Popups
-- Admin can create, manage, and schedule promotional banners and popups via `/admin/ads` (gated by `canManageAds` permission, separate from Platform Settings).
-- Ads have: title, content, type (banner/popup), target pages (landing, browse-jobs, job-details), position on page (top/middle/bottom), optional CTA link, custom colors, priority, scheduling (start/end dates), active toggle, optional artwork/media image upload (stored in `uploads/ads/`).
-- Banners display as dismissible horizontal bars at the top of page content areas. Popups display as centered modal dialogs.
-- Dismissals are tracked per-session (sessionStorage per ad ID).
-- Components: `InternalAd.tsx` (AdBanner, AdPopup), `PageAds.tsx` (fetches & renders ads for a page).
-
-### Login Security
-- Implements image-based CAPTCHA on the login form for bot protection.
+### Core Features
+- **Counter-Offer System**: Allows applicants to submit counter-offers to job offers, with a defined workflow for employer response and status updates.
+- **Facebook Auto-Posting**: Premium/Enterprise employer job posts are automatically shared to the Iṣéyá Facebook Page via the Graph API, running asynchronously.
+- **Location System**: Jobs and user profiles utilize a 3-level Nigerian location system (State, City/Town, Address/Area).
+- **Profile Management**: Centralized `/profile` page for all users to manage personal details. Applicants can manage CVs, job history, and preferences; employers manage company details.
+- **Applicant Verification System**: Allows applicants to submit government ID for verification, providing a verified badge and priority. Admin review and approval system.
+- **Support Ticket System**: Users can submit and track support tickets with a conversation thread for user-admin communication. External support tickets from the contact form are also integrated.
+- **Legal & Policy Pages**: Comprehensive legal pages including Terms of Use, Cookie Policy, Privacy Policy (NDPR compliant), Disclaimer, and Copyright.
+- **Internal Ads & Popups**: Admin-managed system for creating and scheduling promotional banners and popups with targeting, custom styling, and scheduling options.
+- **Security**: Image-based CAPTCHA on login forms for bot protection.
 
 ## External Dependencies
 
@@ -144,11 +67,5 @@ Preferred communication style: Simple, everyday language.
 ### Email Service
 - **Resend**: Transactional email delivery.
 
-### Key NPM Packages
-- `@tanstack/react-query`: Data fetching and caching.
-- `react-hook-form` with `@hookform/resolvers`: Form handling and validation.
-- `drizzle-zod`: Zod schemas from Drizzle.
-- `framer-motion`: Animations.
-- `date-fns`: Date utilities.
-- `svg-captcha`: CAPTCHA generation.
-- `resend`: Resend API client.
+### Social Media
+- **Facebook Graph API**: For automated job posting.

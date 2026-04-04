@@ -29,6 +29,8 @@ import {
   sendVerificationRejectedEmail,
   sendTicketCreatedEmail,
   sendTicketAdminNotifyEmail,
+  sendContactFormAcknowledgement,
+  sendTicketReplyEmail,
 } from "./email";
 import { storeFileInDb, getFileFromDb, migrateExistingUploads, restoreFilesFromDb } from "./file-storage";
 
@@ -1072,6 +1074,73 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  // === CONTACT FORM (PUBLIC) ===
+
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email address" });
+      }
+
+      const ticket = await storage.createTicket({
+        userId: null,
+        subject,
+        description: message,
+        category: "contact",
+        priority: "medium",
+        status: "open",
+        isExternal: true,
+        externalName: name,
+        externalEmail: email,
+      });
+
+      await storage.createTicketMessage({
+        ticketId: ticket.id,
+        senderId: null,
+        senderRole: "external",
+        message,
+        attachmentUrl: null,
+        attachmentName: null,
+        isRead: false,
+      });
+
+      res.status(201).json({ success: true, ticketId: ticket.id });
+
+      sendContactFormAcknowledgement(email, name, ticket.id, subject).catch(() => {});
+
+      const admins = await storage.getAllUsers({ role: "admin" });
+      const primaryAdmin = admins.find(a => a.email === "bekinsmart@gmail.com") || admins[0];
+      if (primaryAdmin?.email) {
+        sendTicketAdminNotifyEmail(
+          primaryAdmin.email,
+          `${primaryAdmin.firstName || ""} ${primaryAdmin.lastName || ""}`.trim() || "Admin",
+          ticket.id,
+          subject,
+          name,
+          "contact",
+          "medium"
+        ).catch(() => {});
+      }
+
+      storage.createNotification({
+        title: "New Contact Form Submission",
+        message: `${name} (${email}) submitted a contact form: "${subject}".`,
+        type: "role",
+        targetRole: "admin",
+        targetUserId: null,
+        createdBy: primaryAdmin?.id || "system",
+      }).catch((e) => console.error("Failed to create contact notification:", e));
+    } catch (err) {
+      console.error("Contact form error:", err);
+      res.status(500).json({ message: "Failed to submit contact form" });
+    }
+  });
+
   // === TICKETS ===
   
   // Create a support ticket (any authenticated user)
@@ -1220,17 +1289,37 @@ export async function registerRoutes(
     });
     res.status(201).json(created);
 
-    // Send notification to the other party
     const senderName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "User";
     if (senderRole === "admin") {
-      storage.createNotification({
-        title: "New Reply on Ticket",
-        message: `Admin replied to your ticket "#${ticket.id}: ${ticket.subject}".`,
-        type: "individual",
-        targetRole: null,
-        targetUserId: ticket.userId,
-        createdBy: userId,
-      }).catch((e) => console.error("Ticket message notification error:", e));
+      if (ticket.isExternal && ticket.externalEmail) {
+        sendTicketReplyEmail(
+          ticket.externalEmail,
+          ticket.externalName || "Customer",
+          ticket.id,
+          ticket.subject,
+          message
+        ).catch((e) => console.error("Failed to send external ticket reply email:", e));
+      } else if (ticket.userId) {
+        storage.createNotification({
+          title: "New Reply on Ticket",
+          message: `Admin replied to your ticket "#${ticket.id}: ${ticket.subject}".`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: ticket.userId,
+          createdBy: userId,
+        }).catch((e) => console.error("Ticket message notification error:", e));
+
+        const ticketOwner = await storage.getUser(ticket.userId);
+        if (ticketOwner?.email) {
+          sendTicketReplyEmail(
+            ticketOwner.email,
+            `${ticketOwner.firstName || ""} ${ticketOwner.lastName || ""}`.trim() || "User",
+            ticket.id,
+            ticket.subject,
+            message
+          ).catch((e) => console.error("Failed to send ticket reply email:", e));
+        }
+      }
     } else {
       storage.createNotification({
         title: "New Ticket Reply",

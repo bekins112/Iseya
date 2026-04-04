@@ -61,14 +61,17 @@ export const jobHistory = pgTable("job_history", {
 // Support tickets table
 export const tickets = pgTable("tickets", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").references(() => users.id),
   subject: varchar("subject").notNull(),
   description: text("description").notNull(),
-  category: varchar("category").notNull().default("general"), // 'general', 'payment', 'account', 'job', 'technical'
+  category: varchar("category").notNull().default("general"), // 'general', 'payment', 'account', 'job', 'technical', 'contact'
   priority: varchar("priority").notNull().default("medium"), // 'low', 'medium', 'high', 'urgent'
   status: varchar("status").notNull().default("open"), // 'open', 'in_progress', 'resolved', 'closed'
   assignedTo: varchar("assigned_to").references(() => users.id),
   adminNotes: text("admin_notes"),
+  isExternal: boolean("is_external").default(false),
+  externalName: varchar("external_name"),
+  externalEmail: varchar("external_email"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -77,8 +80,8 @@ export const tickets = pgTable("tickets", {
 export const ticketMessages = pgTable("ticket_messages", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   ticketId: integer("ticket_id").notNull().references(() => tickets.id, { onDelete: "cascade" }),
-  senderId: varchar("sender_id").notNull().references(() => users.id),
-  senderRole: varchar("sender_role").notNull(), // 'user' or 'admin'
+  senderId: varchar("sender_id").references(() => users.id),
+  senderRole: varchar("sender_role").notNull(), // 'user', 'admin', or 'external'
   message: text("message").notNull(),
   attachmentUrl: varchar("attachment_url"),
   attachmentName: varchar("attachment_name"),

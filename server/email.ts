@@ -776,6 +776,42 @@ export async function sendPasswordChangedEmail(to: string, name: string): Promis
   `);
 }
 
+export async function sendContactFormAcknowledgement(
+  email: string,
+  name: string,
+  ticketId: number,
+  subject: string
+): Promise<boolean> {
+  return sendEmail(email, name, `We received your message — Ref #${ticketId}`, `
+    <h2 style="color: #333; margin: 0 0 16px;">Thank You for Contacting Us</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${name},</p>
+    <p style="color: #555; line-height: 1.6;">We've received your message and our support team will get back to you shortly.</p>
+    <div style="background: #f7f7f7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <p style="margin: 0; color: #333;"><strong>Reference:</strong> #${ticketId}</p>
+      <p style="margin: 8px 0 0; color: #333;"><strong>Subject:</strong> ${subject}</p>
+    </div>
+    <p style="color: #666; font-size: 14px;">We typically respond within 24–48 hours. You can reply directly to this email or reach us at <a href="mailto:support@iseya.ng" style="color: ${brandColor}; text-decoration: underline;">support@iseya.ng</a>.</p>
+  `);
+}
+
+export async function sendTicketReplyEmail(
+  email: string,
+  name: string,
+  ticketId: number,
+  subject: string,
+  replyMessage: string
+): Promise<boolean> {
+  return sendEmail(email, name, `Re: ${subject} — Ref #${ticketId}`, `
+    <h2 style="color: #333; margin: 0 0 16px;">New Reply on Your Support Request</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${name},</p>
+    <p style="color: #555; line-height: 1.6;">Our support team has responded to your inquiry (Ref #${ticketId}):</p>
+    <div style="background: #f7f7f7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${brandColor};">
+      <p style="margin: 0; color: #333; line-height: 1.6; white-space: pre-wrap;">${replyMessage}</p>
+    </div>
+    <p style="color: #666; font-size: 14px;">You can reply directly to this email or contact us at <a href="mailto:support@iseya.ng" style="color: ${brandColor}; text-decoration: underline;">support@iseya.ng</a>.</p>
+  `);
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, code: string): Promise<boolean> {
   return sendEmail(to, name, "Password Reset Request", `
     <h2 style="color: #333; margin: 0 0 16px;">Password Reset Request</h2>
