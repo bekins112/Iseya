@@ -11,6 +11,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useSearch } from "wouter";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 function formatJobLimit(limit: number): string {
   if (limit === -1) return "Unlimited job postings";
@@ -144,6 +145,7 @@ function buildPlans(settings: Record<string, string> | undefined) {
 const planOrder = ["free", "standard", "premium", "enterprise"];
 
 export default function Subscription() {
+  usePageTitle("Subscription");
   const { user } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();

@@ -5,6 +5,7 @@ import { Users, Briefcase, FileText, Building2, UserCheck, Crown, TrendingUp, Ch
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 interface Stats {
   totalUsers: number;
@@ -27,6 +28,7 @@ interface DetailedStats {
 }
 
 export default function AdminStatistics() {
+  usePageTitle("Admin Statistics");
   const { user } = useAuth();
 
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({

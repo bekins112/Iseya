@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function JobListing() {
+  usePageTitle("Job Listing");
   const { user } = useAuth();
   const isEmployer = user?.role === "employer";
   const [showFilters, setShowFilters] = useState(false);

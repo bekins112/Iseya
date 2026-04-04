@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/ui-extension";
 import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus, Phone, Mail, MapPin, Globe, Key, Youtube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 function formatNaira(amount: number) {
   return `₦${amount.toLocaleString()}`;
@@ -106,6 +107,7 @@ const youtubeSchema = z.object({
 });
 
 export default function AdminSettings() {
+  usePageTitle("Admin Settings");
   const { user } = useAuth();
 
   const { data: settings, isLoading } = useQuery<Record<string, string>>({

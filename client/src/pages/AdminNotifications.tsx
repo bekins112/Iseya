@@ -19,6 +19,7 @@ import { Bell, Send, Trash2, Users, User, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const notificationSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -49,6 +50,7 @@ interface NotificationItem {
 }
 
 export default function AdminNotifications() {
+  usePageTitle("Admin Notifications");
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

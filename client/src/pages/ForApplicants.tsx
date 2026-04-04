@@ -11,6 +11,7 @@ import {
   Bell, CreditCard, Camera, Users, Play,
 } from "lucide-react";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const features = [
   {
@@ -64,6 +65,7 @@ const steps = [
 ];
 
 export default function ForApplicants() {
+  usePageTitle("For Job Seekers");
   return (
     <div className="min-h-screen bg-background">
       <Header />

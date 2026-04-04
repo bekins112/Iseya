@@ -24,8 +24,10 @@ type AdminJob = Job & {
   };
 };
 import { format } from "date-fns";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function AdminJobs() {
+  usePageTitle("Admin Jobs");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");

@@ -22,6 +22,7 @@ import { checkEmployerProfile, checkAgentProfile } from "@/lib/profile-utils";
 import { nigerianStates } from "@/lib/nigerian-locations";
 import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const categories = [
   "Waiter / Waitress",
@@ -86,6 +87,7 @@ const postJobSchema = z.object({
 type JobFormValues = z.infer<typeof postJobSchema>;
 
 export default function PostJob() {
+  usePageTitle("Post a Job");
   const { user } = useAuth();
   const createJob = useCreateJob();
   const [, setLocation] = useLocation();

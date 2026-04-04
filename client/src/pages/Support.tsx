@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import type { Ticket, TicketMessage } from "@shared/schema";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const ticketSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters"),
@@ -80,6 +81,7 @@ function getPriorityColor(priority: string | null) {
 }
 
 export default function Support() {
+  usePageTitle("Support");
   const { user } = useAuth();
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);

@@ -9,8 +9,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Mail, Lock, AlertCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function AdminLogin() {
+  usePageTitle("Admin Login");
   const { login, isLoggingIn, isAuthenticated, user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");

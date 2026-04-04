@@ -26,6 +26,7 @@ import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { nigerianStates } from "@/lib/nigerian-locations";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
   if (!date) return "Recently";
@@ -91,6 +92,7 @@ const categories = [
 const jobTypes = ["full-time", "part-time", "contract", "temporary"];
 
 export default function BrowseJobs() {
+  usePageTitle("Browse Jobs");
   const urlParams = new URLSearchParams(window.location.search);
   const [searchQuery, setSearchQuery] = useState(urlParams.get("q") || "");
   const [showFilters, setShowFilters] = useState(false);

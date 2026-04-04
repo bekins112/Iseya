@@ -6,8 +6,10 @@ import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function CookiePolicy() {
+  usePageTitle("Cookie Policy");
   const container = {
     hidden: { opacity: 0 },
     show: {

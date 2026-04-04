@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ExportButton } from "@/components/ExportButton";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const txnExportColumns = [
   { key: "id", label: "ID" },
@@ -73,6 +74,7 @@ type TransactionStats = {
 };
 
 export default function AdminTransactions() {
+  usePageTitle("Admin Transactions");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");

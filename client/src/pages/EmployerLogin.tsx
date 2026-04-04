@@ -7,8 +7,10 @@ import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader, StatusBadge } from "@/components/ui-extension";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function EmployerLogin() {
+  usePageTitle("Employer Login");
   const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 

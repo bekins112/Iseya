@@ -16,6 +16,7 @@ import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User, AdminPermissions } from "@shared/schema";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 interface AdminWithPermissions extends User {
   permissions?: AdminPermissions;
@@ -56,6 +57,7 @@ const permissionLabels = [
 ];
 
 export default function AdminSubAdmins() {
+  usePageTitle("Admin Sub-Admins");
   const { user } = useAuth();
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

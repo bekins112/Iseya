@@ -17,8 +17,10 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 import { format } from "date-fns";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function AdminSubscriptions() {
+  usePageTitle("Admin Subscriptions");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");

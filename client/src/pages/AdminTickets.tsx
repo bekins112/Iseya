@@ -17,10 +17,12 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Ticket as TicketType, TicketMessage } from "@shared/schema";
 import { format } from "date-fns";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 type TicketWithSender = TicketType & { senderName?: string; senderEmail?: string; senderRole?: string };
 
 export default function AdminTickets() {
+  usePageTitle("Admin Tickets");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");

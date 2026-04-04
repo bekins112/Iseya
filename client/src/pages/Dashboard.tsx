@@ -12,9 +12,11 @@ import { JobCard } from "@/components/JobCard";
 import { motion } from "framer-motion";
 import { checkApplicantProfile, checkEmployerProfile, checkAgentProfile } from "@/lib/profile-utils";
 import PageAds from "@/components/PageAds";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 
 export default function Dashboard() {
+  usePageTitle("Dashboard");
   const { user } = useAuth();
   const isAgent = user?.role === "agent";
   const isEmployer = user?.role === "employer" || isAgent;

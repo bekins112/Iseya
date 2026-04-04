@@ -17,6 +17,7 @@ import NewsletterBar from "@/components/NewsletterBar";
 import PageAds from "@/components/PageAds";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const bannerSlides = [
   {
@@ -183,6 +184,7 @@ function TestimonialsCarousel({ testimonialIndex, setTestimonialIndex }: { testi
 }
 
 export default function Landing() {
+  usePageTitle();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [currentSlide, setCurrentSlide] = useState(0);

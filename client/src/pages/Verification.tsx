@@ -34,6 +34,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSearch } from "wouter";
 import type { Transaction } from "@shared/schema";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const idTypes = [
   { value: "nin", label: "National Identification Number (NIN)" },
@@ -50,6 +51,7 @@ const benefits = [
 ];
 
 export default function Verification() {
+  usePageTitle("Verification");
   const { user } = useAuth();
   const { toast } = useToast();
   const searchString = useSearch();

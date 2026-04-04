@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertCircle, Briefcase, Search, Building2, UserCheck, Users } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { nigerianStates } from "@/lib/nigerian-locations";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const businessCategories = [
   "Restaurant & Food Service",
@@ -31,6 +32,7 @@ const businessCategories = [
 ];
 
 export default function Onboarding() {
+  usePageTitle("Get Started");
   const { user } = useAuth();
   const updateUser = useUpdateUser();
   const [, setLocation] = useLocation();

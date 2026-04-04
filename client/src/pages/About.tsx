@@ -7,8 +7,10 @@ import { Link } from "wouter";
 import { ArrowLeft, Users, Target, Heart, Shield, Briefcase, CheckCircle2 } from "lucide-react";
 import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function About() {
+  usePageTitle("About Us");
   const container = {
     hidden: { opacity: 0 },
     show: {

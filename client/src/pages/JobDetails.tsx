@@ -40,6 +40,7 @@ import type { Job } from "@shared/schema";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { useToast } from "@/hooks/use-toast";
 import { checkApplicantProfile } from "@/lib/profile-utils";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
   if (!date) return "Recently";
@@ -66,6 +67,7 @@ function formatSalary(min: number, max: number, wage: string) {
 }
 
 export default function JobDetails() {
+  usePageTitle("Job Details");
   const [, params] = useRoute("/jobs/:id/:slug?");
   const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0");

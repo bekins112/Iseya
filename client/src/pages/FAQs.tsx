@@ -9,6 +9,7 @@ import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { Input } from "@/components/ui/input";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 interface FAQItem {
   question: string;
@@ -80,6 +81,7 @@ const faqs: FAQItem[] = [
 ];
 
 export default function FAQs() {
+  usePageTitle("FAQs");
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 

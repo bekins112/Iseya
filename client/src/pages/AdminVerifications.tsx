@@ -32,6 +32,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 type VerificationRequest = {
   id: number;
@@ -65,6 +66,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AdminVerifications() {
+  usePageTitle("Admin Verifications");
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);

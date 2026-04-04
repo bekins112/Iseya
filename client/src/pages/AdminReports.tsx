@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Report } from "@shared/schema";
 import { format } from "date-fns";
 import { ExportButton } from "@/components/ExportButton";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const reportExportColumns = [
   { key: "id", label: "ID" },
@@ -32,6 +33,7 @@ const reportExportColumns = [
 ];
 
 export default function AdminReports() {
+  usePageTitle("Admin Reports");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");

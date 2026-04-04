@@ -13,8 +13,10 @@ import { Mail, Phone, MapPin, Send, MessageSquare, Clock, CheckCircle2 } from "l
 import { SiInstagram, SiLinkedin, SiX, SiFacebook, SiTiktok } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function Contact() {
+  usePageTitle("Contact Us");
   const { toast } = useToast();
   const { data: appSettings } = useQuery<Record<string, string>>({
     queryKey: ["/api/settings/public"],

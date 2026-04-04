@@ -23,6 +23,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 import { ExportButton } from "@/components/ExportButton";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const userExportColumns = [
   { key: "id", label: "ID" },
@@ -45,6 +46,7 @@ const userExportColumns = [
 ];
 
 export default function AdminUsers() {
+  usePageTitle("Admin Users");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");

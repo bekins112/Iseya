@@ -40,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 type EnrichedApp = {
   id: number;
@@ -342,6 +343,7 @@ function CancelApplicationDialog({
 }
 
 export default function Applications() {
+  usePageTitle("My Applications");
   const { user } = useAuth();
   const { data: applications, isLoading } = useMyApplications();
   const { data: interviewsData } = useMyInterviews();

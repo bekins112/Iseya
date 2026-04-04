@@ -27,6 +27,7 @@ import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 type AgentCredit = {
   id: string;
@@ -41,6 +42,7 @@ type AgentCredit = {
 };
 
 export default function AdminAgentCredits() {
+  usePageTitle("Admin Agent Credits");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");

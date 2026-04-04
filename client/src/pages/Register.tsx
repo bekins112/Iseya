@@ -10,8 +10,10 @@ import { Mail, Lock, User, ArrowRight, AlertCircle, Eye, EyeOff, UserPlus, Searc
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function Register() {
+  usePageTitle("Sign Up");
   const { register, isRegistering, registerError, isAuthenticated, user } = useAuth();
   const [, setLocation] = useLocation();
   const [firstName, setFirstName] = useState("");

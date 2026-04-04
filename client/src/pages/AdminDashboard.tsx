@@ -17,6 +17,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 interface Stats {
   totalUsers: number;
@@ -36,6 +37,7 @@ interface AdminPermissions {
 }
 
 export default function AdminDashboard() {
+  usePageTitle("Admin Dashboard");
   const { user } = useAuth();
 
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({

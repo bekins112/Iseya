@@ -60,6 +60,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 type EnrichedApplication = Application & {
   applicantName?: string;
@@ -1012,6 +1013,7 @@ function ApplicantCard({
 }
 
 export default function ManageApplicants() {
+  usePageTitle("Manage Applicants");
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const backPath = isAdmin ? "/admin/jobs" : "/manage-jobs";

@@ -8,8 +8,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, ArrowLeft, CheckCircle, AlertCircle, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function ForgotPassword() {
+  usePageTitle("Forgot Password");
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");

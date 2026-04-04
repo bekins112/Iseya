@@ -22,6 +22,7 @@ import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase, Building2, 
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { nigerianStates } from "@/lib/nigerian-locations";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const businessCategories = [
   "Restaurant & Food Service",
@@ -126,6 +127,7 @@ const profileSchema = insertUserSchema.pick({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 export default function Profile() {
+  usePageTitle("My Profile");
   const { user } = useAuth();
   const updateUser = useUpdateUser();
   const uploadPicture = useUploadProfilePicture();

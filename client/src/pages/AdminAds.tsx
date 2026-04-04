@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import type { InternalAd } from "@shared/schema";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 const TARGET_PAGE_OPTIONS = [
   { value: "landing", label: "Landing Page" },
@@ -90,6 +91,7 @@ const defaultFormValues: AdFormValues = {
 };
 
 export default function AdminAds() {
+  usePageTitle("Admin Ads");
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();

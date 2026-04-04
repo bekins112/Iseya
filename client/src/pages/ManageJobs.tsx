@@ -61,6 +61,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 function getJobStatusInfo(job: Job) {
   const status = job.status || "active";
@@ -259,6 +260,7 @@ function JobRow({ job, onToggleActive, onDelete, onEdit, onExtendDeadline, onRea
 }
 
 export default function ManageJobs() {
+  usePageTitle("Manage Jobs");
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: jobs, isLoading } = useEmployerJobs();

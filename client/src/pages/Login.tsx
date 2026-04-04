@@ -9,8 +9,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, RefreshCw, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function Login() {
+  usePageTitle("Login");
   const { login, isLoggingIn, loginError, isAuthenticated, user } = useAuth();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
