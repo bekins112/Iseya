@@ -37,6 +37,7 @@ const POSITION_OPTIONS = [
   { value: "top", label: "Top of Page" },
   { value: "middle", label: "Middle of Page" },
   { value: "bottom", label: "Bottom of Page" },
+  { value: "right", label: "Right Sidebar" },
 ];
 
 const adFormSchema = z.object({
@@ -377,7 +378,7 @@ export default function AdminAds() {
                           {ad.isActive ? "Active" : "Inactive"}
                         </Badge>
                         <Badge variant="outline" className="text-xs" data-testid={`badge-ad-position-${ad.id}`}>
-                          {(Array.isArray(ad.position) ? ad.position : [ad.position || "top"]).map(p => p === "middle" ? "Middle" : p === "bottom" ? "Bottom" : "Top").join(", ")}
+                          {(Array.isArray(ad.position) ? ad.position : [ad.position || "top"]).map(p => p === "middle" ? "Middle" : p === "bottom" ? "Bottom" : p === "right" ? "Right Sidebar" : "Top").join(", ")}
                         </Badge>
                         {ad.priority !== null && ad.priority > 0 && (
                           <Badge variant="outline" className="text-xs">

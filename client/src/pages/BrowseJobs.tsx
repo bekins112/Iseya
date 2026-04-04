@@ -578,6 +578,7 @@ export default function BrowseJobs() {
                 </CardContent>
               </Card>
 
+              <PageAds page="browse-jobs" position="right" />
               <PageAds page="browse-jobs" position="top" />
               <PageAds page="browse-jobs" position="bottom" />
             </div>

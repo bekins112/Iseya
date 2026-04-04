@@ -555,6 +555,7 @@ export default function JobDetails() {
                 </Card>
               )}
 
+              <PageAds page="job-details" position="right" />
               <PageAds page="job-details" position="top" />
 
               {similarJobs && similarJobs.length > 0 && (

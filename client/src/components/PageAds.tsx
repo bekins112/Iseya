@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { AdBanner, AdPopup } from "./InternalAd";
 import type { InternalAd } from "@shared/schema";
 
-export default function PageAds({ page, position = "top" }: { page: string; position?: "top" | "middle" | "bottom" }) {
+export default function PageAds({ page, position = "top" }: { page: string; position?: "top" | "middle" | "bottom" | "right" }) {
   const { data: ads = [] } = useQuery<InternalAd[]>({
     queryKey: ["/api/ads", page],
     queryFn: async () => {
