@@ -99,7 +99,32 @@ const faqs: FAQItem[] = [
   {
     category: "Agents",
     question: "What is an Agent account?",
-    answer: "Agents can post jobs on behalf of multiple employers. This is ideal for recruitment agencies, HR consultants, or staffing firms. Agents can manage job postings using credits or subscription-based access."
+    answer: "An Agent account lets you act as a recruitment middleman on Iṣéyá. You post jobs on behalf of employers or clients, manage applications, review candidates, send offers, and handle the entire hiring process — just like an employer would. It's perfect for recruitment agencies, HR consultants, staffing firms, or anyone who wants to earn money by connecting employers with workers."
+  },
+  {
+    category: "Agents",
+    question: "How do Agents earn money?",
+    answer: "Agents earn money directly by charging their clients (employers) for recruitment services. You set your own rates and terms with each client. Iṣéyá gives you the tools to post jobs, screen applicants, and manage the hiring process — you keep the fees you negotiate with your clients. The more placements you make, the more you earn."
+  },
+  {
+    category: "Agents",
+    question: "What can Agents do on the platform?",
+    answer: "Agents have the same core functions as employers. You can post jobs across all categories (corporate, remote, freelance, casual, industrial), review and manage applications, schedule interviews, send job offers, handle counter-offers, and track all your postings from your dashboard. The key difference is that you're doing it on behalf of multiple clients rather than a single company."
+  },
+  {
+    category: "Agents",
+    question: "How do Agent job posting credits work?",
+    answer: "Agents can post jobs using a credit-based system or through a subscription plan. Each credit allows you to post one job listing. You can purchase credits as needed, or subscribe to a plan that includes a set number of job posts per month. Your dashboard shows your remaining credits and active postings at all times."
+  },
+  {
+    category: "Agents",
+    question: "Can Agents manage jobs for multiple employers?",
+    answer: "Yes, that's exactly what Agents are designed for. You can post and manage jobs for as many employers or clients as you want. Each job listing can specify the hiring company's details, and you manage the full recruitment pipeline for all of them from a single Agent dashboard."
+  },
+  {
+    category: "Agents",
+    question: "How do I become an Agent?",
+    answer: "Simply register on Iṣéyá and select 'Agent' as your role during the onboarding process. Complete your profile with your business details and you're ready to start posting jobs. There's no approval process — you can begin immediately after registration."
   },
   {
     category: "Account & Security",
