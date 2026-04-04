@@ -219,10 +219,10 @@ export default function JobDetails() {
           <span className="text-sm text-muted-foreground truncate">{job.title}</span>
         </div>
 
+        <PageAds page="job-details" position="top" />
+
         <div className="flex gap-6 items-start">
           <div className="flex-1 min-w-0">
-            <PageAds page="job-details" position="top" />
-
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -533,7 +533,6 @@ export default function JobDetails() {
               </motion.div>
             )}
 
-            <PageAds page="job-details" position="bottom" />
           </div>
 
           <aside className="hidden lg:block w-[300px] shrink-0">
@@ -556,7 +555,6 @@ export default function JobDetails() {
               )}
 
               <PageAds page="job-details" position="right" />
-              <PageAds page="job-details" position="top" />
 
               {similarJobs && similarJobs.length > 0 && (
                 <Card>
@@ -574,8 +572,6 @@ export default function JobDetails() {
                 </Card>
               )}
 
-              <PageAds page="job-details" position="bottom" />
-
               <Card>
                 <CardContent className="p-5 text-center">
                   <h3 className="font-semibold mb-2 text-sm">Looking for more?</h3>
@@ -591,6 +587,8 @@ export default function JobDetails() {
             </div>
           </aside>
         </div>
+
+        <PageAds page="job-details" position="bottom" />
       </main>
 
       <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
