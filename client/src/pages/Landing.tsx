@@ -23,19 +23,19 @@ const bannerSlides = [
   {
     id: 1,
     title: "Find Your Perfect Job",
-    subtitle: "Thousands of opportunities waiting for you",
+    subtitle: "Corporate, remote, freelance & casual opportunities across Nigeria",
     image: bannerImg1,
   },
   {
     id: 2,
-    title: "Hire Reliable Workers",
-    subtitle: "Connect with skilled candidates instantly",
+    title: "Hire Top Talent Fast",
+    subtitle: "Connect with skilled professionals and reliable workers instantly",
     image: bannerImg2,
   },
   {
     id: 3,
-    title: "Flexible Work, Your Schedule",
-    subtitle: "Part-time, full-time, or temporary - you choose",
+    title: "Work Your Way",
+    subtitle: "Full-time, part-time, remote, freelance, or contract — you choose",
     image: bannerImg3,
   },
 ];
