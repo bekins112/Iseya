@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +82,12 @@ export default function Profile() {
   const cvInputRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
+
+  const { data: profileStats } = useQuery<{ jobCount: number; avgRating: number | null }>({
+    queryKey: ["/api/profile/stats"],
+    enabled: !!user,
+  });
+
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -270,12 +276,14 @@ export default function Profile() {
               </p>
               <div className="flex justify-center gap-4 py-4 border-t border-border/40">
                 <div className="text-center px-4">
-                  <div className="text-xl font-bold">12</div>
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase">Jobs</div>
+                  <div className="text-xl font-bold" data-testid="text-profile-job-count">{profileStats?.jobCount ?? 0}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase">
+                    {user?.role === "applicant" ? "Applications" : "Jobs"}
+                  </div>
                 </div>
                 <div className="border-r border-border/40" />
                 <div className="text-center px-4">
-                  <div className="text-xl font-bold">4.8</div>
+                  <div className="text-xl font-bold" data-testid="text-profile-rating">{profileStats?.avgRating ?? "—"}</div>
                   <div className="text-[10px] font-bold text-muted-foreground uppercase">Rating</div>
                 </div>
               </div>

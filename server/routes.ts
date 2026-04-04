@@ -1542,6 +1542,52 @@ export async function registerRoutes(
 
   // === APPLICANT PROFILE (for employer viewing - scoped to their job applicants) ===
 
+  app.get("/api/profile/stats", isAuthenticated, async (req, res) => {
+    const userId = req.session.userId!;
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    let jobCount = 0;
+    let avgRating: number | null = null;
+
+    if (user.role === "applicant") {
+      const apps = await storage.getApplicationsForApplicant(userId);
+      jobCount = apps.length;
+      const rated = apps.filter(a => a.adminRating && a.adminRating > 0);
+      if (rated.length > 0) {
+        avgRating = Math.round((rated.reduce((sum, a) => sum + (a.adminRating || 0), 0) / rated.length) * 10) / 10;
+      }
+    } else if (user.role === "employer") {
+      const employerJobs = await storage.getJobsByEmployer(userId);
+      jobCount = employerJobs.length;
+      let allRatings: number[] = [];
+      for (const job of employerJobs) {
+        const apps = await storage.getApplicationsForJob(job.id);
+        for (const a of apps) {
+          if (a.adminRating && a.adminRating > 0) allRatings.push(a.adminRating);
+        }
+      }
+      if (allRatings.length > 0) {
+        avgRating = Math.round((allRatings.reduce((s, r) => s + r, 0) / allRatings.length) * 10) / 10;
+      }
+    } else if (user.role === "agent") {
+      const agentJobs = await db.select().from(jobs).where(eq(jobs.agentId, userId));
+      jobCount = agentJobs.length;
+      let allRatings: number[] = [];
+      for (const job of agentJobs) {
+        const apps = await storage.getApplicationsForJob(job.id);
+        for (const a of apps) {
+          if (a.adminRating && a.adminRating > 0) allRatings.push(a.adminRating);
+        }
+      }
+      if (allRatings.length > 0) {
+        avgRating = Math.round((allRatings.reduce((s, r) => s + r, 0) / allRatings.length) * 10) / 10;
+      }
+    }
+
+    res.json({ jobCount, avgRating });
+  });
+
   app.get("/api/applicant-profile/:applicantId", isAuthenticated, async (req, res) => {
     const viewerId = req.session.userId!;
     const viewer = await storage.getUser(viewerId);
