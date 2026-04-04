@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useEmployerJobs, useUpdateJob, useDeleteJob, useJobApplications } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/ui-extension";
+import { jobUrl } from "@/lib/slug-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -175,7 +176,7 @@ function JobRow({ job, onToggleActive, onDelete, onEdit, onExtendDeadline, onRea
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <Link href={`/jobs/${job.id}`}>
+                    <Link href={jobUrl(job)}>
                       <DropdownMenuItem className="cursor-pointer">
                         <Eye className="w-4 h-4 mr-2" />
                         View Details

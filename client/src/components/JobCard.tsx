@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { jobUrl } from "@/lib/slug-utils";
 
 interface JobCardProps {
   job: Job;
@@ -123,7 +124,7 @@ export function JobCard({ job, isEmployer = false }: JobCardProps) {
               </Link>
             </div>
           ) : (
-            <Link href={`/jobs/${job.id}`} className="w-full">
+            <Link href={jobUrl(job)} className="w-full">
               <Button className="w-full bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-lg shadow-primary/20 h-12 text-md font-bold group">
                 Quick Apply
                 <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />

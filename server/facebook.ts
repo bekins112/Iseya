@@ -36,7 +36,7 @@ function slugify(text: string): string {
 function buildJobPost(job: JobData, siteUrl: string): string {
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.wage);
   const jobSlug = slugify(job.title);
-  const jobUrl = `${siteUrl}/jobs/${job.id}/${jobSlug}`;
+  const jobUrl = `${siteUrl}/jobs/${jobSlug}-${job.id}`;
 
   const lines = [
     `🔔 New Job Alert on Iṣéyá!`,

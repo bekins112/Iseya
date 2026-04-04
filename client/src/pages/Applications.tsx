@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { jobUrl } from "@/lib/slug-utils";
 
 type EnrichedApp = {
   id: number;
@@ -601,7 +602,7 @@ export default function Applications() {
                         )}
 
                         <div className="flex items-center gap-2 mt-3 flex-wrap">
-                          <Link href={`/jobs/${app.jobId}`}>
+                          <Link href={jobUrl({ id: app.jobId, title: app.jobTitle })}>
                             <Button variant="outline" size="sm" data-testid={`button-view-job-${app.id}`}>
                               View Job
                             </Button>

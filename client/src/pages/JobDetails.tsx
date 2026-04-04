@@ -2,6 +2,7 @@ import { useRoute, Link, useLocation } from "wouter";
 import PageAds from "@/components/PageAds";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
+import NewsletterBar from "@/components/NewsletterBar";
 import { useQuery } from "@tanstack/react-query";
 import { useJob, useCreateApplication, useUploadCV } from "@/hooks/use-casual";
 import { useAuth } from "@/hooks/use-auth";
@@ -29,18 +30,19 @@ import {
   Upload,
   X,
   Share2,
-  Link2,
-  Copy
+  Copy,
+  Send,
+  Users
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SiWhatsapp, SiFacebook, SiLinkedin } from "react-icons/si";
 import { RiTwitterXFill } from "react-icons/ri";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
-import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { useToast } from "@/hooks/use-toast";
 import { checkApplicantProfile } from "@/lib/profile-utils";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { extractIdFromSlug, jobUrl } from "@/lib/slug-utils";
 
 function formatTimeAgo(date: Date | string | null | undefined): string {
   if (!date) return "Recently";
@@ -66,11 +68,20 @@ function formatSalary(min: number, max: number, wage: string) {
   return `${formatNum(min)} - ${formatNum(max)}${wageLabel}`;
 }
 
+const jobTypeBadgeColor: Record<string, string> = {
+  "Full-time": "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  "Part-time": "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  "Contract": "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+  "Remote": "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  "Freelance": "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
+};
+
 export default function JobDetails() {
   usePageTitle("Job Details");
-  const [, params] = useRoute("/jobs/:id/:slug?");
+  const [, params] = useRoute("/jobs/:slug");
   const [, setLocation] = useLocation();
-  const id = parseInt(params?.id || "0");
+  const slug = params?.slug || "";
+  const id = extractIdFromSlug(slug) || 0;
   const { data: job, isLoading } = useJob(id);
   const { user, isLoading: authLoading } = useAuth();
   const createApplication = useCreateApplication();
@@ -85,7 +96,6 @@ export default function JobDetails() {
   const isEmployer = user?.role === "employer";
   const isApplicant = user?.role === "applicant";
 
-  // Fetch similar jobs (same category, excluding current job)
   const { data: similarJobs } = useQuery<Job[]>({
     queryKey: [api.jobs.list.path, 'similar', job?.category],
     queryFn: async () => {
@@ -94,7 +104,7 @@ export default function JobDetails() {
       const res = await fetch(`${api.jobs.list.path}?${params}`);
       if (!res.ok) return [];
       const jobs = await res.json();
-      return jobs.filter((j: Job) => j.id !== id && j.isActive).slice(0, 3);
+      return jobs.filter((j: Job) => j.id !== id && j.isActive).slice(0, 6);
     },
     enabled: !!job?.category,
   });
@@ -150,14 +160,19 @@ export default function JobDetails() {
   };
 
   const handleLoginRedirect = () => {
-    setLocation(`/?redirect=/jobs/${id}`);
+    setLocation(`/?redirect=${encodeURIComponent(`/jobs/${slug}`)}`);
+  };
+
+  const getShareUrl = () => {
+    if (!job) return window.location.href;
+    return `${window.location.origin}${jobUrl(job)}`;
   };
 
   if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
+        <main className="pt-24 pb-16 px-4 max-w-6xl mx-auto">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/4" />
             <div className="h-12 bg-muted rounded w-3/4" />
@@ -172,7 +187,7 @@ export default function JobDetails() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto text-center">
+        <main className="pt-24 pb-16 px-4 max-w-6xl mx-auto text-center">
           <Briefcase className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Job Not Found</h1>
           <p className="text-muted-foreground mb-6">This job may have been removed or doesn't exist.</p>
@@ -192,321 +207,389 @@ export default function JobDetails() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="pt-24 pb-16 px-4 max-w-4xl mx-auto">
-        <PageAds page="job-details" position="top" />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Card className="overflow-hidden">
-            <div className="bg-primary/5 p-6 md:p-8 border-b">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="default">{job.category}</Badge>
-                    <Badge variant={job.isActive ? "outline" : "secondary"}>
-                      {job.isActive ? "Active" : "Closed"}
-                    </Badge>
-                  </div>
-                  
-                  <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-job-title">
-                    {job.title}
-                  </h1>
-                  
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Building2 className="w-4 h-4" />
-                      {(job as any).employerName || "Employer"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      {[job.state, job.city, job.location].filter(Boolean).join(" — ") || job.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      Posted {formatTimeAgo(job.createdAt)}
-                    </span>
+      <main className="pt-24 pb-16 px-4 max-w-6xl mx-auto">
+        <div className="mb-6 flex items-center gap-3">
+          <Link href="/browse-jobs">
+            <Button variant="ghost" size="sm" className="gap-1.5" data-testid="button-back-browse">
+              <ArrowLeft className="w-4 h-4" />
+              Browse Jobs
+            </Button>
+          </Link>
+          <span className="text-muted-foreground text-sm">/</span>
+          <span className="text-sm text-muted-foreground truncate">{job.title}</span>
+        </div>
+
+        <div className="flex gap-6 items-start">
+          <div className="flex-1 min-w-0">
+            <PageAds page="job-details" position="top" />
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className="overflow-hidden">
+                <div className="bg-primary/5 p-6 md:p-8 border-b">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="space-y-3 flex-1 min-w-0">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="default">{job.category}</Badge>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${jobTypeBadgeColor[job.jobType] || "bg-muted text-muted-foreground"}`}>
+                          {job.jobType}
+                        </span>
+                        <Badge variant={job.isActive ? "outline" : "secondary"}>
+                          {job.isActive ? "Active" : "Closed"}
+                        </Badge>
+                      </div>
+                      
+                      <h1 className="text-2xl md:text-3xl font-bold" data-testid="text-job-title">
+                        {job.title}
+                      </h1>
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Building2 className="w-4 h-4" />
+                          {(job as any).employerName || "Employer"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {[job.state, job.city, job.location].filter(Boolean).join(" — ") || job.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          Posted {formatTimeAgo(job.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
+                      <div className="text-2xl font-bold text-primary" data-testid="text-job-salary">
+                        {formatSalary(job.salaryMin, job.salaryMax, job.wage)}
+                      </div>
+                      
+                      {!isEmployer && job.isActive && !hasApplied && (
+                        <Button 
+                          size="lg" 
+                          onClick={handleApplyClick}
+                          className="w-full md:w-auto gap-2"
+                          data-testid="button-apply"
+                        >
+                          <Send className="w-4 h-4" />
+                          Apply Now
+                        </Button>
+                      )}
+
+                      {hasApplied && (
+                        <div className="flex flex-col items-start md:items-end gap-1">
+                          <Badge variant="secondary" className="gap-1 text-sm" data-testid="badge-already-applied">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Already Applied
+                          </Badge>
+                          <span className="text-xs text-muted-foreground capitalize">
+                            Status: {existingApplication?.status || "pending"}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {isMyJob && (
+                        <Link href={`/jobs/${job.id}/applications`}>
+                          <Button variant="outline" data-testid="button-view-applications">
+                            View Applications
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex flex-col items-start md:items-end gap-3">
-                  <div className="text-2xl font-bold text-primary" data-testid="text-job-salary">
-                    {formatSalary(job.salaryMin, job.salaryMax, job.wage)}
+                <CardContent className="p-6 md:p-8 space-y-8">
+                  <div>
+                    <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <Briefcase className="w-5 h-5" />
+                      Job Description
+                    </h2>
+                    <div className="prose max-w-none text-muted-foreground whitespace-pre-line leading-relaxed" data-testid="text-job-description">
+                      {job.description}
+                    </div>
                   </div>
                   
-                  {!isEmployer && job.isActive && !hasApplied && (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="bg-muted/30">
+                      <CardContent className="p-4 space-y-3">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <Building2 className="w-4 h-4" />
+                          Job Details
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Category</span>
+                            <span className="font-medium">{job.category}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Job Type</span>
+                            <span className="font-medium">{job.jobType}</span>
+                          </div>
+                          {job.state && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">State</span>
+                              <span className="font-medium">{job.state}</span>
+                            </div>
+                          )}
+                          {job.lga && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">LGA</span>
+                              <span className="font-medium">{job.lga}</span>
+                            </div>
+                          )}
+                          {job.city && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">City/Town</span>
+                              <span className="font-medium">{job.city}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Address</span>
+                            <span className="font-medium">{job.location}</span>
+                          </div>
+                          {job.gender && job.gender !== "Any" && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Gender</span>
+                              <span className="font-medium">{job.gender}</span>
+                            </div>
+                          )}
+                          {(job.ageMin || job.ageMax) && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Age Range</span>
+                              <span className="font-medium">
+                                {job.ageMin && job.ageMax
+                                  ? `${job.ageMin} - ${job.ageMax} years`
+                                  : job.ageMin
+                                    ? `${job.ageMin}+ years`
+                                    : `Up to ${job.ageMax} years`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-muted/30">
+                      <CardContent className="p-4 space-y-3">
+                        <h3 className="font-semibold flex items-center gap-2">
+                          <Banknote className="w-4 h-4" />
+                          Compensation
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Salary Range</span>
+                            <span className="font-medium text-primary">
+                              ₦{job.salaryMin.toLocaleString()} - ₦{job.salaryMax.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Payment</span>
+                            <span className="font-medium">
+                              {job.wage === 'monthly' ? 'Monthly' : job.wage === 'daily' ? 'Daily' : job.wage === 'hourly' ? 'Hourly' : job.wage}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
+                    {!isEmployer && job.isActive && !hasApplied && (
+                      <Button 
+                        size="lg" 
+                        onClick={handleApplyClick}
+                        className="gap-2"
+                        data-testid="button-apply-bottom"
+                      >
+                        <Send className="w-4 h-4" />
+                        Apply Now
+                      </Button>
+                    )}
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" data-testid="button-share-job">
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3" align="start">
+                        <div className="flex flex-col gap-2">
+                          <p className="text-sm font-semibold mb-1">Share this job</p>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 text-[#25D366] hover:bg-[#25D366]/10"
+                              data-testid="button-share-whatsapp"
+                              onClick={() => {
+                                const url = getShareUrl();
+                                const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
+                                window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank");
+                              }}
+                            >
+                              <SiWhatsapp className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 hover:bg-muted"
+                              data-testid="button-share-twitter"
+                              onClick={() => {
+                                const url = getShareUrl();
+                                const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location}`;
+                                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
+                              }}
+                            >
+                              <RiTwitterXFill className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 text-[#1877F2] hover:bg-[#1877F2]/10"
+                              data-testid="button-share-facebook"
+                              onClick={() => {
+                                const url = getShareUrl();
+                                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
+                              }}
+                            >
+                              <SiFacebook className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 text-[#0A66C2] hover:bg-[#0A66C2]/10"
+                              data-testid="button-share-linkedin"
+                              onClick={() => {
+                                const url = getShareUrl();
+                                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
+                              }}
+                            >
+                              <SiLinkedin className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9"
+                              data-testid="button-copy-link"
+                              onClick={() => {
+                                navigator.clipboard.writeText(getShareUrl());
+                                toast({ title: "Link copied!", description: "Job link has been copied to your clipboard." });
+                              }}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  {!user && job.isActive && (
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="p-6 text-center">
+                        <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-3" />
+                        <h3 className="text-lg font-semibold mb-2">Interested in this job?</h3>
+                        <p className="text-muted-foreground mb-4">
+                          Create a free account to apply and connect with employers
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                          <Button onClick={handleLoginRedirect} data-testid="button-login-to-apply">
+                            <LogIn className="w-4 h-4 mr-2" />
+                            Sign In to Apply
+                          </Button>
+                          <Link href="/">
+                            <Button variant="outline" data-testid="button-signup-to-apply">
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Create Account
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <PageAds page="job-details" position="middle" />
+
+            {similarJobs && similarJobs.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-8 lg:hidden"
+              >
+                <h2 className="text-xl font-bold mb-4">Related Jobs</h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {similarJobs.slice(0, 4).map((sj) => (
+                    <SimilarJobCard key={sj.id} job={sj} />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            <PageAds page="job-details" position="bottom" />
+          </div>
+
+          <aside className="hidden lg:block w-[300px] shrink-0">
+            <div className="sticky top-24 space-y-5">
+              {!isEmployer && job.isActive && !hasApplied && (
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardContent className="p-5 text-center">
+                    <h3 className="font-semibold mb-2">Interested?</h3>
                     <Button 
                       size="lg" 
                       onClick={handleApplyClick}
-                      className="w-full md:w-auto"
-                      data-testid="button-apply"
+                      className="w-full gap-2"
+                      data-testid="button-apply-sidebar"
                     >
+                      <Send className="w-4 h-4" />
                       Apply Now
                     </Button>
-                  )}
-
-                  {hasApplied && (
-                    <div className="flex flex-col items-start md:items-end gap-1">
-                      <Badge variant="secondary" className="gap-1 text-sm" data-testid="badge-already-applied">
-                        <CheckCircle2 className="w-4 h-4" />
-                        Already Applied
-                      </Badge>
-                      <span className="text-xs text-muted-foreground capitalize">
-                        Status: {existingApplication?.status || "pending"}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {isMyJob && (
-                    <Link href={`/jobs/${job.id}/applications`}>
-                      <Button variant="outline" data-testid="button-view-applications">
-                        View Applications
-                      </Button>
-                    </Link>
-                  )}
-
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" data-testid="button-share-job">
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Share
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-3" align="end">
-                      <div className="flex flex-col gap-2">
-                        <p className="text-sm font-semibold mb-1">Share this job</p>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 text-[#25D366] hover:bg-[#25D366]/10"
-                            data-testid="button-share-whatsapp"
-                            onClick={() => {
-                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
-                              const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
-                              window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank");
-                            }}
-                          >
-                            <SiWhatsapp className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 hover:bg-muted"
-                            data-testid="button-share-twitter"
-                            onClick={() => {
-                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
-                              const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location}`;
-                              window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
-                            }}
-                          >
-                            <RiTwitterXFill className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 text-[#1877F2] hover:bg-[#1877F2]/10"
-                            data-testid="button-share-facebook"
-                            onClick={() => {
-                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
-                              window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
-                            }}
-                          >
-                            <SiFacebook className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 text-[#0A66C2] hover:bg-[#0A66C2]/10"
-                            data-testid="button-share-linkedin"
-                            onClick={() => {
-                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
-                              window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
-                            }}
-                          >
-                            <SiLinkedin className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9"
-                            data-testid="button-copy-link"
-                            onClick={() => {
-                              const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-                              const url = `${window.location.origin}/jobs/${job.id}/${slug}`;
-                              navigator.clipboard.writeText(url);
-                              toast({ title: "Link copied!", description: "Job link has been copied to your clipboard." });
-                            }}
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
-            
-            <CardContent className="p-6 md:p-8 space-y-8">
-              <div>
-                <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <Briefcase className="w-5 h-5" />
-                  Job Description
-                </h2>
-                <div className="prose max-w-none text-muted-foreground whitespace-pre-line" data-testid="text-job-description">
-                  {job.description}
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <Card className="bg-muted/30">
-                  <CardContent className="p-4 space-y-3">
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <Building2 className="w-4 h-4" />
-                      Job Details
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Category</span>
-                        <span className="font-medium">{job.category}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Job Type</span>
-                        <span className="font-medium">{job.jobType.charAt(0).toUpperCase() + job.jobType.slice(1)}</span>
-                      </div>
-                      {job.state && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">State</span>
-                          <span className="font-medium">{job.state}</span>
-                        </div>
-                      )}
-                      {job.city && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">City</span>
-                          <span className="font-medium">{job.city}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Address</span>
-                        <span className="font-medium">{job.location}</span>
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
-                
-                <Card className="bg-muted/30">
-                  <CardContent className="p-4 space-y-3">
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <Banknote className="w-4 h-4" />
-                      Compensation
+              )}
+
+              <PageAds page="job-details" position="top" />
+
+              {similarJobs && similarJobs.length > 0 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm">
+                      <Briefcase className="w-4 h-4" />
+                      Related Jobs
                     </h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Salary Range</span>
-                        <span className="font-medium text-primary">
-                          ₦{job.salaryMin.toLocaleString()} - ₦{job.salaryMax.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Payment</span>
-                        <span className="font-medium">
-                          {job.wage === 'monthly' ? 'Monthly' : job.wage === 'daily' ? 'Daily' : job.wage === 'hourly' ? 'Hourly' : job.wage}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              {!user && job.isActive && (
-                <Card className="bg-primary/5 border-primary/20">
-                  <CardContent className="p-6 text-center">
-                    <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-3" />
-                    <h3 className="text-lg font-semibold mb-2">Interested in this job?</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Create a free account to apply and connect with employers
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      <Button onClick={handleLoginRedirect} data-testid="button-login-to-apply">
-                        <LogIn className="w-4 h-4 mr-2" />
-                        Sign In to Apply
-                      </Button>
-                      <Link href="/">
-                        <Button variant="outline" data-testid="button-signup-to-apply">
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Create Account
-                        </Button>
-                      </Link>
+                    <div className="space-y-3">
+                      {similarJobs.map((sj) => (
+                        <SimilarJobCard key={sj.id} job={sj} compact />
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
               )}
-            </CardContent>
-          </Card>
-        </motion.div>
 
-        <PageAds page="job-details" position="middle" />
+              <PageAds page="job-details" position="bottom" />
 
-        {/* Similar Jobs Section */}
-        {similarJobs && similarJobs.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-8"
-          >
-            <h2 className="text-xl font-bold mb-4">Similar Jobs</h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              {similarJobs.map((similarJob) => (
-                <Card key={similarJob.id} className="hover-elevate transition-all group" data-testid={`card-similar-job-${similarJob.id}`}>
-                  <CardContent className="p-4">
-                    <div className="mb-2">
-                      <Badge variant="outline" className="mb-2">{similarJob.category}</Badge>
-                      <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-1">
-                        {similarJob.title}
-                      </h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                      {similarJob.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {[similarJob.state, similarJob.city].filter(Boolean).join(", ") || similarJob.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {similarJob.jobType}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t">
-                      <span className="font-semibold text-primary text-sm">
-                        {formatSalary(similarJob.salaryMin, similarJob.salaryMax, similarJob.wage)}
-                      </span>
-                      <Link 
-                        href={`/jobs/${similarJob.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
-                        data-testid={`link-similar-job-${similarJob.id}`}
-                      >
-                        View
-                        <ChevronRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              <Card>
+                <CardContent className="p-5 text-center">
+                  <h3 className="font-semibold mb-2 text-sm">Looking for more?</h3>
+                  <p className="text-xs text-muted-foreground mb-3">Browse all available jobs</p>
+                  <Link href="/browse-jobs">
+                    <Button variant="outline" size="sm" className="w-full gap-1.5" data-testid="button-browse-more">
+                      Browse All Jobs
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
             </div>
-          </motion.div>
-        )}
+          </aside>
+        </div>
       </main>
 
       <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
@@ -668,11 +751,71 @@ export default function JobDetails() {
         </DialogContent>
       </Dialog>
 
-      <div className="max-w-4xl mx-auto px-4 py-4">
-        <PageAds page="job-details" position="bottom" />
-      </div>
-
       <Footer />
+      <NewsletterBar />
     </div>
+  );
+}
+
+function SimilarJobCard({ job, compact = false }: { job: Job; compact?: boolean }) {
+  if (compact) {
+    return (
+      <Link href={jobUrl(job)} className="block" data-testid={`link-similar-job-${job.id}`}>
+        <div className="group p-3 rounded-lg border hover:border-primary/30 hover:bg-primary/5 transition-all cursor-pointer">
+          <h4 className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
+            {job.title}
+          </h4>
+          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+            <MapPin className="w-3 h-3 shrink-0" />
+            <span className="truncate">{[job.state, job.city].filter(Boolean).join(", ") || job.location}</span>
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs font-semibold text-primary">
+              ₦{job.salaryMin.toLocaleString()} - ₦{job.salaryMax.toLocaleString()}
+            </span>
+            <Badge variant="outline" className="text-[10px] h-4 px-1.5">{job.jobType}</Badge>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <Card className="hover:shadow-md transition-all group" data-testid={`card-similar-job-${job.id}`}>
+      <CardContent className="p-4">
+        <div className="mb-2">
+          <Badge variant="outline" className="mb-2 text-[11px]">{job.category}</Badge>
+          <h3 className="font-semibold group-hover:text-primary transition-colors line-clamp-1">
+            {job.title}
+          </h3>
+        </div>
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+          {job.description}
+        </p>
+        <div className="flex flex-wrap gap-2 mb-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {[job.state, job.city].filter(Boolean).join(", ") || job.location}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {job.jobType}
+          </span>
+        </div>
+        <div className="flex items-center justify-between pt-3 border-t">
+          <span className="font-semibold text-primary text-sm">
+            ₦{job.salaryMin.toLocaleString()} - ₦{job.salaryMax.toLocaleString()}
+          </span>
+          <Link 
+            href={jobUrl(job)}
+            className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+            data-testid={`link-similar-job-${job.id}`}
+          >
+            View
+            <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

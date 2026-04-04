@@ -155,8 +155,8 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
-      {/* Public job details page - no auth required */}
-      <Route path="/jobs/:id/:slug?">
+      {/* Public job details page - slug-based URLs like /jobs/female-childcare-worker-needed-11 */}
+      <Route path="/jobs/:slug">
         <JobDetails />
       </Route>
 

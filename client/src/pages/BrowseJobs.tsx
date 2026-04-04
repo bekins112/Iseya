@@ -28,6 +28,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
+import { jobUrl } from "@/lib/slug-utils";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { nigerianStates } from "@/lib/nigerian-locations";
@@ -71,7 +72,7 @@ function JobCard({ job, index, formatSalary }: { job: Job; index: number; format
       transition={{ delay: index * 0.03 }}
     >
       <div className="group border rounded-lg bg-card hover:border-primary/40 hover:shadow-md transition-all" data-testid={`card-job-${job.id}`}>
-        <Link href={`/jobs/${job.id}`} className="block p-4 sm:p-5">
+        <Link href={jobUrl(job)} className="block p-4 sm:p-5">
           <div className="flex gap-4">
             <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <Briefcase className="w-5 h-5 text-primary" />
@@ -131,13 +132,13 @@ function JobCard({ job, index, formatSalary }: { job: Job; index: number; format
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Link href={`/jobs/${job.id}`}>
+            <Link href={jobUrl(job)}>
               <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" data-testid={`button-view-job-${job.id}`}>
                 View Details
                 <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </Link>
-            <Link href={`/jobs/${job.id}`}>
+            <Link href={jobUrl(job)}>
               <Button size="sm" className="h-8 text-xs gap-1.5" data-testid={`button-apply-job-${job.id}`}>
                 <Send className="w-3.5 h-3.5" />
                 Apply Now

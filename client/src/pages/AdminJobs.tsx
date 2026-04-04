@@ -13,6 +13,7 @@ import { Redirect, Link } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Job } from "@shared/schema";
+import { jobUrl } from "@/lib/slug-utils";
 
 type AdminJob = Job & {
   applicationCounts?: {
@@ -161,7 +162,7 @@ export default function AdminJobs() {
                         {counts.total > 0 ? `${counts.total} Applicants` : "Applicants"}
                       </Button>
                     </Link>
-                    <Link href={`/jobs/${job.id}`}>
+                    <Link href={jobUrl(job)}>
                       <Button variant="outline" size="sm" data-testid={`button-view-job-${job.id}`}>
                         View
                       </Button>
