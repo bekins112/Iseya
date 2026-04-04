@@ -124,9 +124,13 @@ function applicationReminderEmailHtml(name: string, pendingApps: { jobTitle: str
   `;
 }
 
-function newsPushEmailHtml(title: string, content: string): string {
+function newsPushEmailHtml(title: string, content: string, imageCid?: string): string {
   const logoUrl = `${BASE_URL}/email-logo.png`;
   const brandColor = "#d4a017";
+
+  const imageBlock = imageCid
+    ? `<div style="text-align: center; margin: 0 0 20px;"><img src="cid:${imageCid}" alt="Promotion" style="max-width: 100%; height: auto; border-radius: 8px;" /></div>`
+    : "";
 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin: 0 auto; background: #ffffff;">
@@ -136,6 +140,7 @@ function newsPushEmailHtml(title: string, content: string): string {
       </div>
       <div style="padding: 32px 32px 16px;">
         <h2 style="color: #333; margin: 0 0 16px; font-size: 20px;">${title}</h2>
+        ${imageBlock}
         <div style="color: #555; font-size: 14px; line-height: 1.6;">${content}</div>
         <div style="text-align: center; margin: 28px 0;">
           <a href="${BASE_URL}" style="display: inline-block; background: ${brandColor}; color: #fff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">Visit Iṣéyá</a>
@@ -149,19 +154,33 @@ function newsPushEmailHtml(title: string, content: string): string {
   `;
 }
 
-async function sendBulkEmail(to: string, name: string, subject: string, html: string): Promise<boolean> {
+interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  content_type?: string;
+}
+
+async function sendBulkEmail(to: string, name: string, subject: string, html: string, attachments?: EmailAttachment[]): Promise<boolean> {
   const { Resend } = await import("resend");
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return false;
 
   try {
     const client = new Resend(apiKey);
-    const { error } = await client.emails.send({
+    const emailPayload: any = {
       from: "Iseya <support@iseya.ng>",
       to: [to],
       subject,
       html,
-    });
+    };
+    if (attachments && attachments.length > 0) {
+      emailPayload.attachments = attachments.map(a => ({
+        filename: a.filename,
+        content: a.content,
+        content_type: a.content_type,
+      }));
+    }
+    const { error } = await client.emails.send(emailPayload);
     if (error) {
       console.error(`[scheduler] Email error for ${to}:`, error);
       return false;
@@ -269,8 +288,8 @@ export async function runApplicationReminders(): Promise<{ sent: number; total: 
   return { sent, total: applicants.length };
 }
 
-export async function runNewsPush(title: string, content: string, targetRole?: string): Promise<{ sent: number; total: number }> {
-  console.log(`[scheduler] Running news push: "${title}" to ${targetRole || "all"}...`);
+export async function runNewsPush(title: string, content: string, targetRole?: string, imagePath?: string): Promise<{ sent: number; total: number }> {
+  console.log(`[scheduler] Running news push: "${title}" to ${targetRole || "all"}${imagePath ? " with image" : ""}...`);
 
   let allUsers: User[];
   if (targetRole && targetRole !== "all") {
@@ -279,13 +298,40 @@ export async function runNewsPush(title: string, content: string, targetRole?: s
     allUsers = await db.select().from(users);
   }
 
-  const html = newsPushEmailHtml(title, content);
+  let attachments: EmailAttachment[] | undefined;
+  let imageCid: string | undefined;
+
+  if (imagePath) {
+    try {
+      const fs = await import("fs");
+      const pathMod = await import("path");
+      if (fs.existsSync(imagePath)) {
+        const imageBuffer = fs.readFileSync(imagePath);
+        const ext = pathMod.extname(imagePath).toLowerCase();
+        const mimeMap: Record<string, string> = {
+          ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+          ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif",
+        };
+        const filename = pathMod.basename(imagePath);
+        imageCid = `promo-image-${Date.now()}`;
+        attachments = [{
+          filename,
+          content: imageBuffer,
+          content_type: mimeMap[ext] || "image/png",
+        }];
+      }
+    } catch (err) {
+      console.error("[scheduler] Failed to read promo image:", err);
+    }
+  }
+
+  const html = newsPushEmailHtml(title, content, imageCid);
   let sent = 0;
 
   for (const user of allUsers) {
     if (!user.email) continue;
     const name = user.firstName || "User";
-    const success = await sendBulkEmail(user.email, name, `${title} | Iṣéyá`, html);
+    const success = await sendBulkEmail(user.email, name, `${title} | Iṣéyá`, html, attachments);
     if (success) sent++;
     await new Promise(r => setTimeout(r, 200));
   }
@@ -295,6 +341,19 @@ export async function runNewsPush(title: string, content: string, targetRole?: s
 }
 
 let schedulerInterval: NodeJS.Timeout | null = null;
+let lastCheckedMinute = -1;
+
+function parseScheduleDays(val: string): number[] {
+  return val.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
+}
+
+function parseScheduleTime(val: string): { hour: number; minute: number } {
+  const parts = val.split(":");
+  const hour = parseInt(parts[0], 10);
+  const minute = parseInt(parts[1] || "0", 10);
+  if (isNaN(hour) || isNaN(minute)) return { hour: 8, minute: 0 };
+  return { hour: Math.max(0, Math.min(23, hour)), minute: Math.max(0, Math.min(59, minute)) };
+}
 
 export function startScheduler() {
   if (schedulerInterval) return;
@@ -305,27 +364,42 @@ export function startScheduler() {
     const now = new Date();
     const day = now.getDay();
     const hour = now.getHours();
+    const minute = now.getMinutes();
 
-    if (hour !== 8) return;
+    const currentMinute = day * 10000 + hour * 100 + minute;
+    if (currentMinute === lastCheckedMinute) return;
+    lastCheckedMinute = currentMinute;
 
     try {
-      if (day === 1) {
-        const enabled = await getSettingValue("auto_weekly_job_alerts");
-        if (enabled === "true") {
+      const alertsEnabled = await getSettingValue("auto_weekly_job_alerts");
+      if (alertsEnabled === "true") {
+        const alertDaysStr = (await getSettingValue("job_alerts_schedule_days")) || "1";
+        const alertTimeStr = (await getSettingValue("job_alerts_schedule_time")) || "08:00";
+        const alertDays = parseScheduleDays(alertDaysStr);
+        const alertTime = parseScheduleTime(alertTimeStr);
+
+        if (alertDays.includes(day) && hour === alertTime.hour && minute === alertTime.minute) {
+          console.log(`[scheduler] Triggering weekly job alerts (day=${day}, time=${hour}:${minute})`);
           await runWeeklyJobAlerts();
         }
       }
 
-      if (day === 3 || day === 5) {
-        const enabled = await getSettingValue("auto_application_reminders");
-        if (enabled === "true") {
+      const remindersEnabled = await getSettingValue("auto_application_reminders");
+      if (remindersEnabled === "true") {
+        const reminderDaysStr = (await getSettingValue("app_reminders_schedule_days")) || "3,5";
+        const reminderTimeStr = (await getSettingValue("app_reminders_schedule_time")) || "08:00";
+        const reminderDays = parseScheduleDays(reminderDaysStr);
+        const reminderTime = parseScheduleTime(reminderTimeStr);
+
+        if (reminderDays.includes(day) && hour === reminderTime.hour && minute === reminderTime.minute) {
+          console.log(`[scheduler] Triggering application reminders (day=${day}, time=${hour}:${minute})`);
           await runApplicationReminders();
         }
       }
     } catch (err) {
       console.error("[scheduler] Error in scheduled task:", err);
     }
-  }, 60 * 60 * 1000);
+  }, 60 * 1000);
 }
 
 export function stopScheduler() {
