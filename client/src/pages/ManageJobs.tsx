@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { jobSectors } from "@/lib/job-categories";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Link } from "wouter";
@@ -524,9 +525,14 @@ export default function ManageJobs() {
                 <Label>Category</Label>
                 <Select value={editForm.category} onValueChange={(v) => setEditForm({ ...editForm, category: v })}>
                   <SelectTrigger data-testid="select-edit-category"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {["Waiter / Waitress","Barman / Bartender","Housekeeper / Room Attendant","Kitchen Assistant / Steward","Cook","Cleaner / Janitor","Driver (Casual)","Nanny / Caregiver","Security Guard","Factory Worker / Casual Labourer","Receptionist","Sales Assistant / Attendant","Cashier","Office Assistant","Other"].map(c => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                  <SelectContent className="max-h-80">
+                    {jobSectors.map((sector) => (
+                      <SelectGroup key={sector.name}>
+                        <SelectLabel>{sector.name}</SelectLabel>
+                        {sector.subcategories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
