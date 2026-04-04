@@ -8,10 +8,11 @@ import Header from "@/components/Header";
 import {
   Building2, Briefcase, Users, Search, Shield, Clock,
   Star, ArrowRight, CheckCircle2, Zap, Crown, CreditCard,
-  FileText, BarChart3, Bell, MessageSquare, Play,
+  FileText, BarChart3, Bell, MessageSquare, Play, Check, X,
 } from "lucide-react";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { useQuery } from "@tanstack/react-query";
 
 const features = [
   {
@@ -46,32 +47,109 @@ const features = [
   },
 ];
 
-const plans = [
-  {
-    name: "Free",
-    description: "Get started with basic hiring",
-    features: ["Post up to 2 jobs", "View applicant profiles", "Basic support"],
-    highlight: false,
-  },
-  {
-    name: "Standard",
-    description: "For growing businesses",
-    features: ["More job postings", "Priority support", "Applicant management tools", "Interview scheduling"],
-    highlight: false,
-  },
-  {
-    name: "Premium",
-    description: "Most popular for serious hiring",
-    features: ["Increased job limits", "Iṣéyá Recommendations", "Interview credits", "Priority listing", "Facebook auto-post"],
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    description: "For large-scale recruitment",
-    features: ["Unlimited job postings", "Dedicated support", "All Premium features", "Custom integrations", "Priority everything"],
-    highlight: false,
-  },
-];
+function formatJobLimit(limit: number): string {
+  if (limit === -1) return "Unlimited job postings";
+  if (limit === 1) return "Post 1 job";
+  return `Post up to ${limit} jobs`;
+}
+
+function formatInterviewCredits(credits: number): string {
+  if (credits <= 0) return "";
+  return `${credits} Iṣéyá team interview${credits !== 1 ? "s" : ""} & recommendations`;
+}
+
+function buildPlans(settings: Record<string, string> | undefined) {
+  const s = settings || {};
+  const stdPrice = Number(s.subscription_standard_price || "9999");
+  const stdDiscount = Number(s.subscription_standard_discount || "0");
+  const premPrice = Number(s.subscription_premium_price || "24999");
+  const premDiscount = Number(s.subscription_premium_discount || "0");
+  const entPrice = Number(s.subscription_enterprise_price || "44999");
+  const entDiscount = Number(s.subscription_enterprise_discount || "0");
+
+  const jobLimitFree = Number(s.job_limit_free ?? "1");
+  const jobLimitStandard = Number(s.job_limit_standard ?? "5");
+  const jobLimitPremium = Number(s.job_limit_premium ?? "10");
+  const jobLimitEnterprise = Number(s.job_limit_enterprise ?? "-1");
+
+  const interviewFree = Number(s.interview_credits_free ?? "0");
+  const interviewStandard = Number(s.interview_credits_standard ?? "0");
+  const interviewPremium = Number(s.interview_credits_premium ?? "3");
+  const interviewEnterprise = Number(s.interview_credits_enterprise ?? "5");
+
+  const calc = (price: number, discount: number) => Math.round(price * (1 - discount / 100));
+
+  return [
+    {
+      name: "Basic",
+      description: "Explore the platform",
+      price: "Free",
+      features: [
+        formatJobLimit(jobLimitFree),
+        "Create employer profile",
+        "Browse applicant listings",
+        "Basic support",
+        ...(interviewFree > 0 ? [formatInterviewCredits(interviewFree)] : []),
+      ],
+      highlight: false,
+    },
+    {
+      name: "Standard",
+      description: "Start hiring talent",
+      price: `₦${calc(stdPrice, stdDiscount).toLocaleString()}/mo`,
+      originalPrice: stdDiscount > 0 ? `₦${stdPrice.toLocaleString()}` : null,
+      discount: stdDiscount,
+      features: [
+        formatJobLimit(jobLimitStandard),
+        "View applicant profiles",
+        "Basic applicant filtering",
+        "Email support",
+        "Standard job visibility",
+        "Applicant background check report",
+        ...(interviewStandard > 0 ? [formatInterviewCredits(interviewStandard)] : []),
+      ],
+      highlight: false,
+    },
+    {
+      name: "Premium",
+      description: "Scale your hiring",
+      price: `₦${calc(premPrice, premDiscount).toLocaleString()}/mo`,
+      originalPrice: premDiscount > 0 ? `₦${premPrice.toLocaleString()}` : null,
+      discount: premDiscount,
+      features: [
+        formatJobLimit(jobLimitPremium),
+        "Priority job listing",
+        "Advanced applicant filtering",
+        "Direct messaging",
+        "Analytics dashboard",
+        "Priority support",
+        "Verified employer badge",
+        "Facebook auto-posting",
+        ...(interviewPremium > 0 ? [formatInterviewCredits(interviewPremium)] : []),
+      ],
+      highlight: true,
+    },
+    {
+      name: "Enterprise",
+      description: "Unlimited hiring power",
+      price: `₦${calc(entPrice, entDiscount).toLocaleString()}/mo`,
+      originalPrice: entDiscount > 0 ? `₦${entPrice.toLocaleString()}` : null,
+      discount: entDiscount,
+      features: [
+        formatJobLimit(jobLimitEnterprise),
+        "Top priority listing",
+        "Advanced applicant filtering",
+        "Direct messaging",
+        "Full analytics dashboard",
+        "Dedicated support",
+        "Verified employer badge",
+        "Featured company profile",
+        ...(interviewEnterprise > 0 ? [formatInterviewCredits(interviewEnterprise)] : []),
+      ],
+      highlight: false,
+    },
+  ];
+}
 
 const steps = [
   { step: "1", title: "Create Account", description: "Sign up as an employer in under 2 minutes. Add your company details." },
@@ -82,6 +160,11 @@ const steps = [
 
 export default function ForEmployers() {
   usePageTitle("For Employers");
+  const { data: platformSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings/public"],
+  });
+  const plans = buildPlans(platformSettings);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -197,11 +280,20 @@ export default function ForEmployers() {
                   )}
                   <CardContent className="p-6 pt-8">
                     <h3 className="font-bold text-xl mb-1">{p.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{p.description}</p>
+                    <p className="text-sm text-muted-foreground mb-2">{p.description}</p>
+                    <div className="mb-4">
+                      <span className="text-2xl font-bold">{p.price}</span>
+                      {(p as any).originalPrice && (
+                        <span className="ml-2 text-sm line-through text-muted-foreground">{(p as any).originalPrice}</span>
+                      )}
+                      {(p as any).discount > 0 && (
+                        <Badge variant="destructive" className="ml-2 text-[10px]">-{(p as any).discount}%</Badge>
+                      )}
+                    </div>
                     <ul className="space-y-2.5 mb-6">
                       {p.features.map((feat) => (
                         <li key={feat} className="flex items-start gap-2 text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                          <Check className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                           {feat}
                         </li>
                       ))}

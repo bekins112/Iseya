@@ -5,9 +5,7 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { Link } from "wouter";
 import { ChevronDown, HelpCircle, Search } from "lucide-react";
-import { SiInstagram, SiLinkedin, SiX, SiFacebook } from "react-icons/si";
 import { useState } from "react";
-import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { Input } from "@/components/ui/input";
 import { usePageTitle } from "@/hooks/use-page-title";
 
@@ -21,42 +19,77 @@ const faqs: FAQItem[] = [
   {
     category: "General",
     question: "What is Iṣéyá?",
-    answer: "Iṣéyá is a job marketplace platform connecting casual workers with employers in Nigeria. Whether you're looking for part-time work, daily jobs, or seeking reliable workers for your business, Iṣéyá makes the connection easy and secure."
+    answer: "Iṣéyá is a job marketplace platform by Renowned Technology Limited, connecting workers with employers in Nigeria. Whether you're looking for casual gigs, part-time roles, remote work, freelance projects, or full-time positions, Iṣéyá makes the connection easy and secure."
   },
   {
     category: "General",
     question: "Is Iṣéyá free to use?",
-    answer: "For job seekers, Iṣéyá is completely free to use. You can browse jobs, apply, and track your applications at no cost. Employers can post up to 3 jobs for free on our basic plan, with premium plans available for unlimited job postings."
+    answer: "For job seekers, Iṣéyá is completely free — browse jobs, apply, and track your applications at no cost. Employers can post jobs on the free plan with limited slots, and can upgrade to Standard, Premium, or Enterprise plans for more job postings, interview credits, and advanced features. Pricing is set by the admin and may include promotional discounts."
   },
   {
     category: "General",
     question: "What age do I need to be to use Iṣéyá?",
-    answer: "You must be at least 18 years old to create an account and use Iṣéyá. This is to ensure compliance with labor laws and protect young workers."
+    answer: "You must be at least 18 years old to create an account and use Iṣéyá. This is to ensure compliance with Nigerian labor laws and protect young workers."
+  },
+  {
+    category: "General",
+    question: "What types of jobs are available on Iṣéyá?",
+    answer: "Iṣéyá covers a wide range of job types: Full-time, Part-time, Contract, Remote, and Freelance. Jobs are organized into sectors like Hospitality & Food Service, Technology & IT, Healthcare & Medicine, Construction & Labour, Domestic & Household, Marketing & Creative, Administration & Finance, and many more — all sorted alphabetically for easy browsing."
+  },
+  {
+    category: "General",
+    question: "What currency does Iṣéyá use?",
+    answer: "All salaries, subscription fees, and transactions on Iṣéyá are in Nigerian Naira (₦ / NGN)."
   },
   {
     category: "Job Seekers",
     question: "How do I apply for a job?",
-    answer: "Once you've created an account and completed your profile, you can browse available jobs and click the 'Apply' button on any job that interests you. Employers will be notified of your application and can review your profile."
+    answer: "Once you've created an account and completed your profile, browse available jobs and click 'Apply' on any listing. Employers will be notified of your application and can review your profile, CV, and work history."
   },
   {
     category: "Job Seekers",
     question: "How will I know if my application was accepted?",
-    answer: "You can track all your applications in your dashboard. When an employer reviews your application, you'll see the status update to 'Under Review', 'Accepted', or 'Rejected'. You may also receive notifications for important updates."
+    answer: "Track all your applications in your dashboard. When an employer reviews your application, the status updates to 'Shortlisted', 'Interview', 'Offered', or 'Rejected'. You'll also receive in-app notifications and email updates for important changes."
   },
   {
     category: "Job Seekers",
-    question: "What types of jobs are available on Iṣéyá?",
-    answer: "Iṣéyá focuses on casual and part-time work including domestic help, event staffing, delivery services, manual labor, hospitality, retail, and more. Jobs range from one-day gigs to ongoing part-time positions."
+    question: "What is applicant verification?",
+    answer: "Verification lets you prove your identity by uploading a government-issued ID (NIN, Voter's Card, Driver's License, or International Passport) and a selfie holding the ID. After paying the verification fee, our team reviews your documents. Verified applicants get a badge on their profile, priority listing, and are 3x more likely to get hired. Verification is valid for 30 days."
+  },
+  {
+    category: "Job Seekers",
+    question: "Can I set my preferred job types and categories?",
+    answer: "Yes! In your profile settings, you can select your preferred job types (Full-time, Part-time, Contract, Remote, Freelance) and preferred job categories. We'll send you alerts when matching jobs are posted."
+  },
+  {
+    category: "Job Seekers",
+    question: "What does the Rating on my profile mean?",
+    answer: "Your profile rating is based on assessments from the Iṣéyá team after completed interviews. It reflects your performance and reliability as rated by our admin team, helping employers make informed hiring decisions."
+  },
+  {
+    category: "Job Seekers",
+    question: "Can I submit a counter-offer to an employer?",
+    answer: "Yes. When an employer sends you a job offer, you can accept it, decline it, or submit a counter-offer with your preferred salary. The employer can then accept or decline your counter-offer."
   },
   {
     category: "Employers",
     question: "How do I post a job?",
-    answer: "After creating an employer account, click 'Post a Job' on your dashboard. Fill in the job details including title, description, location, pay rate, and requirements. Your job will be visible to job seekers once submitted."
+    answer: "After creating an employer account, click 'Post a Job' on your dashboard. Fill in the job details including title, category (from organized sectors), job type (Full-time, Part-time, Contract, Remote, or Freelance), location (state, LGA, city/town, and specific address), salary range, and requirements. Your job goes live instantly."
   },
   {
     category: "Employers",
-    question: "What's included in the premium subscription?",
-    answer: "Premium subscribers get unlimited job postings, priority listing in search results, a verified badge for credibility, and access to advanced applicant filtering. The premium plan costs ₦5,000 per month."
+    question: "What subscription plans are available?",
+    answer: "Iṣéyá offers four tiers: Basic (Free) for getting started with limited job postings; Standard for growing businesses with more job slots and applicant management; Premium (most popular) with priority listing, verified badge, interview credits, and Facebook auto-posting; and Enterprise for large-scale recruitment with unlimited postings and dedicated support. Pricing and job limits are configured by the platform and may include discounts."
+  },
+  {
+    category: "Employers",
+    question: "How do I pay for subscriptions?",
+    answer: "Subscriptions can be paid via Paystack or Flutterwave — both support cards, bank transfers, USSD, and mobile money. All payments are in Nigerian Naira (₦)."
+  },
+  {
+    category: "Employers",
+    question: "What are Iṣéyá Recommendations?",
+    answer: "Available on Premium and Enterprise plans, Iṣéyá Recommendations are admin-scored applicant assessments. Our team interviews applicants and provides ratings and notes to help you make better hiring decisions."
   },
   {
     category: "Employers",
@@ -64,20 +97,40 @@ const faqs: FAQItem[] = [
     answer: "Payment is arranged directly between employers and workers. Iṣéyá facilitates the connection but does not handle payments between parties. We recommend agreeing on payment terms before work begins."
   },
   {
+    category: "Agents",
+    question: "What is an Agent account?",
+    answer: "Agents can post jobs on behalf of multiple employers. This is ideal for recruitment agencies, HR consultants, or staffing firms. Agents can manage job postings using credits or subscription-based access."
+  },
+  {
+    category: "Account & Security",
+    question: "How do I create an account?",
+    answer: "You can register with your email address and password, or sign in with Google. During registration, you'll select your role (applicant, employer, or agent) and complete a short onboarding process to set up your profile."
+  },
+  {
     category: "Account & Security",
     question: "How do I reset my password?",
-    answer: "Since Iṣéyá uses secure login through Replit Auth, password management is handled through your authentication provider (Google, GitHub, etc.). Visit your provider's settings to manage your password."
+    answer: "Click 'Forgot Password' on the login page and enter your email address. You'll receive a password reset link via email. Follow the link to set a new password. The reset link expires after a limited time for security."
   },
   {
     category: "Account & Security",
     question: "Is my personal information safe?",
-    answer: "Yes, we take data security seriously. Your personal information is encrypted and stored securely. We never share your data with third parties without your consent. Read our Privacy Policy for more details."
+    answer: "Yes, we take data security seriously. Passwords are hashed with bcrypt, sessions are stored securely in PostgreSQL, and login forms are protected with CAPTCHA. We comply with the Nigeria Data Protection Regulation (NDPR). Read our Privacy Policy for full details."
   },
   {
     category: "Account & Security",
     question: "How do I delete my account?",
-    answer: "To delete your account, please contact our support team through the Contact page. We'll process your request and remove your data in accordance with our privacy policy."
-  }
+    answer: "To delete your account, submit a support ticket through the Contact page or from your dashboard. Our team will process your request and remove your data in accordance with our privacy policy."
+  },
+  {
+    category: "Support",
+    question: "How do I contact support?",
+    answer: "You can submit a support ticket from your dashboard or use the Contact page. Our team responds to tickets with a conversation thread so you can track your issue. You can also reach us via email at support@iseya.ng."
+  },
+  {
+    category: "Support",
+    question: "Can I report a job or user?",
+    answer: "Yes. If you encounter a suspicious job listing or user, you can report them directly from the platform. Our admin team reviews all reports and takes appropriate action."
+  },
 ];
 
 export default function FAQs() {
