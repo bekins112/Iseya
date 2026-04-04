@@ -29,6 +29,8 @@ const JOB_TYPE_OPTIONS = [
   "Full-time",
   "Part-time",
   "Contract",
+  "Remote",
+  "Freelance",
 ];
 
 const profileSchema = insertUserSchema.pick({

@@ -49,7 +49,7 @@ function formatTimeAgo(date: Date | string | null | undefined): string {
 
 
 
-const jobTypes = ["full-time", "part-time", "contract", "temporary"];
+const jobTypes = ["Full-time", "Part-time", "Contract", "Remote", "Freelance"];
 
 export default function BrowseJobs() {
   usePageTitle("Browse Jobs");
@@ -230,7 +230,7 @@ export default function BrowseJobs() {
                             <SelectItem value="all">All Types</SelectItem>
                             {jobTypes.map(type => (
                               <SelectItem key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                {type}
                               </SelectItem>
                             ))}
                           </SelectContent>
