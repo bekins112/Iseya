@@ -38,6 +38,7 @@ import AdminSettings from "@/pages/AdminSettings";
 import AdminTransactions from "@/pages/AdminTransactions";
 import AdminAds from "@/pages/AdminAds";
 import AdminAgentCredits from "@/pages/AdminAgentCredits";
+import AdminAutomatedEmails from "@/pages/AdminAutomatedEmails";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
@@ -287,6 +288,12 @@ function Router() {
       <Route path="/admin/agent-credits">
         <AuthenticatedLayout>
           <AdminAgentCredits />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/automated-emails">
+        <AuthenticatedLayout>
+          <AdminAutomatedEmails />
         </AuthenticatedLayout>
       </Route>
 

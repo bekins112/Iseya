@@ -3606,11 +3606,15 @@ export async function registerRoutes(
     "youtube_applicants": "",
     "hide_unverified_details": "true",
     "restrict_free_employer_management": "true",
+    "auto_weekly_job_alerts": "true",
+    "auto_application_reminders": "true",
   };
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
     "hide_unverified_details",
     "restrict_free_employer_management",
+    "auto_weekly_job_alerts",
+    "auto_application_reminders",
   ]);
 
   const TEXT_SETTINGS_KEYS = new Set([
@@ -3879,6 +3883,74 @@ export async function registerRoutes(
       result[s.key] = s.value;
     }
     res.json(result);
+  });
+
+  // === AUTOMATED EMAILS ===
+
+  app.post("/api/admin/automated-emails/job-alerts", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+      return res.status(403).json({ message: "You do not have permission to manage automated emails" });
+    }
+    try {
+      const { runWeeklyJobAlerts } = await import("./scheduler");
+      const result = await runWeeklyJobAlerts();
+      res.json({ message: `Job alerts sent to ${result.sent} of ${result.total} applicants.`, ...result });
+    } catch (err: any) {
+      console.error("Manual job alert trigger error:", err);
+      res.status(500).json({ message: "Failed to send job alerts" });
+    }
+  });
+
+  app.post("/api/admin/automated-emails/application-reminders", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+      return res.status(403).json({ message: "You do not have permission to manage automated emails" });
+    }
+    try {
+      const { runApplicationReminders } = await import("./scheduler");
+      const result = await runApplicationReminders();
+      res.json({ message: `Reminders sent to ${result.sent} of ${result.total} applicants.`, ...result });
+    } catch (err: any) {
+      console.error("Manual reminder trigger error:", err);
+      res.status(500).json({ message: "Failed to send reminders" });
+    }
+  });
+
+  app.post("/api/admin/automated-emails/news-push", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+      return res.status(403).json({ message: "You do not have permission to send news push" });
+    }
+    try {
+      const newsSchema = z.object({
+        title: z.string().min(1, "Title is required"),
+        content: z.string().min(1, "Content is required"),
+        targetRole: z.string().optional(),
+        sendNotification: z.boolean().optional(),
+      });
+      const input = newsSchema.parse(req.body);
+      const { runNewsPush } = await import("./scheduler");
+      const result = await runNewsPush(input.title, input.content, input.targetRole);
+
+      if (input.sendNotification) {
+        const notifData: any = {
+          title: input.title,
+          message: input.content.replace(/<[^>]*>/g, "").substring(0, 500),
+          type: input.targetRole && input.targetRole !== "all" ? "role" : "all",
+          createdBy: req.session.userId!,
+        };
+        if (input.targetRole && input.targetRole !== "all") {
+          notifData.targetRole = input.targetRole;
+        }
+        await storage.createNotification(notifData);
+      }
+
+      res.json({ message: `News push sent to ${result.sent} of ${result.total} users.`, ...result });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("News push error:", err);
+      res.status(500).json({ message: "Failed to send news push" });
+    }
   });
 
   return httpServer;

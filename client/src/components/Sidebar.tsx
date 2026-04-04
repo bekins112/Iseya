@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Megaphone,
   Coins,
+  Mail,
   Menu,
   X,
 } from "lucide-react";
@@ -69,6 +70,7 @@ export function Sidebar() {
     { href: "/admin/transactions", label: "Transactions", icon: DollarSign, perm: "canManageTransactions" },
     { href: "/admin/tickets", label: "Support Tickets", icon: Ticket, perm: "canManageTickets" },
     { href: "/admin/notifications", label: "Notifications", icon: Bell, perm: "canManageNotifications" },
+    { href: "/admin/automated-emails", label: "Automated Emails", icon: Mail, perm: "canManageNotifications" },
     { href: "/admin/ads", label: "Ads & Popups", icon: Megaphone, perm: "canManageAds" },
     { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
     { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
