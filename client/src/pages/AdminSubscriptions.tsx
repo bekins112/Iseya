@@ -175,10 +175,10 @@ export default function AdminSubscriptions() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="pb-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name, email, or company..."
@@ -189,7 +189,7 @@ export default function AdminSubscriptions() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]" data-testid="select-subscription-filter">
+              <SelectTrigger className="w-full sm:w-[180px] shrink-0" data-testid="select-subscription-filter">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
@@ -215,34 +215,34 @@ export default function AdminSubscriptions() {
               <p>No subscribers found</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-x-auto">
               {filteredEmployers.map((employer) => (
                 <div
                   key={employer.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                   data-testid={`subscription-row-${employer.id}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                       {employer.profileImageUrl ? (
                         <img src={employer.profileImageUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         <Building2 className="w-5 h-5 text-muted-foreground" />
                       )}
                     </div>
-                    <div>
-                      <p className="font-medium">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">
                         {employer.companyName || `${employer.firstName || ""} ${employer.lastName || ""}`.trim() || employer.email}
                       </p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-sm text-muted-foreground">{employer.email}</p>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <p className="text-sm text-muted-foreground truncate">{employer.email}</p>
                         {employer.role === "agent" && (
-                          <Badge variant="outline" className="text-teal-700 border-teal-300 text-[10px] px-1.5 py-0">Agent</Badge>
+                          <Badge variant="outline" className="text-teal-700 border-teal-300 text-[10px] px-1.5 py-0 shrink-0">Agent</Badge>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0 sm:ml-auto">
                     <div className="text-right">
                       {employer.subscriptionStatus === "enterprise" ? (
                         <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
@@ -270,7 +270,7 @@ export default function AdminSubscriptions() {
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" data-testid={`button-subscription-menu-${employer.id}`}>
+                        <Button variant="ghost" size="icon" className="shrink-0" data-testid={`button-subscription-menu-${employer.id}`}>
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
