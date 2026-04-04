@@ -3464,6 +3464,73 @@ export async function registerRoutes(
     }
   });
 
+  // Admin: Get all applicants with verification status
+  app.get("/api/admin/applicants-verification", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageVerifications) {
+      return res.status(403).json({ message: "You don't have permission to manage verifications" });
+    }
+    const allUsers = await storage.getAllUsers({ role: "applicant" });
+    const now = new Date();
+    const enriched = allUsers.map((u) => {
+      const isExpired = u.verificationExpiry ? new Date(u.verificationExpiry) < now : false;
+      return {
+        id: u.id,
+        firstName: u.firstName || "",
+        lastName: u.lastName || "",
+        email: u.email || "",
+        profileImageUrl: u.profileImageUrl || null,
+        phone: u.phone || null,
+        isVerified: u.isVerified && !isExpired,
+        verificationExpiry: u.verificationExpiry || null,
+        isExpired,
+        isSuspended: u.isSuspended || false,
+        createdAt: u.createdAt,
+      };
+    });
+    res.json(enriched);
+  });
+
+  // Admin: Manually verify/unverify an applicant and set expiry
+  app.patch("/api/admin/applicants-verification/:userId", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageVerifications) {
+      return res.status(403).json({ message: "You don't have permission to manage verifications" });
+    }
+    const { userId } = req.params;
+    const { isVerified, verificationExpiry } = req.body;
+
+    const user = await storage.getUser(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.role !== "applicant") return res.status(400).json({ message: "Only applicants can be verified" });
+
+    const updates: any = {};
+    if (typeof isVerified === "boolean") {
+      updates.isVerified = isVerified;
+      if (!isVerified) {
+        updates.verificationExpiry = null;
+      }
+    }
+    if (verificationExpiry) {
+      updates.verificationExpiry = new Date(verificationExpiry);
+    }
+
+    await storage.updateUser(userId, updates);
+    const updated = await storage.getUser(userId);
+
+    if (isVerified && updated?.email) {
+      const userName = `${updated.firstName || ""} ${updated.lastName || ""}`.trim() || "User";
+      sendVerificationApprovedEmail(updated.email, userName).catch(() => {});
+    }
+
+    res.json({
+      message: isVerified ? "Applicant verified successfully" : "Verification removed",
+      user: {
+        id: updated?.id,
+        isVerified: updated?.isVerified,
+        verificationExpiry: updated?.verificationExpiry,
+      },
+    });
+  });
+
   // ============ NOTIFICATION ROUTES ============
 
   app.get("/api/notifications", isAuthenticated, async (req, res) => {
