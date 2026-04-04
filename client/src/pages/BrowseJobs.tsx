@@ -431,6 +431,8 @@ export default function BrowseJobs() {
           )}
         </AnimatePresence>
 
+        <PageAds page="browse-jobs" position="top" />
+
         <div className="flex gap-6">
           <div className="flex-1 min-w-0">
             {isLoading ? (
@@ -579,7 +581,6 @@ export default function BrowseJobs() {
               </Card>
 
               <PageAds page="browse-jobs" position="right" />
-              <PageAds page="browse-jobs" position="top" />
               <PageAds page="browse-jobs" position="bottom" />
             </div>
           </aside>
