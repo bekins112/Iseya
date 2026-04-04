@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Crown, Building2, Calendar, MoreVertical } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Search, Crown, Building2, Calendar, MoreVertical, ShieldAlert } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -26,6 +27,27 @@ export default function AdminSubscriptions() {
   const [editForm, setEditForm] = useState({ 
     subscriptionStatus: "free" as "free" | "standard" | "premium" | "enterprise", 
     subscriptionEndDate: "" 
+  });
+
+  const { data: settings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/admin/settings"],
+  });
+
+  const restrictFreeManagement = settings?.restrict_free_employer_management !== "false";
+
+  const toggleRestrictFreeMutation = useMutation({
+    mutationFn: async (value: boolean) => {
+      await apiRequest("PATCH", "/api/admin/settings", {
+        restrict_free_employer_management: value ? "true" : "false",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      toast({ title: "Setting updated", description: restrictFreeManagement ? "Free-tier employers can now manage applications without restrictions." : "Free-tier employers are now restricted from managing applications." });
+    },
+    onError: () => {
+      toast({ title: "Failed to update setting", variant: "destructive" });
+    },
   });
 
   const { data: employers = [], isLoading } = useQuery<User[]>({
@@ -97,6 +119,29 @@ export default function AdminSubscriptions() {
         title="Subscription Management"
         description="Manage employer and agent subscription plans"
       />
+
+      <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+        <CardContent className="flex items-center justify-between py-4 px-5">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div>
+              <Label htmlFor="restrict-free-toggle" className="font-medium text-sm cursor-pointer">
+                Restrict free-tier employer management
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When enabled, free-tier employers cannot manage jobs, update applicant status, or send offers.
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="restrict-free-toggle"
+            data-testid="toggle-restrict-free"
+            checked={restrictFreeManagement}
+            disabled={toggleRestrictFreeMutation.isPending}
+            onCheckedChange={(checked) => toggleRestrictFreeMutation.mutate(checked)}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>

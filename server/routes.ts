@@ -352,7 +352,8 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    if (user?.role === 'employer' && user.subscriptionStatus === "free") {
+    const restrictFreeEmployerDelete = (await getSettingValue("restrict_free_employer_management")) === "true";
+    if (restrictFreeEmployerDelete && user?.role === 'employer' && user.subscriptionStatus === "free") {
       return res.status(403).json({ message: "Please upgrade your subscription to manage jobs.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
@@ -374,7 +375,8 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    if (user?.role === 'employer' && user.subscriptionStatus === "free") {
+    const restrictFreeEmployerUpdate = (await getSettingValue("restrict_free_employer_management")) === "true";
+    if (restrictFreeEmployerUpdate && user?.role === 'employer' && user.subscriptionStatus === "free") {
       return res.status(403).json({ message: "Please upgrade your subscription to manage jobs.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
@@ -489,22 +491,25 @@ export async function registerRoutes(
     const isOwner = job.employerId === userId || job.agentId === userId;
     if (!isOwner && user?.role !== 'admin') return res.status(403).json({ message: "Forbidden" });
 
-    if (user?.role === 'employer' && user.subscriptionStatus === "free") {
+    const restrictFreeApplicants = (await getSettingValue("restrict_free_employer_management")) === "true";
+    if (restrictFreeApplicants && user?.role === 'employer' && user.subscriptionStatus === "free") {
       return res.status(403).json({ message: "Please upgrade your subscription to manage job applicants.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
+    const hideUnverified = (await getSettingValue("hide_unverified_details")) === "true";
     const apps = await storage.getApplicationsForJob(jobId);
     const enriched = await Promise.all(apps.map(async (app) => {
       const applicant = await storage.getUser(app.applicantId);
       const isApplicantVerified = applicant?.isVerified || false;
+      const showDetails = isApplicantVerified || !hideUnverified;
       const offer = await storage.getOfferByApplication(app.id);
       return {
         ...app,
         applicantName: applicant ? `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim() : 'Unknown',
-        applicantEmail: isApplicantVerified ? (applicant?.email || null) : null,
-        applicantPhone: isApplicantVerified ? (applicant?.phone || null) : null,
+        applicantEmail: showDetails ? (applicant?.email || null) : null,
+        applicantPhone: showDetails ? (applicant?.phone || null) : null,
         applicantProfileImageUrl: applicant?.profileImageUrl || null,
-        applicantCvUrl: isApplicantVerified ? (applicant?.cvUrl || null) : null,
+        applicantCvUrl: showDetails ? (applicant?.cvUrl || null) : null,
         applicantGender: applicant?.gender || null,
         applicantAge: applicant?.age || null,
         applicantIsVerified: isApplicantVerified,
@@ -565,7 +570,8 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    if (currentUser?.role === 'employer' && currentUser.subscriptionStatus === "free") {
+    const restrictFreeStatus = (await getSettingValue("restrict_free_employer_management")) === "true";
+    if (restrictFreeStatus && currentUser?.role === 'employer' && currentUser.subscriptionStatus === "free") {
       return res.status(403).json({ message: "Please upgrade your subscription to manage applicants.", code: "SUBSCRIPTION_REQUIRED" });
     }
 
@@ -1370,10 +1376,13 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Access denied" });
     }
     const requestingUser = await storage.getUser(req.session.userId!);
-    if (requestingUser?.role === "employer") {
-      const cvOwner = await storage.getUserByCvFilename(filename);
-      if (cvOwner && !cvOwner.isVerified) {
-        return res.status(403).json({ message: "Cannot download CV of unverified applicants" });
+    if (requestingUser?.role === "employer" || requestingUser?.role === "agent") {
+      const hideUnverifiedCv = (await getSettingValue("hide_unverified_details")) === "true";
+      if (hideUnverifiedCv) {
+        const cvOwner = await storage.getUserByCvFilename(filename);
+        if (cvOwner && !cvOwner.isVerified) {
+          return res.status(403).json({ message: "Cannot download CV of unverified applicants" });
+        }
       }
     }
 
@@ -1456,19 +1465,21 @@ export async function registerRoutes(
 
     const history = await storage.getJobHistoryByUser(applicantId);
     const isApplicantVerified = applicant.isVerified || false;
+    const hideUnverifiedProfile = (await getSettingValue("hide_unverified_details")) === "true";
+    const showDetails = isApplicantVerified || !hideUnverifiedProfile;
 
     res.json({
       id: applicant.id,
       firstName: applicant.firstName,
       lastName: applicant.lastName,
-      email: isApplicantVerified ? applicant.email : null,
-      phone: isApplicantVerified ? applicant.phone : null,
+      email: showDetails ? applicant.email : null,
+      phone: showDetails ? applicant.phone : null,
       profileImageUrl: applicant.profileImageUrl,
       gender: applicant.gender,
       age: applicant.age,
       bio: applicant.bio,
       location: applicant.location,
-      cvUrl: isApplicantVerified ? applicant.cvUrl : null,
+      cvUrl: showDetails ? applicant.cvUrl : null,
       expectedSalaryMin: applicant.expectedSalaryMin,
       expectedSalaryMax: applicant.expectedSalaryMax,
       isVerified: isApplicantVerified,
@@ -1542,7 +1553,8 @@ export async function registerRoutes(
     const employerId = req.session.userId!;
     const employer = await storage.getUser(employerId);
     if (employer?.role !== "employer" && employer?.role !== "admin") return res.status(403).json({ message: "Only employers can send offers" });
-    if (employer.role === "employer" && employer.subscriptionStatus === "free") return res.status(403).json({ message: "Please upgrade your subscription to send offers.", code: "SUBSCRIPTION_REQUIRED" });
+    const restrictFreeOffer = (await getSettingValue("restrict_free_employer_management")) === "true";
+    if (restrictFreeOffer && employer.role === "employer" && employer.subscriptionStatus === "free") return res.status(403).json({ message: "Please upgrade your subscription to send offers.", code: "SUBSCRIPTION_REQUIRED" });
 
     try {
       const offerSchema = z.object({
@@ -1781,6 +1793,11 @@ export async function registerRoutes(
       const isAdmin = employer?.role === "admin";
       if (!isEmployer && !isAdmin) return res.status(403).json({ message: "Not authorized" });
 
+      const restrictFreeCounter = (await getSettingValue("restrict_free_employer_management")) === "true";
+      if (restrictFreeCounter && employer?.role === "employer" && employer.subscriptionStatus === "free") {
+        return res.status(403).json({ message: "Please upgrade your subscription to respond to counter offers.", code: "SUBSCRIPTION_REQUIRED" });
+      }
+
       if (input.action === "accept") {
         const updated = await storage.updateOffer(offerId, {
           salary: offer.counterSalary!,
@@ -1894,6 +1911,7 @@ export async function registerRoutes(
     if (!job || (job.employerId !== employerId && employer.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
     const apps = await storage.getApplicationsForJob(jobId);
+    const hideUnverifiedRec = (await getSettingValue("hide_unverified_details")) === "true";
 
     const scored = await Promise.all(apps.map(async (app) => {
       const applicant = await storage.getUser(app.applicantId);
@@ -1938,6 +1956,7 @@ export async function registerRoutes(
       }
 
       const isApplicantVerified = applicant.isVerified || false;
+      const showRecommendationDetails = isApplicantVerified || !hideUnverifiedRec;
 
       const interviewRecord = await storage.getInterviewByApplication(app.id);
       const interviewStatus = interviewRecord ? interviewRecord.status : null;
@@ -1953,10 +1972,10 @@ export async function registerRoutes(
         applicationId: app.id,
         applicantId: applicant.id,
         applicantName: `${applicant.firstName || ""} ${applicant.lastName || ""}`.trim() || "Applicant",
-        applicantEmail: isApplicantVerified ? applicant.email : null,
-        applicantPhone: isApplicantVerified ? applicant.phone : null,
+        applicantEmail: showRecommendationDetails ? applicant.email : null,
+        applicantPhone: showRecommendationDetails ? applicant.phone : null,
         applicantProfileImageUrl: applicant.profileImageUrl || null,
-        applicantCvUrl: isApplicantVerified ? applicant.cvUrl : null,
+        applicantCvUrl: showRecommendationDetails ? applicant.cvUrl : null,
         applicantGender: applicant.gender || null,
         applicantAge: applicant.age || null,
         applicantLocation: applicant.location || null,
@@ -2125,12 +2144,15 @@ export async function registerRoutes(
     if (!job || (!isJobOwner && currentUser?.role !== 'admin')) return res.status(403).json({ message: "Not authorized" });
 
     const interviewList = await storage.getInterviewsForJob(jobId);
+    const hideUnverifiedInterview = (await getSettingValue("hide_unverified_details")) === "true";
     const enriched = await Promise.all(interviewList.map(async (interview) => {
       const applicant = await storage.getUser(interview.applicantId);
+      const isVerified = applicant?.isVerified || false;
+      const showInfo = isVerified || !hideUnverifiedInterview || currentUser?.role === 'admin';
       return {
         ...interview,
         applicantName: applicant ? `${applicant.firstName} ${applicant.lastName}` : "Unknown",
-        applicantEmail: applicant?.email || null,
+        applicantEmail: showInfo ? (applicant?.email || null) : null,
       };
     }));
     res.json(enriched);
@@ -3582,7 +3604,14 @@ export async function registerRoutes(
     "youtube_employers": "",
     "youtube_agents": "",
     "youtube_applicants": "",
+    "hide_unverified_details": "true",
+    "restrict_free_employer_management": "true",
   };
+
+  const BOOLEAN_SETTINGS_KEYS = new Set([
+    "hide_unverified_details",
+    "restrict_free_employer_management",
+  ]);
 
   const TEXT_SETTINGS_KEYS = new Set([
     "app_phone", "app_email", "app_address",
@@ -3826,7 +3855,9 @@ export async function registerRoutes(
     const validKeys = Object.keys(DEFAULT_SETTINGS);
     for (const [key, value] of Object.entries(updates)) {
       if (!validKeys.includes(key)) continue;
-      if (TEXT_SETTINGS_KEYS.has(key)) {
+      if (BOOLEAN_SETTINGS_KEYS.has(key)) {
+        await storage.upsertSetting(key, value === "true" ? "true" : "false", userId);
+      } else if (TEXT_SETTINGS_KEYS.has(key)) {
         await storage.upsertSetting(key, String(value || "").trim(), userId);
       } else {
         const numVal = parseFloat(value);

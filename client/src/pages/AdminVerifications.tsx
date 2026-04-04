@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +26,7 @@ import {
   Camera,
   Loader2,
   Search,
+  EyeOff,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -67,6 +70,27 @@ export default function AdminVerifications() {
   const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
+
+  const { data: settings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/admin/settings"],
+  });
+
+  const hideUnverified = settings?.hide_unverified_details !== "false";
+
+  const toggleHideUnverifiedMutation = useMutation({
+    mutationFn: async (value: boolean) => {
+      await apiRequest("PATCH", "/api/admin/settings", {
+        hide_unverified_details: value ? "true" : "false",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      toast({ title: "Setting updated", description: hideUnverified ? "Unverified applicant details are now visible to employers/agents." : "Unverified applicant details are now hidden from employers/agents." });
+    },
+    onError: () => {
+      toast({ title: "Failed to update setting", variant: "destructive" });
+    },
+  });
 
   const { data: requests = [], isLoading } = useQuery<VerificationRequest[]>({
     queryKey: ["/api/admin/verification-requests", statusFilter],
@@ -118,6 +142,29 @@ export default function AdminVerifications() {
         title="Verification Requests"
         description={`Review and manage applicant identity verification requests. ${pendingCount} pending.`}
       />
+
+      <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+        <CardContent className="flex items-center justify-between py-4 px-5">
+          <div className="flex items-center gap-3">
+            <EyeOff className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div>
+              <Label htmlFor="hide-unverified-toggle" className="font-medium text-sm cursor-pointer">
+                Hide unverified applicant details
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When enabled, employers and agents cannot see contact info, CV, or email of unverified applicants.
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="hide-unverified-toggle"
+            data-testid="toggle-hide-unverified"
+            checked={hideUnverified}
+            disabled={toggleHideUnverifiedMutation.isPending}
+            onCheckedChange={(checked) => toggleHideUnverifiedMutation.mutate(checked)}
+          />
+        </CardContent>
+      </Card>
 
       <div className="flex items-center gap-3">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
