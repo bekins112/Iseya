@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extension";
@@ -6,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { getSectorForCategory } from "@/lib/job-categories";
 
 interface Stats {
   totalUsers: number;
@@ -39,6 +41,18 @@ export default function AdminStatistics() {
     queryKey: ["/api/admin/stats/detailed"],
   });
 
+  const jobsBySector = useMemo(() => {
+    if (!detailedStats?.jobsByCategory) return [];
+    const sectorMap = new Map<string, number>();
+    for (const item of detailedStats.jobsByCategory) {
+      const sector = getSectorForCategory(item.category) || "Other";
+      sectorMap.set(sector, (sectorMap.get(sector) || 0) + item.count);
+    }
+    return Array.from(sectorMap.entries())
+      .map(([sector, count]) => ({ sector, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [detailedStats?.jobsByCategory]);
+
   if (user?.role !== "admin") {
     return <Redirect to="/dashboard" />;
   }
@@ -68,7 +82,8 @@ export default function AdminStatistics() {
   const getCategoryColor = (index: number) => {
     const colors = [
       "bg-blue-500", "bg-green-500", "bg-amber-500", "bg-purple-500",
-      "bg-rose-500", "bg-teal-500", "bg-orange-500", "bg-indigo-500"
+      "bg-rose-500", "bg-teal-500", "bg-orange-500", "bg-indigo-500",
+      "bg-cyan-500", "bg-pink-500",
     ];
     return colors[index % colors.length];
   };
@@ -155,15 +170,15 @@ export default function AdminStatistics() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {detailedStats?.jobsByCategory && detailedStats.jobsByCategory.length > 0 ? (
+                {jobsBySector.length > 0 ? (
                   <div className="space-y-3">
-                    {detailedStats.jobsByCategory.slice(0, 8).map((item, index) => {
-                      const total = detailedStats.jobsByCategory.reduce((acc, j) => acc + j.count, 0);
+                    {jobsBySector.slice(0, 10).map((item, index) => {
+                      const total = jobsBySector.reduce((acc, j) => acc + j.count, 0);
                       const percentage = total > 0 ? (item.count / total) * 100 : 0;
                       return (
-                        <div key={item.category} className="space-y-1">
+                        <div key={item.sector} className="space-y-1">
                           <div className="flex justify-between text-sm">
-                            <span className="capitalize font-medium">{item.category}</span>
+                            <span className="font-medium">{item.sector}</span>
                             <span className="text-muted-foreground">{item.count}</span>
                           </div>
                           <div className="h-2 bg-muted rounded-full overflow-hidden">
