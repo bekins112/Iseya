@@ -948,6 +948,7 @@ export async function registerRoutes(
         canManageReports: input.permissions.canManageReports ?? false,
         canManageVerifications: input.permissions.canManageVerifications ?? false,
         canManageNotifications: input.permissions.canManageNotifications ?? false,
+        canManageAutomatedEmails: input.permissions.canManageAutomatedEmails ?? false,
         canManageAds: input.permissions.canManageAds ?? false,
         canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
@@ -999,6 +1000,7 @@ export async function registerRoutes(
         canManageReports: input.permissions.canManageReports ?? false,
         canManageVerifications: input.permissions.canManageVerifications ?? false,
         canManageNotifications: input.permissions.canManageNotifications ?? false,
+        canManageAutomatedEmails: input.permissions.canManageAutomatedEmails ?? false,
         canManageAds: input.permissions.canManageAds ?? false,
         canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
@@ -1061,6 +1063,9 @@ export async function registerRoutes(
       canManageReports: true,
       canManageVerifications: true,
       canManageNotifications: true,
+      canManageAutomatedEmails: true,
+      canManageAds: true,
+      canManageAgentCredits: true,
       canManageSettings: true,
     });
   });
@@ -4075,7 +4080,7 @@ export async function registerRoutes(
   // === AUTOMATED EMAILS ===
 
   app.post("/api/admin/automated-emails/job-alerts", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+    if (req.adminPermissions && !req.adminPermissions.canManageAutomatedEmails) {
       return res.status(403).json({ message: "You do not have permission to manage automated emails" });
     }
     try {
@@ -4089,7 +4094,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/automated-emails/application-reminders", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+    if (req.adminPermissions && !req.adminPermissions.canManageAutomatedEmails) {
       return res.status(403).json({ message: "You do not have permission to manage automated emails" });
     }
     try {
@@ -4103,7 +4108,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/automated-emails/news-push", isAuthenticated, isAdmin, uploadEmailPromo.single("image"), async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+    if (req.adminPermissions && !req.adminPermissions.canManageAutomatedEmails) {
       return res.status(403).json({ message: "You do not have permission to send news push" });
     }
     try {
