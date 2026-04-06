@@ -25,6 +25,7 @@ import {
   Bell,
   HelpCircle,
   Megaphone,
+  MonitorPlay,
   Coins,
   Mail,
   Menu,
@@ -73,6 +74,7 @@ export function Sidebar() {
     { href: "/admin/notifications", label: "Notifications", icon: Bell, perm: "canManageNotifications" },
     { href: "/admin/automated-emails", label: "Automated Emails", icon: Mail, perm: "canManageAutomatedEmails" },
     { href: "/admin/ads", label: "Ads & Popups", icon: Megaphone, perm: "canManageAds" },
+    { href: "/admin/google-ads", label: "Google Ads", icon: MonitorPlay, perm: "canManageSettings" },
     { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
     { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
   ];
