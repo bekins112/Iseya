@@ -4113,6 +4113,18 @@ export async function registerRoutes(
 
   // === GOOGLE ADS MANAGEMENT ===
 
+  app.get("/api/google-ads/codes", async (_req, res) => {
+    try {
+      const settings = await storage.getAllPlatformSettings();
+      res.json({
+        headerCode: settings.google_ads_header_code || "",
+        bodyCode: settings.google_ads_body_code || "",
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Google Ad codes" });
+    }
+  });
+
   app.get("/api/google-ads", async (req, res) => {
     try {
       const page = req.query.page as string;
@@ -4136,6 +4148,8 @@ export async function registerRoutes(
       const settings = await storage.getAllPlatformSettings();
       res.json({
         publisherId: settings.google_adsense_publisher_id || "",
+        headerCode: settings.google_ads_header_code || "",
+        bodyCode: settings.google_ads_body_code || "",
         placements,
       });
     } catch (error) {
@@ -4148,10 +4162,17 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     try {
-      const { publisherId } = req.body;
-      if (typeof publisherId !== "string") return res.status(400).json({ message: "Publisher ID is required" });
-      await storage.upsertSetting("google_adsense_publisher_id", publisherId.trim(), req.session.userId!);
-      res.json({ message: "Publisher ID saved" });
+      const { publisherId, headerCode, bodyCode } = req.body;
+      if (typeof publisherId === "string") {
+        await storage.upsertSetting("google_adsense_publisher_id", publisherId.trim(), req.session.userId!);
+      }
+      if (typeof headerCode === "string") {
+        await storage.upsertSetting("google_ads_header_code", headerCode, req.session.userId!);
+      }
+      if (typeof bodyCode === "string") {
+        await storage.upsertSetting("google_ads_body_code", bodyCode, req.session.userId!);
+      }
+      res.json({ message: "Settings saved" });
     } catch (error) {
       res.status(500).json({ message: "Failed to save settings" });
     }

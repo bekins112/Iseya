@@ -38,6 +38,7 @@ import AdminSettings from "@/pages/AdminSettings";
 import AdminTransactions from "@/pages/AdminTransactions";
 import AdminAds from "@/pages/AdminAds";
 import AdminGoogleAds from "@/pages/AdminGoogleAds";
+import GoogleAdCodes from "@/components/GoogleAdCodes";
 import AdminAgentCredits from "@/pages/AdminAgentCredits";
 import AdminAutomatedEmails from "@/pages/AdminAutomatedEmails";
 import Verification from "@/pages/Verification";
@@ -318,6 +319,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <GoogleAdCodes />
         <Router />
         <CookieConsent />
         <InstallPrompt />

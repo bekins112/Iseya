@@ -14,7 +14,8 @@ import { useForm, FormProvider } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Edit2, Settings, ExternalLink, Eye, EyeOff, Monitor } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Trash2, Edit2, Settings, ExternalLink, Eye, EyeOff, Monitor, Code } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -70,9 +71,11 @@ export default function AdminGoogleAds() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [publisherId, setPublisherId] = useState("");
-  const [publisherIdEdited, setPublisherIdEdited] = useState(false);
+  const [headerCode, setHeaderCode] = useState("");
+  const [bodyCode, setBodyCode] = useState("");
+  const [settingsEdited, setSettingsEdited] = useState(false);
 
-  const { data, isLoading } = useQuery<{ publisherId: string; placements: GoogleAdPlacement[] }>({
+  const { data, isLoading } = useQuery<{ publisherId: string; headerCode: string; bodyCode: string; placements: GoogleAdPlacement[] }>({
     queryKey: ["/api/admin/google-ads"],
     queryFn: async () => {
       const res = await fetch("/api/admin/google-ads", { credentials: "include" });
@@ -81,10 +84,10 @@ export default function AdminGoogleAds() {
     },
   });
 
-  if (!authLoading && data?.publisherId !== undefined && !publisherIdEdited) {
-    if (publisherId !== data.publisherId) {
-      setPublisherId(data.publisherId);
-    }
+  if (!authLoading && data?.publisherId !== undefined && !settingsEdited) {
+    if (publisherId !== data.publisherId) setPublisherId(data.publisherId);
+    if (headerCode !== data.headerCode) setHeaderCode(data.headerCode);
+    if (bodyCode !== data.bodyCode) setBodyCode(data.bodyCode);
   }
 
   const form = useForm<PlacementFormData>({
@@ -104,12 +107,17 @@ export default function AdminGoogleAds() {
 
   const saveSettings = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/admin/google-ads/settings", { publisherId: publisherId.trim() });
+      await apiRequest("POST", "/api/admin/google-ads/settings", {
+        publisherId: publisherId.trim(),
+        headerCode,
+        bodyCode,
+      });
     },
     onSuccess: () => {
-      toast({ title: "Settings saved", description: "Google AdSense Publisher ID updated." });
-      setPublisherIdEdited(false);
+      toast({ title: "Settings saved", description: "Google Ads settings updated." });
+      setSettingsEdited(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/google-ads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/google-ads/codes"] });
     },
     onError: () => toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" }),
   });
@@ -219,32 +227,70 @@ export default function AdminGoogleAds() {
             Google AdSense Settings
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 items-end">
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor="publisher-id">Publisher ID (Client ID)</Label>
-              <Input
-                id="publisher-id"
-                placeholder="ca-pub-XXXXXXXXXXXXXXXX"
-                value={publisherId}
-                onChange={(e) => { setPublisherId(e.target.value); setPublisherIdEdited(true); }}
-                data-testid="input-publisher-id"
-              />
-              <p className="text-xs text-muted-foreground">
-                Your Google AdSense publisher ID. Find it in your{" "}
-                <a href="https://www.google.com/adsense" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
-                  AdSense account <ExternalLink className="w-3 h-3" />
-                </a>
-              </p>
-            </div>
-            <Button
-              onClick={() => saveSettings.mutate()}
-              disabled={saveSettings.isPending || !publisherIdEdited}
-              data-testid="button-save-publisher"
-            >
-              {saveSettings.isPending ? "Saving..." : "Save"}
-            </Button>
+        <CardContent className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="publisher-id">Publisher ID (Client ID)</Label>
+            <Input
+              id="publisher-id"
+              placeholder="ca-pub-XXXXXXXXXXXXXXXX"
+              value={publisherId}
+              onChange={(e) => { setPublisherId(e.target.value); setSettingsEdited(true); }}
+              data-testid="input-publisher-id"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your Google AdSense publisher ID. Find it in your{" "}
+              <a href="https://www.google.com/adsense" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                AdSense account <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
           </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="header-code" className="flex items-center gap-1.5">
+              <Code className="w-4 h-4" />
+              Header Code
+            </Label>
+            <Textarea
+              id="header-code"
+              placeholder={'Paste your Google Ad code for the <head> section here...\ne.g. <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX" crossorigin="anonymous"></script>'}
+              value={headerCode}
+              onChange={(e) => { setHeaderCode(e.target.value); setSettingsEdited(true); }}
+              rows={4}
+              className="font-mono text-xs"
+              data-testid="input-header-code"
+            />
+            <p className="text-xs text-muted-foreground">
+              Code that will be injected into the {'<head>'} section of every page. Typically the AdSense script tag.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="body-code" className="flex items-center gap-1.5">
+              <Code className="w-4 h-4" />
+              Body Code
+            </Label>
+            <Textarea
+              id="body-code"
+              placeholder="Paste your Google Ad code for the <body> section here..."
+              value={bodyCode}
+              onChange={(e) => { setBodyCode(e.target.value); setSettingsEdited(true); }}
+              rows={4}
+              className="font-mono text-xs"
+              data-testid="input-body-code"
+            />
+            <p className="text-xs text-muted-foreground">
+              Code that will be injected at the end of the {'<body>'} section. Use for additional tracking or ad scripts.
+            </p>
+          </div>
+
+          <Button
+            onClick={() => saveSettings.mutate()}
+            disabled={saveSettings.isPending || !settingsEdited}
+            className="w-full sm:w-auto"
+            data-testid="button-save-settings"
+          >
+            {saveSettings.isPending ? "Saving..." : "Save Settings"}
+          </Button>
         </CardContent>
       </Card>
 
