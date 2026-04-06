@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -130,6 +130,14 @@ export interface IStorage {
   getActiveAdsForPage(page: string): Promise<InternalAd[]>;
   updateAd(id: number, updates: Partial<InternalAd>): Promise<InternalAd>;
   deleteAd(id: number): Promise<void>;
+
+  // Google Ad Placements
+  createGoogleAdPlacement(placement: InsertGoogleAdPlacement): Promise<GoogleAdPlacement>;
+  getGoogleAdPlacement(id: number): Promise<GoogleAdPlacement | undefined>;
+  getAllGoogleAdPlacements(): Promise<GoogleAdPlacement[]>;
+  getActiveGoogleAdsForPage(page: string): Promise<GoogleAdPlacement[]>;
+  updateGoogleAdPlacement(id: number, updates: Partial<GoogleAdPlacement>): Promise<GoogleAdPlacement>;
+  deleteGoogleAdPlacement(id: number): Promise<void>;
 
   // Transaction methods
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
@@ -1043,6 +1051,35 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAd(id: number): Promise<void> {
     await db.delete(internalAds).where(eq(internalAds.id, id));
+  }
+
+  async createGoogleAdPlacement(placement: InsertGoogleAdPlacement): Promise<GoogleAdPlacement> {
+    const [newPlacement] = await db.insert(googleAdPlacements).values(placement).returning();
+    return newPlacement;
+  }
+
+  async getGoogleAdPlacement(id: number): Promise<GoogleAdPlacement | undefined> {
+    const [placement] = await db.select().from(googleAdPlacements).where(eq(googleAdPlacements.id, id));
+    return placement;
+  }
+
+  async getAllGoogleAdPlacements(): Promise<GoogleAdPlacement[]> {
+    return await db.select().from(googleAdPlacements).orderBy(desc(googleAdPlacements.createdAt));
+  }
+
+  async getActiveGoogleAdsForPage(page: string): Promise<GoogleAdPlacement[]> {
+    const allActive = await db.select().from(googleAdPlacements)
+      .where(eq(googleAdPlacements.isActive, true));
+    return allActive.filter(ad => ad.targetPages?.includes(page));
+  }
+
+  async updateGoogleAdPlacement(id: number, updates: Partial<GoogleAdPlacement>): Promise<GoogleAdPlacement> {
+    const [updated] = await db.update(googleAdPlacements).set(updates).where(eq(googleAdPlacements.id, id)).returning();
+    return updated;
+  }
+
+  async deleteGoogleAdPlacement(id: number): Promise<void> {
+    await db.delete(googleAdPlacements).where(eq(googleAdPlacements.id, id));
   }
 }
 

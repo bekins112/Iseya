@@ -4111,6 +4111,123 @@ export async function registerRoutes(
     }
   });
 
+  // === GOOGLE ADS MANAGEMENT ===
+
+  app.get("/api/google-ads", async (req, res) => {
+    try {
+      const page = req.query.page as string;
+      if (!page) return res.status(400).json({ message: "Page parameter is required" });
+      const settings = await storage.getAllPlatformSettings();
+      const publisherId = settings.google_adsense_publisher_id;
+      if (!publisherId) return res.json({ publisherId: null, placements: [] });
+      const placements = await storage.getActiveGoogleAdsForPage(page);
+      res.json({ publisherId, placements });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Google Ads" });
+    }
+  });
+
+  app.get("/api/admin/google-ads", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    try {
+      const placements = await storage.getAllGoogleAdPlacements();
+      const settings = await storage.getAllPlatformSettings();
+      res.json({
+        publisherId: settings.google_adsense_publisher_id || "",
+        placements,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch Google Ads" });
+    }
+  });
+
+  app.post("/api/admin/google-ads/settings", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    try {
+      const { publisherId } = req.body;
+      if (typeof publisherId !== "string") return res.status(400).json({ message: "Publisher ID is required" });
+      await storage.upsertSetting("google_adsense_publisher_id", publisherId.trim(), req.session.userId!);
+      res.json({ message: "Publisher ID saved" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to save settings" });
+    }
+  });
+
+  app.post("/api/admin/google-ads", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    try {
+      const placementSchema = z.object({
+        name: z.string().min(1, "Name is required"),
+        adSlotId: z.string().min(1, "Ad Slot ID is required"),
+        adFormat: z.enum(["auto", "horizontal", "vertical", "rectangle", "fluid"]).default("auto"),
+        targetPages: z.array(z.string()).min(1, "Select at least one page"),
+        position: z.array(z.enum(["top", "middle", "bottom", "right"])).min(1, "Select at least one position").default(["right"]),
+        isActive: z.boolean().default(true),
+        isResponsive: z.boolean().default(true),
+        customWidth: z.number().nullable().optional(),
+        customHeight: z.number().nullable().optional(),
+      });
+      const input = placementSchema.parse(req.body);
+      const placement = await storage.createGoogleAdPlacement({
+        ...input,
+        createdBy: req.session.userId!,
+      });
+      res.status(201).json(placement);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      res.status(500).json({ message: "Failed to create placement" });
+    }
+  });
+
+  app.patch("/api/admin/google-ads/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      const existing = await storage.getGoogleAdPlacement(id);
+      if (!existing) return res.status(404).json({ message: "Placement not found" });
+      const updateSchema = z.object({
+        name: z.string().optional(),
+        adSlotId: z.string().optional(),
+        adFormat: z.enum(["auto", "horizontal", "vertical", "rectangle", "fluid"]).optional(),
+        targetPages: z.array(z.string()).min(1).optional(),
+        position: z.array(z.enum(["top", "middle", "bottom", "right"])).min(1).optional(),
+        isActive: z.boolean().optional(),
+        isResponsive: z.boolean().optional(),
+        customWidth: z.number().nullable().optional(),
+        customHeight: z.number().nullable().optional(),
+      });
+      const updates = updateSchema.parse(req.body);
+      const updated = await storage.updateGoogleAdPlacement(id, updates);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      res.status(500).json({ message: "Failed to update placement" });
+    }
+  });
+
+  app.delete("/api/admin/google-ads/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage ads" });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+    try {
+      await storage.deleteGoogleAdPlacement(id);
+      res.json({ message: "Placement deleted" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete placement" });
+    }
+  });
+
   app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
       const { email } = req.body;

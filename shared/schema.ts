@@ -465,6 +465,25 @@ export const insertInternalAdSchema = createInsertSchema(internalAds).omit({ id:
 export type InternalAd = typeof internalAds.$inferSelect;
 export type InsertInternalAd = z.infer<typeof insertInternalAdSchema>;
 
+export const googleAdPlacements = pgTable("google_ad_placements", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name").notNull(),
+  adSlotId: varchar("ad_slot_id").notNull(),
+  adFormat: varchar("ad_format").notNull().default("auto"),
+  targetPages: text("target_pages").array().notNull(),
+  position: text("position").array().default(["right"]),
+  isActive: boolean("is_active").default(true),
+  isResponsive: boolean("is_responsive").default(true),
+  customWidth: integer("custom_width"),
+  customHeight: integer("custom_height"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertGoogleAdPlacementSchema = createInsertSchema(googleAdPlacements).omit({ id: true, createdAt: true });
+export type GoogleAdPlacement = typeof googleAdPlacements.$inferSelect;
+export type InsertGoogleAdPlacement = z.infer<typeof insertGoogleAdPlacementSchema>;
+
 export const fileUploads = pgTable("file_uploads", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   filePath: varchar("file_path").notNull().unique(),
