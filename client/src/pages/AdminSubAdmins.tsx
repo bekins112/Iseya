@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus, Megaphone, Coins, Mail } from "lucide-react";
+import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus, Megaphone, Coins, Mail, MonitorPlay } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -54,7 +54,7 @@ const permissionLabels = [
   { key: "canManageAutomatedEmails", label: "Automated Emails", icon: Mail, description: "Can manage automated email schedules and send newsletters" },
   { key: "canManageAds", label: "Manage Ads & Popups", icon: Megaphone, description: "Can create and manage internal ads and popups" },
   { key: "canManageAgentCredits", label: "Manage Agent Credits", icon: Coins, description: "Can add, deduct, or set agent job post credits" },
-  { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform configuration" },
+  { key: "canManageSettings", label: "Platform Settings & Google Ads", icon: SlidersHorizontal, description: "Can modify pricing, platform configuration, Google Ads & Analytics settings" },
   { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
 ];
 
@@ -274,9 +274,11 @@ export default function AdminSubAdmins() {
                           {admin.permissions.canManageReports && <Badge variant="outline" className="text-xs">Reports</Badge>}
                           {admin.permissions.canManageVerifications && <Badge variant="outline" className="text-xs">Verify</Badge>}
                           {admin.permissions.canManageNotifications && <Badge variant="outline" className="text-xs">Notifs</Badge>}
+                          {admin.permissions.canManageAutomatedEmails && <Badge variant="outline" className="text-xs">Emails</Badge>}
                           {admin.permissions.canManageAds && <Badge variant="outline" className="text-xs">Ads</Badge>}
                           {admin.permissions.canManageAgentCredits && <Badge variant="outline" className="text-xs">Agent Credits</Badge>}
                           {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Settings</Badge>}
+                          {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Google Ads</Badge>}
                           {admin.permissions.canManageAdmins && <Badge variant="outline" className="text-xs">Admins</Badge>}
                         </>
                       )}

@@ -83,13 +83,13 @@ export default function AdminJobs() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       <PageHeader
         title="Manage Jobs"
         description="Oversee all job postings on the platform"
       />
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader className="pb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -102,7 +102,7 @@ export default function AdminJobs() {
             />
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {isLoading ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -124,10 +124,10 @@ export default function AdminJobs() {
                   className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
                   data-testid={`job-row-${job.id}`}
                 >
-                  <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium">{job.title}</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-medium truncate">{job.title}</h3>
                       <Badge variant={job.isActive ? "default" : "secondary"}>
                         {job.isActive ? "Active" : "Inactive"}
                       </Badge>
@@ -140,10 +140,10 @@ export default function AdminJobs() {
                     {job.onBehalfOf && (
                       <p className="text-xs text-muted-foreground mb-1">On behalf of: {job.onBehalfOf}</p>
                     )}
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {[job.state, job.city].filter(Boolean).join(", ") || job.location}
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{[job.state, job.city].filter(Boolean).join(", ") || job.location}</span>
                       </span>
                       <span>{job.category}</span>
                       <span>{job.jobType}</span>
@@ -155,11 +155,12 @@ export default function AdminJobs() {
                       Posted: {job.createdAt ? format(new Date(job.createdAt), "MMM d, yyyy") : "N/A"}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
                     <Link href={`/jobs/${job.id}/applications`}>
                       <Button variant="outline" size="sm" className="gap-1" data-testid={`button-manage-applicants-${job.id}`}>
                         <Users className="w-3.5 h-3.5" />
-                        {counts.total > 0 ? `${counts.total} Applicants` : "Applicants"}
+                        <span className="hidden xs:inline">{counts.total > 0 ? `${counts.total} ` : ""}Applicants</span>
+                        <span className="xs:hidden">{counts.total || 0}</span>
                       </Button>
                     </Link>
                     <Link href={jobUrl(job)}>

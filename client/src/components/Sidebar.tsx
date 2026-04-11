@@ -192,7 +192,7 @@ export function Sidebar() {
             onClick={() => setMoreOpen(false)}
           />
           <div className="fixed bottom-16 left-0 right-0 z-40 md:hidden p-3">
-            <div className="bg-card border rounded-2xl shadow-2xl p-3 space-y-1 max-w-sm mx-auto">
+            <div className="bg-card border rounded-2xl shadow-2xl p-3 space-y-1 max-w-sm mx-auto max-h-[60vh] overflow-y-auto">
               {mobileOverflow.map((link) => {
                 const Icon = link.icon;
                 const isActive = location === link.href;
