@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit2, Settings, ExternalLink, Eye, EyeOff, Monitor, Code, BarChart3 } from "lucide-react";
+import { Plus, Trash2, Edit2, Settings, ExternalLink, Eye, EyeOff, Monitor, Code, BarChart3, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -63,6 +63,16 @@ const placementSchema = z.object({
 
 type PlacementFormData = z.infer<typeof placementSchema>;
 
+interface AdminData {
+  publisherId: string;
+  adsenseHeaderScript: string;
+  gadsTrackingId: string;
+  gadsHeaderScript: string;
+  gaMeasurementId: string;
+  gaScript: string;
+  placements: GoogleAdPlacement[];
+}
+
 export default function AdminGoogleAds() {
   usePageTitle("Admin - Google Settings");
   const { user, isLoading: authLoading } = useAuth();
@@ -71,13 +81,14 @@ export default function AdminGoogleAds() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [publisherId, setPublisherId] = useState("");
-  const [headerCode, setHeaderCode] = useState("");
-  const [bodyCode, setBodyCode] = useState("");
-  const [gaTrackingId, setGaTrackingId] = useState("");
-  const [gaCode, setGaCode] = useState("");
+  const [adsenseHeaderScript, setAdsenseHeaderScript] = useState("");
+  const [gadsTrackingId, setGadsTrackingId] = useState("");
+  const [gadsHeaderScript, setGadsHeaderScript] = useState("");
+  const [gaMeasurementId, setGaMeasurementId] = useState("");
+  const [gaScript, setGaScript] = useState("");
   const [settingsEdited, setSettingsEdited] = useState(false);
 
-  const { data, isLoading } = useQuery<{ publisherId: string; headerCode: string; bodyCode: string; gaTrackingId: string; gaCode: string; placements: GoogleAdPlacement[] }>({
+  const { data, isLoading } = useQuery<AdminData>({
     queryKey: ["/api/admin/google-ads"],
     queryFn: async () => {
       const res = await fetch("/api/admin/google-ads", { credentials: "include" });
@@ -88,10 +99,11 @@ export default function AdminGoogleAds() {
 
   if (!authLoading && data?.publisherId !== undefined && !settingsEdited) {
     if (publisherId !== data.publisherId) setPublisherId(data.publisherId);
-    if (headerCode !== data.headerCode) setHeaderCode(data.headerCode);
-    if (bodyCode !== data.bodyCode) setBodyCode(data.bodyCode);
-    if (gaTrackingId !== data.gaTrackingId) setGaTrackingId(data.gaTrackingId);
-    if (gaCode !== data.gaCode) setGaCode(data.gaCode);
+    if (adsenseHeaderScript !== data.adsenseHeaderScript) setAdsenseHeaderScript(data.adsenseHeaderScript);
+    if (gadsTrackingId !== data.gadsTrackingId) setGadsTrackingId(data.gadsTrackingId);
+    if (gadsHeaderScript !== data.gadsHeaderScript) setGadsHeaderScript(data.gadsHeaderScript);
+    if (gaMeasurementId !== data.gaMeasurementId) setGaMeasurementId(data.gaMeasurementId);
+    if (gaScript !== data.gaScript) setGaScript(data.gaScript);
   }
 
   const form = useForm<PlacementFormData>({
@@ -113,14 +125,15 @@ export default function AdminGoogleAds() {
     mutationFn: async () => {
       await apiRequest("POST", "/api/admin/google-ads/settings", {
         publisherId: publisherId.trim(),
-        headerCode,
-        bodyCode,
-        gaTrackingId: gaTrackingId.trim(),
-        gaCode,
+        adsenseHeaderScript,
+        gadsTrackingId: gadsTrackingId.trim(),
+        gadsHeaderScript,
+        gaMeasurementId: gaMeasurementId.trim(),
+        gaScript,
       });
     },
     onSuccess: () => {
-      toast({ title: "Settings saved", description: "Google Ads settings updated." });
+      toast({ title: "Settings saved", description: "Google settings updated successfully." });
       setSettingsEdited(false);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/google-ads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/google-ads/codes"] });
@@ -223,9 +236,10 @@ export default function AdminGoogleAds() {
     <div className="space-y-6">
       <PageHeader
         title="Google Settings"
-        description="Configure Google AdSense, Google Ads, and Google Analytics settings for your site"
+        description="Configure Google AdSense, Google Ads, and Google Analytics for your site"
       />
 
+      {/* ===== SECTION 1: GOOGLE ADSENSE SETTINGS ===== */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -251,6 +265,25 @@ export default function AdminGoogleAds() {
             </p>
           </div>
 
+          <div className="space-y-1.5">
+            <Label htmlFor="adsense-header-script" className="flex items-center gap-1.5">
+              <Code className="w-4 h-4" />
+              Header Script
+            </Label>
+            <Textarea
+              id="adsense-header-script"
+              placeholder={'Paste your AdSense script for the <head> section here...\ne.g. <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX" crossorigin="anonymous"></script>'}
+              value={adsenseHeaderScript}
+              onChange={(e) => { setAdsenseHeaderScript(e.target.value); setSettingsEdited(true); }}
+              rows={4}
+              className="font-mono text-xs"
+              data-testid="input-adsense-header-script"
+            />
+            <p className="text-xs text-muted-foreground">
+              The AdSense script tag that will be injected into the {'<head>'} section of every page.
+            </p>
+          </div>
+
           <Button
             onClick={() => saveSettings.mutate()}
             disabled={saveSettings.isPending || !settingsEdited}
@@ -262,123 +295,12 @@ export default function AdminGoogleAds() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Code className="w-5 h-5" />
-            Google Ads Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="header-code" className="flex items-center gap-1.5">
-              <Code className="w-4 h-4" />
-              Header Code
-            </Label>
-            <Textarea
-              id="header-code"
-              placeholder={'Paste your Google Ad code for the <head> section here...\ne.g. <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX" crossorigin="anonymous"></script>'}
-              value={headerCode}
-              onChange={(e) => { setHeaderCode(e.target.value); setSettingsEdited(true); }}
-              rows={4}
-              className="font-mono text-xs"
-              data-testid="input-header-code"
-            />
-            <p className="text-xs text-muted-foreground">
-              Code that will be injected into the {'<head>'} section of every page. Typically the AdSense script tag.
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="body-code" className="flex items-center gap-1.5">
-              <Code className="w-4 h-4" />
-              Body Code
-            </Label>
-            <Textarea
-              id="body-code"
-              placeholder="Paste your Google Ad code for the <body> section here..."
-              value={bodyCode}
-              onChange={(e) => { setBodyCode(e.target.value); setSettingsEdited(true); }}
-              rows={4}
-              className="font-mono text-xs"
-              data-testid="input-body-code"
-            />
-            <p className="text-xs text-muted-foreground">
-              Code that will be injected at the end of the {'<body>'} section. Use for additional tracking or ad scripts.
-            </p>
-          </div>
-
-          <Button
-            onClick={() => saveSettings.mutate()}
-            disabled={saveSettings.isPending || !settingsEdited}
-            className="w-full sm:w-auto"
-            data-testid="button-save-ads-settings"
-          >
-            {saveSettings.isPending ? "Saving..." : "Save Ads Settings"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BarChart3 className="w-5 h-5" />
-            Google Analytics Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="ga-tracking-id">Tracking / Measurement ID</Label>
-            <Input
-              id="ga-tracking-id"
-              placeholder="G-XXXXXXXXXX or UA-XXXXXXXX-X"
-              value={gaTrackingId}
-              onChange={(e) => { setGaTrackingId(e.target.value); setSettingsEdited(true); }}
-              data-testid="input-ga-tracking-id"
-            />
-            <p className="text-xs text-muted-foreground">
-              Your Google Analytics Measurement ID (GA4: G-XXXX or Universal Analytics: UA-XXXX). Find it in your{" "}
-              <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
-                Analytics account <ExternalLink className="w-3 h-3" />
-              </a>
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="ga-code" className="flex items-center gap-1.5">
-              <Code className="w-4 h-4" />
-              Additional Analytics Code
-            </Label>
-            <Textarea
-              id="ga-code"
-              placeholder={'Paste any additional Google Analytics or Tag Manager code here...\ne.g. <script>(function(w,d,s,l,i){...})(window,document,\'script\',\'dataLayer\',\'GTM-XXXX\');</script>'}
-              value={gaCode}
-              onChange={(e) => { setGaCode(e.target.value); setSettingsEdited(true); }}
-              rows={4}
-              className="font-mono text-xs"
-              data-testid="input-ga-code"
-            />
-            <p className="text-xs text-muted-foreground">
-              Optional extra code for Google Tag Manager, custom events, or advanced analytics configuration. Injected into the {'<head>'}.
-            </p>
-          </div>
-
-          <Button
-            onClick={() => saveSettings.mutate()}
-            disabled={saveSettings.isPending || !settingsEdited}
-            className="w-full sm:w-auto"
-            data-testid="button-save-analytics-settings"
-          >
-            {saveSettings.isPending ? "Saving..." : "Save Analytics Settings"}
-          </Button>
-        </CardContent>
-      </Card>
-
+      {/* AdSense Ad Placements */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Monitor className="w-5 h-5" />
-            Ad Placements ({data?.placements?.length || 0})
+            AdSense Ad Placements ({data?.placements?.length || 0})
           </CardTitle>
           <Button onClick={openCreate} size="sm" className="gap-1.5" data-testid="button-add-placement">
             <Plus className="w-4 h-4" />
@@ -399,7 +321,7 @@ export default function AdminGoogleAds() {
             <div className="text-center py-12">
               <Monitor className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
               <h3 className="font-semibold mb-1">No Ad Placements</h3>
-              <p className="text-sm text-muted-foreground mb-4">Create your first Google Ad placement to start showing ads</p>
+              <p className="text-sm text-muted-foreground mb-4">Create your first AdSense placement to start showing ads</p>
               <Button onClick={openCreate} size="sm" className="gap-1.5" data-testid="button-add-first-placement">
                 <Plus className="w-4 h-4" />
                 Add Placement
@@ -449,6 +371,119 @@ export default function AdminGoogleAds() {
         </CardContent>
       </Card>
 
+      {/* ===== SECTION 2: GOOGLE ADS SETTINGS (Advertising) ===== */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Megaphone className="w-5 h-5" />
+            Google Ads Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="gads-tracking-id">Tracking ID</Label>
+            <Input
+              id="gads-tracking-id"
+              placeholder="AW-XXXXXXXXXX"
+              value={gadsTrackingId}
+              onChange={(e) => { setGadsTrackingId(e.target.value); setSettingsEdited(true); }}
+              data-testid="input-gads-tracking-id"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your Google Ads conversion tracking ID (AW-XXXX). Find it in your{" "}
+              <a href="https://ads.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                Google Ads account <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="gads-header-script" className="flex items-center gap-1.5">
+              <Code className="w-4 h-4" />
+              Header Script
+            </Label>
+            <Textarea
+              id="gads-header-script"
+              placeholder={'Paste your Google Ads script for the <head> section here...\ne.g. <script async src="https://www.googletagmanager.com/gtag/js?id=AW-XXXX"></script>'}
+              value={gadsHeaderScript}
+              onChange={(e) => { setGadsHeaderScript(e.target.value); setSettingsEdited(true); }}
+              rows={4}
+              className="font-mono text-xs"
+              data-testid="input-gads-header-script"
+            />
+            <p className="text-xs text-muted-foreground">
+              Google Ads tracking/conversion script injected into the {'<head>'} section.
+            </p>
+          </div>
+
+          <Button
+            onClick={() => saveSettings.mutate()}
+            disabled={saveSettings.isPending || !settingsEdited}
+            className="w-full sm:w-auto"
+            data-testid="button-save-gads-settings"
+          >
+            {saveSettings.isPending ? "Saving..." : "Save Google Ads Settings"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* ===== SECTION 3: GOOGLE ANALYTICS SETTINGS ===== */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="w-5 h-5" />
+            Google Analytics Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="ga-measurement-id">Measurement ID</Label>
+            <Input
+              id="ga-measurement-id"
+              placeholder="G-XXXXXXXXXX"
+              value={gaMeasurementId}
+              onChange={(e) => { setGaMeasurementId(e.target.value); setSettingsEdited(true); }}
+              data-testid="input-ga-measurement-id"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your Google Analytics 4 Measurement ID (G-XXXX). Find it in your{" "}
+              <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                Analytics account <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="ga-script" className="flex items-center gap-1.5">
+              <Code className="w-4 h-4" />
+              Analytics Script
+            </Label>
+            <Textarea
+              id="ga-script"
+              placeholder={'Paste your Google Analytics or Tag Manager script here...\ne.g. <script>(function(w,d,s,l,i){...})(window,document,\'script\',\'dataLayer\',\'GTM-XXXX\');</script>'}
+              value={gaScript}
+              onChange={(e) => { setGaScript(e.target.value); setSettingsEdited(true); }}
+              rows={4}
+              className="font-mono text-xs"
+              data-testid="input-ga-script"
+            />
+            <p className="text-xs text-muted-foreground">
+              Additional Google Analytics or Tag Manager code injected into the {'<head>'}.
+            </p>
+          </div>
+
+          <Button
+            onClick={() => saveSettings.mutate()}
+            disabled={saveSettings.isPending || !settingsEdited}
+            className="w-full sm:w-auto"
+            data-testid="button-save-analytics-settings"
+          >
+            {saveSettings.isPending ? "Saving..." : "Save Analytics Settings"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* How It Works */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">How It Works</CardTitle>
@@ -456,16 +491,16 @@ export default function AdminGoogleAds() {
         <CardContent className="text-sm text-muted-foreground space-y-3">
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-muted/30 space-y-1">
-              <p className="font-semibold text-foreground">1. Set Publisher ID</p>
-              <p>Enter your Google AdSense Publisher ID (ca-pub-XXXX) from your AdSense account.</p>
+              <p className="font-semibold text-foreground">Google AdSense</p>
+              <p>Enter your Publisher ID and header script. Create ad placements to control where ads show on your site.</p>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 space-y-1">
-              <p className="font-semibold text-foreground">2. Create Placements</p>
-              <p>Add ad slots with their Slot ID from AdSense. Choose which pages and positions to display them.</p>
+              <p className="font-semibold text-foreground">Google Ads</p>
+              <p>Add your Google Ads tracking ID and header script for conversion tracking and remarketing.</p>
             </div>
             <div className="p-4 rounded-lg bg-muted/30 space-y-1">
-              <p className="font-semibold text-foreground">3. Go Live</p>
-              <p>Toggle placements on/off anytime. Google Ads will appear alongside your internal ads.</p>
+              <p className="font-semibold text-foreground">Google Analytics</p>
+              <p>Enter your GA4 Measurement ID and any additional tracking scripts to monitor site traffic.</p>
             </div>
           </div>
           <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 mt-3">
@@ -479,12 +514,13 @@ export default function AdminGoogleAds() {
         </CardContent>
       </Card>
 
+      {/* Placement Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingId(null); }}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Placement" : "New Ad Placement"}</DialogTitle>
             <DialogDescription>
-              {editingId ? "Update this Google Ad placement" : "Create a new Google Ad placement. You'll need the Ad Slot ID from your AdSense account."}
+              {editingId ? "Update this AdSense ad placement" : "Create a new AdSense ad placement. You'll need the Ad Slot ID from your AdSense account."}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -557,12 +593,16 @@ export default function AdminGoogleAds() {
                                   checked={field.value?.includes(opt.value)}
                                   onCheckedChange={(checked) => {
                                     const current = field.value || [];
-                                    field.onChange(checked ? [...current, opt.value] : current.filter(v => v !== opt.value));
+                                    field.onChange(
+                                      checked
+                                        ? [...current, opt.value]
+                                        : current.filter((v: string) => v !== opt.value)
+                                    );
                                   }}
                                   data-testid={`checkbox-page-${opt.value}`}
                                 />
                               </FormControl>
-                              <FormLabel className="font-normal !mt-0 text-xs">{opt.label}</FormLabel>
+                              <FormLabel className="text-sm font-normal cursor-pointer">{opt.label}</FormLabel>
                             </FormItem>
                           )}
                         />
@@ -577,7 +617,7 @@ export default function AdminGoogleAds() {
                 name="position"
                 render={() => (
                   <FormItem>
-                    <FormLabel>Position</FormLabel>
+                    <FormLabel>Position on Page</FormLabel>
                     <div className="grid grid-cols-2 gap-2">
                       {POSITION_OPTIONS.map((opt) => (
                         <FormField
@@ -591,12 +631,16 @@ export default function AdminGoogleAds() {
                                   checked={field.value?.includes(opt.value)}
                                   onCheckedChange={(checked) => {
                                     const current = field.value || [];
-                                    field.onChange(checked ? [...current, opt.value] : current.filter(v => v !== opt.value));
+                                    field.onChange(
+                                      checked
+                                        ? [...current, opt.value]
+                                        : current.filter((v: string) => v !== opt.value)
+                                    );
                                   }}
-                                  data-testid={`checkbox-pos-${opt.value}`}
+                                  data-testid={`checkbox-position-${opt.value}`}
                                 />
                               </FormControl>
-                              <FormLabel className="font-normal !mt-0 text-xs">{opt.label}</FormLabel>
+                              <FormLabel className="text-sm font-normal cursor-pointer">{opt.label}</FormLabel>
                             </FormItem>
                           )}
                         />
@@ -606,7 +650,7 @@ export default function AdminGoogleAds() {
                   </FormItem>
                 )}
               />
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-4">
                 <FormField
                   control={form.control}
                   name="isResponsive"
@@ -615,7 +659,7 @@ export default function AdminGoogleAds() {
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-responsive" />
                       </FormControl>
-                      <FormLabel className="!mt-0 text-sm">Responsive</FormLabel>
+                      <FormLabel className="font-normal">Responsive</FormLabel>
                     </FormItem>
                   )}
                 />
@@ -627,7 +671,7 @@ export default function AdminGoogleAds() {
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-active" />
                       </FormControl>
-                      <FormLabel className="!mt-0 text-sm">Active</FormLabel>
+                      <FormLabel className="font-normal">Active</FormLabel>
                     </FormItem>
                   )}
                 />
@@ -643,9 +687,10 @@ export default function AdminGoogleAds() {
                         <FormControl>
                           <Input
                             type="number"
+                            placeholder="728"
                             value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                            data-testid="input-width"
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                            data-testid="input-custom-width"
                           />
                         </FormControl>
                       </FormItem>
@@ -660,9 +705,10 @@ export default function AdminGoogleAds() {
                         <FormControl>
                           <Input
                             type="number"
+                            placeholder="90"
                             value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                            data-testid="input-height"
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                            data-testid="input-custom-height"
                           />
                         </FormControl>
                       </FormItem>
@@ -671,9 +717,8 @@ export default function AdminGoogleAds() {
                 </div>
               )}
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={createPlacement.isPending || updatePlacement.isPending} data-testid="button-save-placement">
-                  {createPlacement.isPending || updatePlacement.isPending ? "Saving..." : editingId ? "Update" : "Create"}
+                <Button type="submit" disabled={createPlacement.isPending || updatePlacement.isPending} data-testid="button-submit-placement">
+                  {(createPlacement.isPending || updatePlacement.isPending) ? "Saving..." : editingId ? "Update Placement" : "Create Placement"}
                 </Button>
               </DialogFooter>
             </form>
@@ -681,14 +726,15 @@ export default function AdminGoogleAds() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Placement</DialogTitle>
-            <DialogDescription>Are you sure you want to delete this ad placement? This cannot be undone.</DialogDescription>
+            <DialogDescription>Are you sure you want to delete this ad placement? This action cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} data-testid="button-cancel-delete">Cancel</Button>
             <Button
               variant="destructive"
               onClick={() => deleteConfirmId && deletePlacement.mutate(deleteConfirmId)}

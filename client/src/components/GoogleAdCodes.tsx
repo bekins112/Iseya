@@ -25,11 +25,17 @@ function injectCodeBlock(html: string, target: "head" | "body", id: string) {
 }
 
 export default function GoogleAdCodes() {
-  const { data } = useQuery<{ headerCode: string; bodyCode: string; gaTrackingId: string; gaCode: string }>({
+  const { data } = useQuery<{
+    adsenseHeaderScript: string;
+    gadsTrackingId: string;
+    gadsHeaderScript: string;
+    gaMeasurementId: string;
+    gaScript: string;
+  }>({
     queryKey: ["/api/google-ads/codes"],
     queryFn: async () => {
       const res = await fetch("/api/google-ads/codes");
-      if (!res.ok) return { headerCode: "", bodyCode: "", gaTrackingId: "", gaCode: "" };
+      if (!res.ok) return { adsenseHeaderScript: "", gadsTrackingId: "", gadsHeaderScript: "", gaMeasurementId: "", gaScript: "" };
       return res.json();
     },
     staleTime: 300000,
@@ -38,32 +44,48 @@ export default function GoogleAdCodes() {
   useEffect(() => {
     if (!data) return;
 
-    if (data.headerCode) {
-      injectCodeBlock(data.headerCode, "head", "google-ads-header-code");
+    if (data.adsenseHeaderScript) {
+      injectCodeBlock(data.adsenseHeaderScript, "head", "google-adsense-header-script");
     }
 
-    if (data.bodyCode) {
-      injectCodeBlock(data.bodyCode, "body", "google-ads-body-code");
-    }
+    if (data.gadsTrackingId) {
+      const existingGads = document.getElementById("google-ads-script");
+      if (!existingGads) {
+        const gadsScript = document.createElement("script");
+        gadsScript.id = "google-ads-script";
+        gadsScript.async = true;
+        gadsScript.src = `https://www.googletagmanager.com/gtag/js?id=${data.gadsTrackingId}`;
+        document.head.appendChild(gadsScript);
 
-    if (data.gaTrackingId) {
-      const existingGtag = document.getElementById("google-analytics-script");
-      if (!existingGtag) {
-        const gtagScript = document.createElement("script");
-        gtagScript.id = "google-analytics-script";
-        gtagScript.async = true;
-        gtagScript.src = `https://www.googletagmanager.com/gtag/js?id=${data.gaTrackingId}`;
-        document.head.appendChild(gtagScript);
-
-        const gtagInit = document.createElement("script");
-        gtagInit.id = "google-analytics-init";
-        gtagInit.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${data.gaTrackingId}');`;
-        document.head.appendChild(gtagInit);
+        const gadsInit = document.createElement("script");
+        gadsInit.id = "google-ads-init";
+        gadsInit.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${data.gadsTrackingId}');`;
+        document.head.appendChild(gadsInit);
       }
     }
 
-    if (data.gaCode) {
-      injectCodeBlock(data.gaCode, "head", "google-analytics-custom-code");
+    if (data.gadsHeaderScript) {
+      injectCodeBlock(data.gadsHeaderScript, "head", "google-ads-header-script");
+    }
+
+    if (data.gaMeasurementId) {
+      const existingGa = document.getElementById("google-analytics-script");
+      if (!existingGa) {
+        const gaScript = document.createElement("script");
+        gaScript.id = "google-analytics-script";
+        gaScript.async = true;
+        gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${data.gaMeasurementId}`;
+        document.head.appendChild(gaScript);
+
+        const gaInit = document.createElement("script");
+        gaInit.id = "google-analytics-init";
+        gaInit.textContent = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${data.gaMeasurementId}');`;
+        document.head.appendChild(gaInit);
+      }
+    }
+
+    if (data.gaScript) {
+      injectCodeBlock(data.gaScript, "head", "google-analytics-custom-code");
     }
   }, [data]);
 
