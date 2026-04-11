@@ -64,7 +64,7 @@ const placementSchema = z.object({
 type PlacementFormData = z.infer<typeof placementSchema>;
 
 export default function AdminGoogleAds() {
-  usePageTitle("Admin - Google Ads");
+  usePageTitle("Admin - Google Settings");
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -222,8 +222,8 @@ export default function AdminGoogleAds() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Google Ads & Analytics"
-        description="Configure Google AdSense, Analytics tracking, and manage ad placements across the site"
+        title="Google Settings"
+        description="Configure Google AdSense, Google Ads, and Google Analytics settings for your site"
       />
 
       <Card>
@@ -251,6 +251,25 @@ export default function AdminGoogleAds() {
             </p>
           </div>
 
+          <Button
+            onClick={() => saveSettings.mutate()}
+            disabled={saveSettings.isPending || !settingsEdited}
+            className="w-full sm:w-auto"
+            data-testid="button-save-adsense-settings"
+          >
+            {saveSettings.isPending ? "Saving..." : "Save AdSense Settings"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Code className="w-5 h-5" />
+            Google Ads Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="header-code" className="flex items-center gap-1.5">
               <Code className="w-4 h-4" />
@@ -295,7 +314,7 @@ export default function AdminGoogleAds() {
             className="w-full sm:w-auto"
             data-testid="button-save-ads-settings"
           >
-            {saveSettings.isPending ? "Saving..." : "Save AdSense Settings"}
+            {saveSettings.isPending ? "Saving..." : "Save Ads Settings"}
           </Button>
         </CardContent>
       </Card>

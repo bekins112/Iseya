@@ -54,7 +54,7 @@ const permissionLabels = [
   { key: "canManageAutomatedEmails", label: "Automated Emails", icon: Mail, description: "Can manage automated email schedules and send newsletters" },
   { key: "canManageAds", label: "Manage Ads & Popups", icon: Megaphone, description: "Can create and manage internal ads and popups" },
   { key: "canManageAgentCredits", label: "Manage Agent Credits", icon: Coins, description: "Can add, deduct, or set agent job post credits" },
-  { key: "canManageSettings", label: "Platform Settings & Google Ads", icon: SlidersHorizontal, description: "Can modify pricing, platform configuration, Google Ads & Analytics settings" },
+  { key: "canManageSettings", label: "Platform Settings & Google Settings", icon: SlidersHorizontal, description: "Can modify pricing, platform configuration, and Google Settings (AdSense, Ads, Analytics)" },
   { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
 ];
 

@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { motion } from "framer-motion";
+import { calculateAge, getMaxDobFor18, getMinDobDate } from "@/lib/age-utils";
 import { Settings, Shield, Crown, Camera, ChevronDown, X, Briefcase, Building2, FileText, Upload, PlusCircle, Pencil, Trash2, Check, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +61,7 @@ const profileSchema = insertUserSchema.pick({
   companyRegNo: z.string().optional().or(z.literal("")),
   agencyName: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
-  age: z.coerce.number().min(18, "Must be at least 18").optional().or(z.literal("")),
+  dateOfBirth: z.string().optional().or(z.literal("")),
   state: z.string().optional().or(z.literal("")),
   city: z.string().optional().or(z.literal("")),
   expectedSalaryMin: z.coerce.number().optional().or(z.literal("")),
@@ -214,7 +215,7 @@ export default function Profile() {
       companyRegNo: (user as any)?.companyRegNo || "",
       agencyName: (user as any)?.agencyName || "",
       gender: user?.gender || "",
-      age: user?.age || "",
+      dateOfBirth: user?.dateOfBirth || "",
       state: (user as any)?.state || "",
       city: (user as any)?.city || "",
       expectedSalaryMin: user?.expectedSalaryMin || "",
@@ -224,7 +225,11 @@ export default function Profile() {
 
   const onSubmit = (data: ProfileFormValues) => {
     if (!user) return;
-    updateUser.mutate({ id: user.id, ...data });
+    const submitData: Record<string, any> = { id: user.id, ...data };
+    if (data.dateOfBirth) {
+      submitData.age = calculateAge(data.dateOfBirth);
+    }
+    updateUser.mutate(submitData);
   };
 
   return (
@@ -468,13 +473,16 @@ export default function Profile() {
                         />
                         <FormField
                           control={form.control}
-                          name="age"
+                          name="dateOfBirth"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Age</FormLabel>
+                              <FormLabel className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Date of Birth</FormLabel>
                               <FormControl>
-                                <Input type="number" min={18} className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" placeholder="e.g. 25" {...field} value={field.value || ""} data-testid="input-age" />
+                                <Input type="date" max={getMaxDobFor18()} min={getMinDobDate()} className="h-12 rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all" {...field} value={field.value || ""} data-testid="input-dob" />
                               </FormControl>
+                              {field.value && (
+                                <p className="text-xs text-muted-foreground">Age: {calculateAge(field.value)} years old</p>
+                              )}
                               <FormMessage />
                             </FormItem>
                           )}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { calculateAge, getAge, getMaxDobFor18, getMinDobDate } from "@/lib/age-utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui-extension";
@@ -170,7 +171,7 @@ export default function AdminUsers() {
       phone: u.phone || "",
       location: u.location || "",
       bio: u.bio || "",
-      age: u.age || "",
+      dateOfBirth: u.dateOfBirth || "",
       gender: u.gender || "",
       isVerified: u.isVerified || false,
       subscriptionStatus: u.subscriptionStatus || "free",
@@ -183,7 +184,9 @@ export default function AdminUsers() {
   const handleSaveEdit = () => {
     if (!editingUser) return;
     const updates: Record<string, any> = { ...editForm };
-    if (updates.age) updates.age = Number(updates.age);
+    if (updates.dateOfBirth) {
+      updates.age = calculateAge(updates.dateOfBirth);
+    }
     if (!updates.subscriptionEndDate) updates.subscriptionEndDate = null;
     if (!updates.phone) updates.phone = null;
     if (!updates.location) updates.location = null;
@@ -500,7 +503,7 @@ export default function AdminUsers() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground">Age</p>
-                  <p className="font-medium">{viewingUser.age || "—"}</p>
+                  <p className="font-medium">{getAge(viewingUser) || "—"}{getAge(viewingUser) ? " years" : ""}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50">
                   <p className="text-xs text-muted-foreground">Gender</p>
@@ -629,15 +632,19 @@ export default function AdminUsers() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="edit-age">Age</Label>
+                  <Label htmlFor="edit-dob">Date of Birth</Label>
                   <Input
-                    id="edit-age"
-                    type="number"
-                    min={16}
-                    value={editForm.age || ""}
-                    onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
-                    data-testid="input-edit-age"
+                    id="edit-dob"
+                    type="date"
+                    max={getMaxDobFor18()}
+                    min={getMinDobDate()}
+                    value={editForm.dateOfBirth || ""}
+                    onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
+                    data-testid="input-edit-dob"
                   />
+                  {editForm.dateOfBirth && (
+                    <p className="text-xs text-muted-foreground">Age: {calculateAge(editForm.dateOfBirth)} years</p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="edit-gender">Gender</Label>

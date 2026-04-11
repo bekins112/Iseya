@@ -13,13 +13,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { nigerianStates } from "@/lib/nigerian-locations";
 import { businessCategories } from "@/lib/job-categories";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { calculateAge, getMaxDobFor18, getMinDobDate } from "@/lib/age-utils";
 
 export default function Onboarding() {
   usePageTitle("Get Started");
   const { user } = useAuth();
   const updateUser = useUpdateUser();
   const [, setLocation] = useLocation();
-  const [age, setAge] = useState<string>("");
+  const [dateOfBirth, setDateOfBirth] = useState<string>("");
   const [companyName, setCompanyName] = useState("");
   const [businessCategory, setBusinessCategory] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
@@ -38,7 +39,7 @@ export default function Onboarding() {
   const isAgent = role === "agent";
 
   useEffect(() => {
-    if (user?.role && user?.age) {
+    if (user?.role && (user?.dateOfBirth || user?.age)) {
       localStorage.removeItem("intended_role");
       setLocation("/dashboard");
     }
@@ -48,17 +49,17 @@ export default function Onboarding() {
     setAgeError("");
     setFormError("");
 
-    const ageNum = parseInt(age);
-    if (!age || isNaN(ageNum)) {
-      setAgeError("Please enter your age");
+    if (!dateOfBirth) {
+      setAgeError("Please enter your date of birth");
       return;
     }
-    if (ageNum < 18) {
+    const computedAge = calculateAge(dateOfBirth);
+    if (computedAge < 18) {
       setAgeError("You must be at least 18 years old to use this platform");
       return;
     }
-    if (ageNum > 100) {
-      setAgeError("Please enter a valid age");
+    if (computedAge > 100) {
+      setAgeError("Please enter a valid date of birth");
       return;
     }
 
@@ -80,7 +81,7 @@ export default function Onboarding() {
       }
     }
 
-    const updateData: Record<string, any> = { id: user!.id, role, age: ageNum };
+    const updateData: Record<string, any> = { id: user!.id, role, dateOfBirth, age: calculateAge(dateOfBirth) };
     if (isEmployer) {
       updateData.companyName = companyName.trim();
       updateData.businessCategory = businessCategory;
@@ -307,17 +308,21 @@ export default function Onboarding() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="age">How old are you?</Label>
+            <Label htmlFor="dob">Date of Birth</Label>
             <Input
-              id="age"
-              type="number"
-              placeholder="Enter your age (must be 18+)"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              min={18}
-              max={100}
-              data-testid="input-onboarding-age"
+              id="dob"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              max={getMaxDobFor18()}
+              min={getMinDobDate()}
+              data-testid="input-onboarding-dob"
             />
+            {dateOfBirth && (
+              <p className="text-sm text-muted-foreground">
+                Age: {calculateAge(dateOfBirth)} years old
+              </p>
+            )}
             {ageError && (
               <Alert variant="destructive" className="mt-2">
                 <AlertCircle className="h-4 w-4" />

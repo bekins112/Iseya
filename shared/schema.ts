@@ -251,6 +251,7 @@ export const adminUpdateUserSchema = z.object({
   location: z.string().optional().nullable(),
   bio: z.string().optional().nullable(),
   age: z.number().min(16).optional().nullable(),
+  dateOfBirth: z.string().optional().nullable(),
   gender: z.string().optional().nullable(),
   companyName: z.string().optional().nullable(),
   businessCategory: z.string().optional().nullable(),

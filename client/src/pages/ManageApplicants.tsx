@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getAge } from "@/lib/age-utils";
 import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useJob, useJobApplications, useUpdateApplicationStatus, useApplicantProfile, useSendOffer, useScheduleInterview, useJobInterviews, useUpdateInterview, useSubmitAdminReview, useRespondToCounter } from "@/hooks/use-casual";
@@ -160,10 +161,10 @@ function ApplicantProfileDialog({ applicantId, open, onOpenChange }: { applicant
                   <p className="text-sm font-medium" data-testid="text-profile-gender">{profile.gender}</p>
                 </div>
               )}
-              {profile.age && (
+              {(profile.dateOfBirth || profile.age) && (
                 <div className="bg-muted/40 rounded-lg p-3">
                   <p className="text-xs text-muted-foreground mb-1">Age</p>
-                  <p className="text-sm font-medium" data-testid="text-profile-age">{profile.age} years</p>
+                  <p className="text-sm font-medium" data-testid="text-profile-age">{profile.dateOfBirth ? getAge({ dateOfBirth: profile.dateOfBirth }) : profile.age} years</p>
                 </div>
               )}
               {profile.location && (
