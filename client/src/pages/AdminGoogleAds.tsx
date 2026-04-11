@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit2, Settings, ExternalLink, Eye, EyeOff, Monitor, Code } from "lucide-react";
+import { Plus, Trash2, Edit2, Settings, ExternalLink, Eye, EyeOff, Monitor, Code, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -73,9 +73,11 @@ export default function AdminGoogleAds() {
   const [publisherId, setPublisherId] = useState("");
   const [headerCode, setHeaderCode] = useState("");
   const [bodyCode, setBodyCode] = useState("");
+  const [gaTrackingId, setGaTrackingId] = useState("");
+  const [gaCode, setGaCode] = useState("");
   const [settingsEdited, setSettingsEdited] = useState(false);
 
-  const { data, isLoading } = useQuery<{ publisherId: string; headerCode: string; bodyCode: string; placements: GoogleAdPlacement[] }>({
+  const { data, isLoading } = useQuery<{ publisherId: string; headerCode: string; bodyCode: string; gaTrackingId: string; gaCode: string; placements: GoogleAdPlacement[] }>({
     queryKey: ["/api/admin/google-ads"],
     queryFn: async () => {
       const res = await fetch("/api/admin/google-ads", { credentials: "include" });
@@ -88,6 +90,8 @@ export default function AdminGoogleAds() {
     if (publisherId !== data.publisherId) setPublisherId(data.publisherId);
     if (headerCode !== data.headerCode) setHeaderCode(data.headerCode);
     if (bodyCode !== data.bodyCode) setBodyCode(data.bodyCode);
+    if (gaTrackingId !== data.gaTrackingId) setGaTrackingId(data.gaTrackingId);
+    if (gaCode !== data.gaCode) setGaCode(data.gaCode);
   }
 
   const form = useForm<PlacementFormData>({
@@ -111,6 +115,8 @@ export default function AdminGoogleAds() {
         publisherId: publisherId.trim(),
         headerCode,
         bodyCode,
+        gaTrackingId: gaTrackingId.trim(),
+        gaCode,
       });
     },
     onSuccess: () => {
@@ -216,8 +222,8 @@ export default function AdminGoogleAds() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Google Ads Management"
-        description="Configure Google AdSense and manage ad placements across the site"
+        title="Google Ads & Analytics"
+        description="Configure Google AdSense, Analytics tracking, and manage ad placements across the site"
       />
 
       <Card>
@@ -287,9 +293,64 @@ export default function AdminGoogleAds() {
             onClick={() => saveSettings.mutate()}
             disabled={saveSettings.isPending || !settingsEdited}
             className="w-full sm:w-auto"
-            data-testid="button-save-settings"
+            data-testid="button-save-ads-settings"
           >
-            {saveSettings.isPending ? "Saving..." : "Save Settings"}
+            {saveSettings.isPending ? "Saving..." : "Save AdSense Settings"}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="w-5 h-5" />
+            Google Analytics Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="ga-tracking-id">Tracking / Measurement ID</Label>
+            <Input
+              id="ga-tracking-id"
+              placeholder="G-XXXXXXXXXX or UA-XXXXXXXX-X"
+              value={gaTrackingId}
+              onChange={(e) => { setGaTrackingId(e.target.value); setSettingsEdited(true); }}
+              data-testid="input-ga-tracking-id"
+            />
+            <p className="text-xs text-muted-foreground">
+              Your Google Analytics Measurement ID (GA4: G-XXXX or Universal Analytics: UA-XXXX). Find it in your{" "}
+              <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                Analytics account <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="ga-code" className="flex items-center gap-1.5">
+              <Code className="w-4 h-4" />
+              Additional Analytics Code
+            </Label>
+            <Textarea
+              id="ga-code"
+              placeholder={'Paste any additional Google Analytics or Tag Manager code here...\ne.g. <script>(function(w,d,s,l,i){...})(window,document,\'script\',\'dataLayer\',\'GTM-XXXX\');</script>'}
+              value={gaCode}
+              onChange={(e) => { setGaCode(e.target.value); setSettingsEdited(true); }}
+              rows={4}
+              className="font-mono text-xs"
+              data-testid="input-ga-code"
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional extra code for Google Tag Manager, custom events, or advanced analytics configuration. Injected into the {'<head>'}.
+            </p>
+          </div>
+
+          <Button
+            onClick={() => saveSettings.mutate()}
+            disabled={saveSettings.isPending || !settingsEdited}
+            className="w-full sm:w-auto"
+            data-testid="button-save-analytics-settings"
+          >
+            {saveSettings.isPending ? "Saving..." : "Save Analytics Settings"}
           </Button>
         </CardContent>
       </Card>

@@ -4119,6 +4119,8 @@ export async function registerRoutes(
       res.json({
         headerCode: settings.google_ads_header_code || "",
         bodyCode: settings.google_ads_body_code || "",
+        gaTrackingId: settings.google_analytics_tracking_id || "",
+        gaCode: settings.google_analytics_code || "",
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch Google Ad codes" });
@@ -4150,6 +4152,8 @@ export async function registerRoutes(
         publisherId: settings.google_adsense_publisher_id || "",
         headerCode: settings.google_ads_header_code || "",
         bodyCode: settings.google_ads_body_code || "",
+        gaTrackingId: settings.google_analytics_tracking_id || "",
+        gaCode: settings.google_analytics_code || "",
         placements,
       });
     } catch (error) {
@@ -4162,7 +4166,7 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     try {
-      const { publisherId, headerCode, bodyCode } = req.body;
+      const { publisherId, headerCode, bodyCode, gaTrackingId, gaCode } = req.body;
       if (typeof publisherId === "string") {
         await storage.upsertSetting("google_adsense_publisher_id", publisherId.trim(), req.session.userId!);
       }
@@ -4171,6 +4175,12 @@ export async function registerRoutes(
       }
       if (typeof bodyCode === "string") {
         await storage.upsertSetting("google_ads_body_code", bodyCode, req.session.userId!);
+      }
+      if (typeof gaTrackingId === "string") {
+        await storage.upsertSetting("google_analytics_tracking_id", gaTrackingId.trim(), req.session.userId!);
+      }
+      if (typeof gaCode === "string") {
+        await storage.upsertSetting("google_analytics_code", gaCode, req.session.userId!);
       }
       res.json({ message: "Settings saved" });
     } catch (error) {
