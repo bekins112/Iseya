@@ -4036,10 +4036,13 @@ export async function registerRoutes(
     "footer_about_description": "Connecting Nigerian workers with opportunities. Find casual jobs or hire reliable workers through our trusted platform.",
     "auto_weekly_job_alerts": "true",
     "auto_application_reminders": "true",
+    "auto_profile_reminders": "true",
     "job_alerts_schedule_days": "1",
     "job_alerts_schedule_time": "08:00",
     "app_reminders_schedule_days": "3,5",
     "app_reminders_schedule_time": "08:00",
+    "profile_reminders_schedule_days": "2,4",
+    "profile_reminders_schedule_time": "10:00",
   };
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
@@ -4047,12 +4050,14 @@ export async function registerRoutes(
     "restrict_free_employer_management",
     "auto_weekly_job_alerts",
     "auto_application_reminders",
+    "auto_profile_reminders",
   ]);
 
   const TEXT_SETTINGS_KEYS = new Set([
     "app_phone", "app_email", "app_address", "footer_about_description",
     "job_alerts_schedule_days", "job_alerts_schedule_time",
     "app_reminders_schedule_days", "app_reminders_schedule_time",
+    "profile_reminders_schedule_days", "profile_reminders_schedule_time",
     "app_facebook", "app_twitter", "app_instagram", "app_linkedin", "app_tiktok",
     "paystack_public_key", "paystack_secret_key",
     "flutterwave_public_key", "flutterwave_secret_key",
@@ -4499,6 +4504,20 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("Manual reminder trigger error:", err);
       res.status(500).json({ message: "Failed to send reminders" });
+    }
+  });
+
+  app.post("/api/admin/automated-emails/profile-reminders", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAutomatedEmails) {
+      return res.status(403).json({ message: "You do not have permission to manage automated emails" });
+    }
+    try {
+      const { runProfileReminders } = await import("./scheduler");
+      const result = await runProfileReminders();
+      res.json({ message: `Profile reminders sent to ${result.sent} of ${result.total} users with incomplete profiles.`, ...result });
+    } catch (err: any) {
+      console.error("Manual profile reminder trigger error:", err);
+      res.status(500).json({ message: "Failed to send profile reminders" });
     }
   });
 

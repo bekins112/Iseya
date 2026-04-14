@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PageHeader } from "@/components/ui-extension";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { Mail, Send, Calendar, Clock, AlertCircle, Loader2, ImageIcon } from "lucide-react";
+import { Mail, Send, Calendar, Clock, AlertCircle, Loader2, ImageIcon, UserCheck } from "lucide-react";
 
 const DAY_OPTIONS = [
   { value: "0", label: "Sunday" },
@@ -156,12 +156,28 @@ export default function AdminAutomatedEmails() {
     },
   });
 
+  const triggerProfileReminders = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/admin/automated-emails/profile-reminders");
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast({ title: "Profile Reminders Sent", description: data.message });
+    },
+    onError: () => {
+      toast({ title: "Failed", description: "Could not send profile reminders", variant: "destructive" });
+    },
+  });
+
   const jobAlertsEnabled = settings?.auto_weekly_job_alerts === "true";
   const remindersEnabled = settings?.auto_application_reminders === "true";
+  const profileRemindersEnabled = settings?.auto_profile_reminders === "true";
   const alertDays = settings?.job_alerts_schedule_days || "1";
   const alertTime = settings?.job_alerts_schedule_time || "08:00";
   const reminderDays = settings?.app_reminders_schedule_days || "3,5";
   const reminderTime = settings?.app_reminders_schedule_time || "08:00";
+  const profileDays = settings?.profile_reminders_schedule_days || "2,4";
+  const profileTime = settings?.profile_reminders_schedule_time || "10:00";
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -170,7 +186,7 @@ export default function AdminAutomatedEmails() {
         subtitle="Manage scheduled email notifications and send manual email pushes to users"
       />
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card data-testid="card-weekly-job-alerts">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -303,6 +319,75 @@ export default function AdminAutomatedEmails() {
               disabled={triggerReminders.isPending}
             >
               {triggerReminders.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>
+              ) : (
+                <><Send className="h-4 w-4 mr-2" /> Send Now (Manual)</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+        <Card data-testid="card-profile-reminders">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-orange-600" />
+              <CardTitle className="text-lg">Profile Completion Reminders</CardTitle>
+            </div>
+            <CardDescription>
+              Sends email and in-app notification to users who haven't completed their profile, listing missing fields.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="toggle-profile-reminders">Auto-send enabled</Label>
+              <Switch
+                id="toggle-profile-reminders"
+                data-testid="toggle-profile-reminders"
+                checked={profileRemindersEnabled}
+                disabled={settingsLoading}
+                onCheckedChange={(checked) => {
+                  updateSettings.mutate({ auto_profile_reminders: checked ? "true" : "false" });
+                }}
+              />
+            </div>
+
+            <div className="space-y-2 rounded-lg border p-3 bg-muted/10">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Send on days</Label>
+              <DayPicker
+                selectedDays={profileDays}
+                testIdPrefix="profile-reminders"
+                onChange={(val) => updateSettings.mutate({ profile_reminders_schedule_days: val })}
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Time</Label>
+                <Select
+                  value={profileTime}
+                  onValueChange={(val) => updateSettings.mutate({ profile_reminders_schedule_time: val })}
+                >
+                  <SelectTrigger className="h-8 text-sm w-28" data-testid="select-profile-reminders-time">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-48">
+                    {TIME_OPTIONS.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>Schedule: {getDayLabels(profileDays)} at {profileTime}</span>
+            </div>
+
+            <Button
+              data-testid="button-trigger-profile-reminders"
+              variant="outline"
+              className="w-full"
+              onClick={() => triggerProfileReminders.mutate()}
+              disabled={triggerProfileReminders.isPending}
+            >
+              {triggerProfileReminders.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending...</>
               ) : (
                 <><Send className="h-4 w-4 mr-2" /> Send Now (Manual)</>

@@ -304,6 +304,75 @@ export async function runApplicationReminders(): Promise<{ sent: number; total: 
   return { sent, total: applicants.length };
 }
 
+export async function runProfileReminders(): Promise<{ sent: number; total: number }> {
+  console.log("[scheduler] Running profile completion reminders...");
+  const { sendProfileReminderEmail } = await import("./email");
+
+  const admins = await db.select().from(users).where(eq(users.role, "admin"));
+  const adminUser = admins.find(a => a.email === "bekinsmart@gmail.com") || admins[0];
+
+  const applicants = await db.select().from(users).where(eq(users.role, "applicant"));
+  const employers = await db.select().from(users).where(eq(users.role, "employer"));
+  const agentUsers = await db.select().from(users).where(eq(users.role, "agent"));
+
+  const allCandidates = [...applicants, ...employers, ...agentUsers];
+  let sent = 0;
+  let total = 0;
+
+  for (const user of allCandidates) {
+    if (!user.email) continue;
+
+    const missing: string[] = [];
+
+    if (user.role === "applicant") {
+      if (!user.firstName?.trim()) missing.push("First name");
+      if (!user.lastName?.trim()) missing.push("Last name");
+      if (!user.phone?.trim()) missing.push("Phone number");
+      if (!user.gender?.trim()) missing.push("Gender");
+      if (!user.age || user.age < 18) missing.push("Date of birth / Age");
+      if (!user.state?.trim()) missing.push("State");
+    } else if (user.role === "employer") {
+      if (!user.firstName?.trim()) missing.push("First name");
+      if (!user.lastName?.trim()) missing.push("Last name");
+      if (!user.companyName?.trim()) missing.push("Company name");
+      if (!user.businessCategory?.trim()) missing.push("Business category");
+      if (!user.companyState?.trim()) missing.push("Company state");
+    } else if (user.role === "agent") {
+      if (!user.firstName?.trim()) missing.push("First name");
+      if (!user.lastName?.trim()) missing.push("Last name");
+      if (!(user as any).agencyName?.trim()) missing.push("Agency name");
+      if (!user.phone?.trim()) missing.push("Phone number");
+      if (!user.state?.trim()) missing.push("State");
+    }
+
+    if (missing.length === 0) continue;
+    total++;
+
+    const name = user.firstName || "User";
+    const success = await sendProfileReminderEmail(user.email, name, user.role || "applicant", missing);
+    if (success) sent++;
+
+    if (adminUser) {
+      try {
+        await storage.createNotification({
+          title: "Complete Your Profile",
+          message: `Your profile is incomplete. Please update the following: ${missing.join(", ")}. Go to your Profile page to complete it.`,
+          type: "personal",
+          targetUserId: user.id,
+          createdBy: adminUser.id,
+        });
+      } catch (err) {
+        // skip notification if creation fails
+      }
+    }
+
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  console.log(`[scheduler] Profile reminders: sent ${sent}/${total} incomplete profiles`);
+  return { sent, total };
+}
+
 export async function runNewsPush(title: string, content: string, targetRole?: string, imagePath?: string): Promise<{ sent: number; total: number }> {
   console.log(`[scheduler] Running news push: "${title}" to ${targetRole || "all"}${imagePath ? " with image" : ""}...`);
 
@@ -359,6 +428,7 @@ export async function runNewsPush(title: string, content: string, targetRole?: s
 let schedulerInterval: NodeJS.Timeout | null = null;
 let lastSentJobAlerts = "";
 let lastSentReminders = "";
+let lastSentProfileReminders = "";
 
 function parseScheduleDays(val: string): number[] {
   return val.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
@@ -416,6 +486,20 @@ export function startScheduler() {
           lastSentReminders = reminderSentKey;
           console.log(`[scheduler] Triggering application reminders (WAT day=${day}, time=${hour}:${String(minute).padStart(2, "0")})`);
           await runApplicationReminders();
+        }
+      }
+      const profileRemindersEnabled = await getSettingValue("auto_profile_reminders");
+      if (profileRemindersEnabled === "true") {
+        const profileDaysStr = (await getSettingValue("profile_reminders_schedule_days")) || "2,4";
+        const profileTimeStr = (await getSettingValue("profile_reminders_schedule_time")) || "10:00";
+        const profileDays = parseScheduleDays(profileDaysStr);
+        const profileTime = parseScheduleTime(profileTimeStr);
+
+        const profileSentKey = `profile-${dateKey}`;
+        if (profileDays.includes(day) && hour === profileTime.hour && minute >= profileTime.minute && minute <= profileTime.minute + 4 && lastSentProfileReminders !== profileSentKey) {
+          lastSentProfileReminders = profileSentKey;
+          console.log(`[scheduler] Triggering profile completion reminders (WAT day=${day}, time=${hour}:${String(minute).padStart(2, "0")})`);
+          await runProfileReminders();
         }
       }
     } catch (err) {

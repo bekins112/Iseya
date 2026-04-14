@@ -823,6 +823,28 @@ export async function sendTicketReplyEmail(
   `);
 }
 
+export async function sendProfileReminderEmail(to: string, name: string, role: string, missingFields: string[]): Promise<boolean> {
+  const baseUrl = getBaseUrl();
+  const missingList = missingFields.map(f => `<li style="color: #555; padding: 4px 0;">${f}</li>`).join("");
+  const roleText = role === "employer" ? "posting jobs" : role === "agent" ? "posting jobs" : "applying for jobs";
+  return sendEmail(to, name, "Complete Your Profile — Iṣéyá", `
+    <h2 style="color: #333; margin: 0 0 16px;">Complete Your Profile</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${name},</p>
+    <p style="color: #555; line-height: 1.6;">We noticed your Iṣéyá profile is not yet complete. You'll need to fill in a few details before you can start ${roleText}.</p>
+    <div style="background: #fdf3d7; border-left: 4px solid ${brandColor}; padding: 16px 20px; border-radius: 4px; margin: 20px 0;">
+      <p style="margin: 0 0 8px; font-weight: 600; color: #333;">Missing information:</p>
+      <ul style="margin: 0; padding-left: 20px;">
+        ${missingList}
+      </ul>
+    </div>
+    <p style="color: #555; line-height: 1.6;">It only takes a minute to complete. Click below to update your profile now:</p>
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="${baseUrl}/profile" style="display: inline-block; background: ${brandColor}; color: #fff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 600;">Complete My Profile →</a>
+    </div>
+    <p style="color: #888; font-size: 13px;">Once your profile is complete, you'll have full access to all Iṣéyá features.</p>
+  `);
+}
+
 export async function sendPasswordResetEmail(to: string, name: string, code: string): Promise<boolean> {
   return sendEmail(to, name, "Password Reset Request", `
     <h2 style="color: #333; margin: 0 0 16px;">Password Reset Request</h2>
