@@ -880,12 +880,17 @@ export async function registerRoutes(
     if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     try {
       const input = adminUpdateJobSchema.parse(req.body);
-      const job = await storage.updateJob(jobId, input);
+      const updateData: any = { ...input };
+      if (updateData.deadline !== undefined) {
+        updateData.deadline = updateData.deadline ? new Date(updateData.deadline) : null;
+      }
+      const job = await storage.updateJob(jobId, updateData);
       res.json(job);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
+      console.error("[admin] Failed to update job:", err);
       res.status(400).json({ message: "Failed to update job" });
     }
   });
