@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Report } from "@shared/schema";
 import { format } from "date-fns";
 import { ExportButton } from "@/components/ExportButton";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 const reportExportColumns = [
@@ -37,6 +38,8 @@ export default function AdminReports() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -76,6 +79,8 @@ export default function AdminReports() {
       r.description?.toLowerCase().includes(search.toLowerCase());
     return matchesSearch;
   });
+
+  const paginatedReports = usePagination(filteredReports, pageSize, page);
 
   const pendingCount = reports.filter(r => r.status === "pending").length;
   const reviewedCount = reports.filter(r => r.status === "reviewed").length;
@@ -239,7 +244,7 @@ export default function AdminReports() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredReports.map((report) => (
+              {paginatedReports.map((report) => (
                 <div
                   key={report.id}
                   className="flex items-start justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
@@ -306,6 +311,7 @@ export default function AdminReports() {
                   </DropdownMenu>
                 </div>
               ))}
+              <AdminPagination totalItems={filteredReports.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
             </div>
           )}
         </CardContent>

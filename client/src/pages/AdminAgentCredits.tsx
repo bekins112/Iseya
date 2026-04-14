@@ -27,6 +27,7 @@ import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 type AgentCredit = {
@@ -46,6 +47,8 @@ export default function AdminAgentCredits() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [managingAgent, setManagingAgent] = useState<AgentCredit | null>(null);
   const [creditAction, setCreditAction] = useState<"add" | "deduct" | "set">("add");
   const [creditAmount, setCreditAmount] = useState(1);
@@ -90,6 +93,8 @@ export default function AdminAgentCredits() {
       a.agencyName?.toLowerCase().includes(q)
     );
   });
+
+  const paginatedAgents = usePagination(filteredAgents, pageSize, page);
 
   const totalCredits = agents.reduce((sum, a) => sum + a.agentPostCredits, 0);
   const agentsWithCredits = agents.filter(a => a.agentPostCredits > 0).length;
@@ -192,7 +197,7 @@ export default function AdminAgentCredits() {
                 <span>Joined</span>
                 <span>Actions</span>
               </div>
-              {filteredAgents.map((agent) => (
+              {paginatedAgents.map((agent) => (
                 <div
                   key={agent.id}
                   className="grid grid-cols-1 md:grid-cols-[1fr_120px_100px_100px_120px] gap-2 px-3 py-3 rounded-lg hover:bg-muted/50 border border-transparent hover:border-border transition-colors"
@@ -244,6 +249,7 @@ export default function AdminAgentCredits() {
                   </div>
                 </div>
               ))}
+              <AdminPagination totalItems={filteredAgents.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
             </div>
           )}
         </CardContent>

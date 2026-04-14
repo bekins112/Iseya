@@ -45,6 +45,7 @@ import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 import type { User as UserType } from "@shared/schema";
 import { format } from "date-fns";
@@ -121,6 +122,14 @@ export default function AdminVerifications() {
   const [activeTab, setActiveTab] = useState("applicants");
   const [searchQuery, setSearchQuery] = useState("");
   const [verifyFilter, setVerifyFilter] = useState<string>("all");
+  const [appPage, setAppPage] = useState(0);
+  const [appPageSize, setAppPageSize] = useState(20);
+  const [reqPage, setReqPage] = useState(0);
+  const [reqPageSize, setReqPageSize] = useState(20);
+  const [empPage, setEmpPage] = useState(0);
+  const [empPageSize, setEmpPageSize] = useState(20);
+  const [agentPage, setAgentPage] = useState(0);
+  const [agentPageSize, setAgentPageSize] = useState(20);
 
   const [requestStatusFilter, setRequestStatusFilter] = useState<string>("all");
   const [selectedRequest, setSelectedRequest] = useState<VerificationRequest | null>(null);
@@ -316,6 +325,11 @@ export default function AdminVerifications() {
     return a.firstName?.toLowerCase().includes(q) || a.lastName?.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q) || a.agencyName?.toLowerCase().includes(q);
   });
 
+  const paginatedApplicants = usePagination(filteredApplicants, appPageSize, appPage);
+  const paginatedRequests = usePagination(requests, reqPageSize, reqPage);
+  const paginatedEmployers = usePagination(filteredEmployers, empPageSize, empPage);
+  const paginatedAgents = usePagination(filteredAgents, agentPageSize, agentPage);
+
   const verifiedCount = applicants.filter(a => a.isVerified).length;
   const unverifiedCount = applicants.filter(a => !a.isVerified && !a.isExpired).length;
   const expiredCount = applicants.filter(a => a.isExpired).length;
@@ -402,7 +416,7 @@ export default function AdminVerifications() {
             <Card><CardContent className="p-8 text-center"><Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" /><p className="text-muted-foreground">No applicants found.</p></CardContent></Card>
           ) : (
             <div className="space-y-2">
-              {filteredApplicants.map((applicant) => (
+              {paginatedApplicants.map((applicant) => (
                 <motion.div key={applicant.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card className="hover-elevate" data-testid={`card-applicant-${applicant.id}`}>
                     <CardContent className="p-4">
@@ -440,6 +454,7 @@ export default function AdminVerifications() {
                   </Card>
                 </motion.div>
               ))}
+              <AdminPagination totalItems={filteredApplicants.length} currentPage={appPage} pageSize={appPageSize} onPageChange={setAppPage} onPageSizeChange={setAppPageSize} />
             </div>
           )}
         </TabsContent>
@@ -466,7 +481,7 @@ export default function AdminVerifications() {
             <Card><CardContent className="p-8 text-center"><ShieldCheck className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" /><p className="text-muted-foreground">No verification requests found.</p></CardContent></Card>
           ) : (
             <div className="space-y-3">
-              {requests.map((request) => (
+              {paginatedRequests.map((request) => (
                 <motion.div key={request.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card className="hover-elevate" data-testid={`card-verification-${request.id}`}>
                     <CardContent className="p-4">
@@ -497,6 +512,7 @@ export default function AdminVerifications() {
                   </Card>
                 </motion.div>
               ))}
+              <AdminPagination totalItems={requests.length} currentPage={reqPage} pageSize={reqPageSize} onPageChange={setReqPage} onPageSizeChange={setReqPageSize} />
             </div>
           )}
         </TabsContent>
@@ -532,7 +548,7 @@ export default function AdminVerifications() {
             <Card><CardContent className="p-8 text-center"><Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" /><p className="text-muted-foreground">No employers found.</p></CardContent></Card>
           ) : (
             <div className="space-y-2">
-              {filteredEmployers.map((employer: UserType) => (
+              {paginatedEmployers.map((employer: UserType) => (
                 <motion.div key={employer.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card className="hover-elevate" data-testid={`card-employer-${employer.id}`}>
                     <CardContent className="p-4">
@@ -561,6 +577,7 @@ export default function AdminVerifications() {
                   </Card>
                 </motion.div>
               ))}
+              <AdminPagination totalItems={filteredEmployers.length} currentPage={empPage} pageSize={empPageSize} onPageChange={setEmpPage} onPageSizeChange={setEmpPageSize} />
             </div>
           )}
         </TabsContent>
@@ -585,7 +602,7 @@ export default function AdminVerifications() {
             <Card><CardContent className="p-8 text-center"><Briefcase className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" /><p className="text-muted-foreground">No agents found.</p></CardContent></Card>
           ) : (
             <div className="space-y-2">
-              {filteredAgents.map((agent) => (
+              {paginatedAgents.map((agent) => (
                 <motion.div key={agent.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                   <Card className="hover-elevate" data-testid={`card-agent-${agent.id}`}>
                     <CardContent className="p-4">
@@ -617,6 +634,7 @@ export default function AdminVerifications() {
                   </Card>
                 </motion.div>
               ))}
+              <AdminPagination totalItems={filteredAgents.length} currentPage={agentPage} pageSize={agentPageSize} onPageChange={setAgentPage} onPageSizeChange={setAgentPageSize} />
             </div>
           )}
         </TabsContent>

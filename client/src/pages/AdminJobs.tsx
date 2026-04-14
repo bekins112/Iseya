@@ -19,6 +19,7 @@ import type { Job } from "@shared/schema";
 import { jobUrl } from "@/lib/slug-utils";
 import { jobSectors } from "@/lib/job-categories";
 import { nigerianStates } from "@/lib/nigerian-locations";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 
 type AdminJob = Job & {
   applicationCounts?: {
@@ -319,6 +320,8 @@ export default function AdminJobs() {
   const [search, setSearch] = useState("");
   const [deletingJob, setDeletingJob] = useState<Job | null>(null);
   const [editingJob, setEditingJob] = useState<AdminJob | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const { data: jobs = [], isLoading } = useQuery<AdminJob[]>({
     queryKey: ["/api/admin/jobs"],
@@ -363,6 +366,8 @@ export default function AdminJobs() {
     return matchesSearch;
   });
 
+  const paginatedJobs = usePagination(filteredJobs, pageSize, page);
+
   const formatSalary = (min: number, max: number) => {
     if (min === max) return `₦${min.toLocaleString()}`;
     return `₦${min.toLocaleString()} - ₦${max.toLocaleString()}`;
@@ -382,7 +387,7 @@ export default function AdminJobs() {
             <Input
               placeholder="Search jobs by title, location, or category..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               className="pl-9"
               data-testid="input-search-jobs"
             />
@@ -402,7 +407,7 @@ export default function AdminJobs() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredJobs.map((job) => {
+              {paginatedJobs.map((job) => {
                 const counts = job.applicationCounts || { total: 0, pending: 0, offered: 0, accepted: 0, rejected: 0 };
                 return (
                 <div
@@ -531,6 +536,13 @@ export default function AdminJobs() {
                 </div>
                 );
               })}
+              <AdminPagination
+                totalItems={filteredJobs.length}
+                currentPage={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </div>
           )}
         </CardContent>

@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ExportButton } from "@/components/ExportButton";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 const txnExportColumns = [
@@ -75,6 +76,8 @@ type TransactionStats = {
 
 export default function AdminTransactions() {
   usePageTitle("Admin Transactions");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -132,6 +135,8 @@ export default function AdminTransactions() {
       (t.plan || "").toLowerCase().includes(q)
     );
   });
+
+  const paginatedTxns = usePagination(filteredTxns, pageSize, page);
 
   const statusIcon = (status: string) => {
     switch (status) {
@@ -385,7 +390,7 @@ export default function AdminTransactions() {
                 <span>Date</span>
                 <span>Status / Action</span>
               </div>
-              {filteredTxns.map((t) => (
+              {paginatedTxns.map((t) => (
                 <div
                   key={t.id}
                   className={`grid grid-cols-1 md:grid-cols-[1fr_120px_100px_100px_100px_120px_140px] gap-2 px-3 py-3 rounded-lg hover:bg-muted/50 border transition-colors ${
@@ -451,6 +456,7 @@ export default function AdminTransactions() {
                   </div>
                 </div>
               ))}
+              <AdminPagination totalItems={filteredTxns.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
             </div>
           )}
         </CardContent>

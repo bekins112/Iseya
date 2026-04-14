@@ -17,6 +17,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Ticket as TicketType, TicketMessage } from "@shared/schema";
 import { format } from "date-fns";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 type TicketWithSender = TicketType & { senderName?: string; senderEmail?: string; senderRole?: string };
@@ -26,6 +27,8 @@ export default function AdminTickets() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [selectedTicket, setSelectedTicket] = useState<TicketWithSender | null>(null);
@@ -138,6 +141,8 @@ export default function AdminTickets() {
       String(t.id).includes(q);
     return matchesSearch;
   });
+
+  const paginatedTickets = usePagination(filteredTickets, pageSize, page);
 
   const openCount = tickets.filter(t => t.status === "open").length;
   const inProgressCount = tickets.filter(t => t.status === "in_progress").length;
@@ -291,7 +296,7 @@ export default function AdminTickets() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredTickets.map((ticket) => {
+              {paginatedTickets.map((ticket) => {
                 const unread = unreadCounts[ticket.id] || 0;
                 return (
                   <div
@@ -375,6 +380,7 @@ export default function AdminTickets() {
                   </div>
                 );
               })}
+              <AdminPagination totalItems={filteredTickets.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
             </div>
           )}
         </CardContent>

@@ -17,6 +17,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 import { format } from "date-fns";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 export default function AdminSubscriptions() {
@@ -25,6 +26,8 @@ export default function AdminSubscriptions() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({ 
     subscriptionStatus: "free" as "free" | "standard" | "premium" | "enterprise", 
@@ -90,6 +93,8 @@ export default function AdminSubscriptions() {
       e.companyName?.toLowerCase().includes(search.toLowerCase());
     return matchesSearch;
   });
+
+  const paginatedEmployers = usePagination(filteredEmployers, pageSize, page);
 
   const paidCount = employers.filter(e => e.subscriptionStatus && e.subscriptionStatus !== "free").length;
   const freeCount = employers.filter(e => !e.subscriptionStatus || e.subscriptionStatus === "free").length;
@@ -216,7 +221,7 @@ export default function AdminSubscriptions() {
             </div>
           ) : (
             <div className="space-y-2 overflow-x-auto">
-              {filteredEmployers.map((employer) => (
+              {paginatedEmployers.map((employer) => (
                 <div
                   key={employer.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
@@ -293,6 +298,7 @@ export default function AdminSubscriptions() {
                   </div>
                 </div>
               ))}
+              <AdminPagination totalItems={filteredEmployers.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
             </div>
           )}
         </CardContent>

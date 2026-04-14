@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import type { InternalAd } from "@shared/schema";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 const TARGET_PAGE_OPTIONS = [
@@ -96,6 +97,8 @@ export default function AdminAds() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAd, setEditingAd] = useState<InternalAd | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
@@ -347,7 +350,7 @@ export default function AdminAds() {
             </div>
           ) : (
             <div className="space-y-3">
-              {ads.map((ad) => (
+              {usePagination(ads, pageSize, page).map((ad) => (
                 <motion.div
                   key={ad.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -441,6 +444,7 @@ export default function AdminAds() {
                   </div>
                 </motion.div>
               ))}
+              <AdminPagination totalItems={ads.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
             </div>
           )}
         </CardContent>

@@ -24,6 +24,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 import { ExportButton } from "@/components/ExportButton";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 const userExportColumns = [
@@ -58,6 +59,8 @@ export default function AdminUsers() {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
   const [editForm, setEditForm] = useState<Record<string, any>>({});
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [tempPasswordUser, setTempPasswordUser] = useState<User | null>(null);
   const [tempPasswordResult, setTempPasswordResult] = useState<{
     tempPassword: string;
@@ -133,6 +136,8 @@ export default function AdminUsers() {
       u.email?.toLowerCase().includes(search.toLowerCase());
     return matchesSearch;
   });
+
+  const paginatedUsers = usePagination(filteredUsers, pageSize, page);
 
   const getRoleIcon = (role: string | null) => {
     switch (role) {
@@ -283,12 +288,12 @@ export default function AdminUsers() {
               <Input
                 placeholder="Search by name or email..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(0); }}
                 className="pl-9"
                 data-testid="input-search-users"
               />
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(0); }}>
               <SelectTrigger className="w-[180px]" data-testid="select-role-filter">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
@@ -322,7 +327,7 @@ export default function AdminUsers() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredUsers.map((u) => (
+              {paginatedUsers.map((u) => (
                 <div
                   key={u.id}
                   className={`flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors ${u.isSuspended ? "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20" : ""}`}
@@ -430,6 +435,13 @@ export default function AdminUsers() {
                   </div>
                 </div>
               ))}
+              <AdminPagination
+                totalItems={filteredUsers.length}
+                currentPage={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
             </div>
           )}
         </CardContent>

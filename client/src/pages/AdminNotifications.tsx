@@ -16,6 +16,7 @@ import { Bell, Send, Trash2, Users, User, Globe, Mail, Monitor, ImageIcon, Loade
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 interface NotificationItem {
@@ -35,6 +36,8 @@ export default function AdminNotifications() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [type, setType] = useState("all");
@@ -352,7 +355,7 @@ export default function AdminNotifications() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {notifications.map((notif) => (
+                  {usePagination(notifications, pageSize, page).map((notif) => (
                     <div
                       key={notif.id}
                       className="p-4 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors"
@@ -382,6 +385,7 @@ export default function AdminNotifications() {
                       </div>
                     </div>
                   ))}
+                  <AdminPagination totalItems={notifications.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
                 </div>
               )}
             </CardContent>
