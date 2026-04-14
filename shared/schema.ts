@@ -266,10 +266,15 @@ export const adminUpdateJobSchema = z.object({
   category: z.string().optional(),
   jobType: z.string().optional(),
   location: z.string().optional(),
+  state: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
   wage: z.string().optional(),
   salaryMin: z.number().optional(),
   salaryMax: z.number().optional(),
-  deadline: z.string().optional(),
+  gender: z.string().optional().nullable(),
+  ageMin: z.number().optional().nullable(),
+  ageMax: z.number().optional().nullable(),
+  deadline: z.string().optional().nullable(),
 });
 
 // Schema for creating sub-admin

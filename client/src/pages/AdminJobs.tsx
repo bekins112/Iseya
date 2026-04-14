@@ -5,8 +5,11 @@ import { PageHeader, StatusBadge } from "@/components/ui-extension";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Search, Briefcase, MapPin, MoreVertical, Trash2, Eye, EyeOff, Building2, Users, Clock, Send, CheckCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Briefcase, MapPin, MoreVertical, Trash2, Eye, EyeOff, Building2, Users, Clock, Send, CheckCircle, XCircle, Pencil } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link } from "wouter";
@@ -14,6 +17,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Job } from "@shared/schema";
 import { jobUrl } from "@/lib/slug-utils";
+import { jobSectors } from "@/lib/job-categories";
+import { nigerianStates } from "@/lib/nigerian-locations";
 
 type AdminJob = Job & {
   applicationCounts?: {
@@ -27,12 +32,293 @@ type AdminJob = Job & {
 import { format } from "date-fns";
 import { usePageTitle } from "@/hooks/use-page-title";
 
+const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Remote", "Freelance"];
+const GENDER_OPTIONS = ["Any", "Male", "Female"];
+const WAGE_OPTIONS = ["Hourly", "Daily", "Weekly", "Monthly", "Yearly", "Fixed", "Negotiable"];
+
+const allCategories = jobSectors.flatMap(s => s.subcategories).sort();
+
+function EditJobDialog({ job, open, onOpenChange }: { job: AdminJob | null; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { toast } = useToast();
+  const [form, setForm] = useState<Record<string, any>>({});
+
+  const resetForm = (j: AdminJob) => {
+    setForm({
+      title: j.title || "",
+      description: j.description || "",
+      category: j.category || "",
+      jobType: j.jobType || "Full-time",
+      location: j.location || "",
+      state: j.state || "",
+      city: j.city || "",
+      wage: j.wage || "Monthly",
+      salaryMin: j.salaryMin ?? 0,
+      salaryMax: j.salaryMax ?? 0,
+      gender: j.gender || "Any",
+      ageMin: j.ageMin ?? "",
+      ageMax: j.ageMax ?? "",
+      status: j.status || "active",
+      isActive: j.isActive ?? true,
+      deadline: j.deadline ? format(new Date(j.deadline), "yyyy-MM-dd") : "",
+    });
+  };
+
+  const updateJobMutation = useMutation({
+    mutationFn: async (data: Record<string, any>) => {
+      return apiRequest("PATCH", `/api/admin/jobs/${job!.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/jobs"] });
+      toast({ title: "Job updated successfully" });
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast({ title: "Failed to update job", variant: "destructive" });
+    },
+  });
+
+  const handleSave = () => {
+    const payload: Record<string, any> = {
+      title: form.title,
+      description: form.description,
+      category: form.category,
+      jobType: form.jobType,
+      location: form.location,
+      state: form.state || null,
+      city: form.city || null,
+      wage: form.wage,
+      salaryMin: Number(form.salaryMin) || 0,
+      salaryMax: Number(form.salaryMax) || 0,
+      gender: form.gender || null,
+      ageMin: form.ageMin ? Number(form.ageMin) : null,
+      ageMax: form.ageMax ? Number(form.ageMax) : null,
+      status: form.status,
+      isActive: form.isActive,
+      deadline: form.deadline || null,
+    };
+    updateJobMutation.mutate(payload);
+  };
+
+  if (!job) return null;
+
+  if (open && Object.keys(form).length === 0) {
+    resetForm(job);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) setForm({}); onOpenChange(v); }}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Job</DialogTitle>
+          <DialogDescription>Update the details of this job posting.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <Label>Title</Label>
+            <Input
+              value={form.title || ""}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              data-testid="input-edit-job-title"
+            />
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <Textarea
+              value={form.description || ""}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={5}
+              data-testid="input-edit-job-description"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Category</Label>
+              <Select value={form.category || ""} onValueChange={(v) => setForm({ ...form, category: v })}>
+                <SelectTrigger data-testid="select-edit-job-category">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {allCategories.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Job Type</Label>
+              <Select value={form.jobType || "Full-time"} onValueChange={(v) => setForm({ ...form, jobType: v })}>
+                <SelectTrigger data-testid="select-edit-job-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {JOB_TYPES.map(t => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>State</Label>
+              <Select value={form.state || ""} onValueChange={(v) => setForm({ ...form, state: v })}>
+                <SelectTrigger data-testid="select-edit-job-state">
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {nigerianStates.map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>City / Town</Label>
+              <Input
+                value={form.city || ""}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                placeholder="e.g. Ikeja"
+                data-testid="input-edit-job-city"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label>Address / Area</Label>
+            <Input
+              value={form.location || ""}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              placeholder="e.g. 15 Admiralty Way, Lekki"
+              data-testid="input-edit-job-location"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label>Wage Type</Label>
+              <Select value={form.wage || "Monthly"} onValueChange={(v) => setForm({ ...form, wage: v })}>
+                <SelectTrigger data-testid="select-edit-job-wage">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WAGE_OPTIONS.map(w => (
+                    <SelectItem key={w} value={w}>{w}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Min Salary (₦)</Label>
+              <Input
+                type="number"
+                value={form.salaryMin ?? 0}
+                onChange={(e) => setForm({ ...form, salaryMin: e.target.value })}
+                data-testid="input-edit-job-salary-min"
+              />
+            </div>
+            <div>
+              <Label>Max Salary (₦)</Label>
+              <Input
+                type="number"
+                value={form.salaryMax ?? 0}
+                onChange={(e) => setForm({ ...form, salaryMax: e.target.value })}
+                data-testid="input-edit-job-salary-max"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label>Gender Preference</Label>
+              <Select value={form.gender || "Any"} onValueChange={(v) => setForm({ ...form, gender: v })}>
+                <SelectTrigger data-testid="select-edit-job-gender">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GENDER_OPTIONS.map(g => (
+                    <SelectItem key={g} value={g}>{g}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Min Age</Label>
+              <Input
+                type="number"
+                value={form.ageMin ?? ""}
+                onChange={(e) => setForm({ ...form, ageMin: e.target.value })}
+                placeholder="e.g. 18"
+                data-testid="input-edit-job-age-min"
+              />
+            </div>
+            <div>
+              <Label>Max Age</Label>
+              <Input
+                type="number"
+                value={form.ageMax ?? ""}
+                onChange={(e) => setForm({ ...form, ageMax: e.target.value })}
+                placeholder="e.g. 45"
+                data-testid="input-edit-job-age-max"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Status</Label>
+              <Select value={form.status || "active"} onValueChange={(v) => setForm({ ...form, status: v, isActive: v === "active" })}>
+                <SelectTrigger data-testid="select-edit-job-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="filled">Filled</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Deadline</Label>
+              <Input
+                type="date"
+                value={form.deadline || ""}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+                data-testid="input-edit-job-deadline"
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => { setForm({}); onOpenChange(false); }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={updateJobMutation.isPending || !form.title?.trim()}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            data-testid="button-save-edit-job"
+          >
+            {updateJobMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminJobs() {
   usePageTitle("Admin Jobs");
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [deletingJob, setDeletingJob] = useState<Job | null>(null);
+  const [editingJob, setEditingJob] = useState<AdminJob | null>(null);
 
   const { data: jobs = [], isLoading } = useQuery<AdminJob[]>({
     queryKey: ["/api/admin/jobs"],
@@ -176,6 +462,13 @@ export default function AdminJobs() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
+                          onClick={() => setEditingJob(job)}
+                          data-testid={`button-edit-job-${job.id}`}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit Job
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={() => toggleJobMutation.mutate({ id: job.id, isActive: !job.isActive })}
                         >
                           {job.isActive ? (
@@ -242,6 +535,12 @@ export default function AdminJobs() {
           )}
         </CardContent>
       </Card>
+
+      <EditJobDialog
+        job={editingJob}
+        open={!!editingJob}
+        onOpenChange={(v) => { if (!v) setEditingJob(null); }}
+      />
 
       <Dialog open={!!deletingJob} onOpenChange={() => setDeletingJob(null)}>
         <DialogContent>
