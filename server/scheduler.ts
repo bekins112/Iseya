@@ -21,6 +21,12 @@ async function getSettingValue(key: string): Promise<string> {
   return val ?? "false";
 }
 
+function getNigerianTime(): Date {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utcMs + 3600000);
+}
+
 function formatSalary(min: number | null, max: number | null): string {
   const fmt = (n: number) => `₦${n.toLocaleString()}`;
   if (min && max) return `${fmt(min)} - ${fmt(max)}`;
@@ -218,7 +224,7 @@ export async function runWeeklyJobAlerts(): Promise<{ sent: number; total: numbe
   }
 
   const applicants = await db.select().from(users)
-    .where(and(eq(users.role, "applicant"), eq(users.subscribedToNewsletter, true)));
+    .where(eq(users.role, "applicant"));
 
   let sent = 0;
   for (const applicant of applicants) {
@@ -351,7 +357,8 @@ export async function runNewsPush(title: string, content: string, targetRole?: s
 }
 
 let schedulerInterval: NodeJS.Timeout | null = null;
-let lastCheckedMinute = -1;
+let lastSentJobAlerts = "";
+let lastSentReminders = "";
 
 function parseScheduleDays(val: string): number[] {
   return val.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
@@ -365,20 +372,21 @@ function parseScheduleTime(val: string): { hour: number; minute: number } {
   return { hour: Math.max(0, Math.min(23, hour)), minute: Math.max(0, Math.min(59, minute)) };
 }
 
+function getDateKey(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getDay()}`;
+}
+
 export function startScheduler() {
   if (schedulerInterval) return;
 
-  console.log("[scheduler] Starting automated email scheduler...");
+  console.log("[scheduler] Starting automated email scheduler (WAT timezone)...");
 
   schedulerInterval = setInterval(async () => {
-    const now = new Date();
-    const day = now.getDay();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-
-    const currentMinute = day * 10000 + hour * 100 + minute;
-    if (currentMinute === lastCheckedMinute) return;
-    lastCheckedMinute = currentMinute;
+    const watNow = getNigerianTime();
+    const day = watNow.getDay();
+    const hour = watNow.getHours();
+    const minute = watNow.getMinutes();
+    const dateKey = getDateKey(watNow);
 
     try {
       const alertsEnabled = await getSettingValue("auto_weekly_job_alerts");
@@ -388,8 +396,10 @@ export function startScheduler() {
         const alertDays = parseScheduleDays(alertDaysStr);
         const alertTime = parseScheduleTime(alertTimeStr);
 
-        if (alertDays.includes(day) && hour === alertTime.hour && minute === alertTime.minute) {
-          console.log(`[scheduler] Triggering weekly job alerts (day=${day}, time=${hour}:${minute})`);
+        const alertSentKey = `alerts-${dateKey}`;
+        if (alertDays.includes(day) && hour === alertTime.hour && minute >= alertTime.minute && minute <= alertTime.minute + 4 && lastSentJobAlerts !== alertSentKey) {
+          lastSentJobAlerts = alertSentKey;
+          console.log(`[scheduler] Triggering weekly job alerts (WAT day=${day}, time=${hour}:${String(minute).padStart(2, "0")})`);
           await runWeeklyJobAlerts();
         }
       }
@@ -401,15 +411,17 @@ export function startScheduler() {
         const reminderDays = parseScheduleDays(reminderDaysStr);
         const reminderTime = parseScheduleTime(reminderTimeStr);
 
-        if (reminderDays.includes(day) && hour === reminderTime.hour && minute === reminderTime.minute) {
-          console.log(`[scheduler] Triggering application reminders (day=${day}, time=${hour}:${minute})`);
+        const reminderSentKey = `reminders-${dateKey}`;
+        if (reminderDays.includes(day) && hour === reminderTime.hour && minute >= reminderTime.minute && minute <= reminderTime.minute + 4 && lastSentReminders !== reminderSentKey) {
+          lastSentReminders = reminderSentKey;
+          console.log(`[scheduler] Triggering application reminders (WAT day=${day}, time=${hour}:${String(minute).padStart(2, "0")})`);
           await runApplicationReminders();
         }
       }
     } catch (err) {
       console.error("[scheduler] Error in scheduled task:", err);
     }
-  }, 60 * 1000);
+  }, 30 * 1000);
 }
 
 export function stopScheduler() {
