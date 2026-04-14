@@ -1146,6 +1146,130 @@ export async function registerRoutes(
     }
   });
 
+  // === INBOUND EMAIL WEBHOOK (support@iseya.ng) ===
+
+  app.post("/api/webhooks/inbound-email", async (req, res) => {
+    try {
+      const { from, subject, text, html } = req.body;
+
+      if (!from || !subject) {
+        return res.status(400).json({ message: "Missing required email fields" });
+      }
+
+      let senderEmail = "";
+      let senderName = "";
+
+      if (typeof from === "string") {
+        const emailMatch = from.match(/<([^>]+)>/);
+        senderEmail = emailMatch ? emailMatch[1] : from.trim();
+        const nameMatch = from.match(/^([^<]+)/);
+        senderName = nameMatch ? nameMatch[1].trim().replace(/^"|"$/g, "") : senderEmail.split("@")[0];
+      } else if (typeof from === "object") {
+        senderEmail = from.address || from.email || "";
+        senderName = from.name || senderEmail.split("@")[0];
+      }
+
+      if (!senderEmail) {
+        return res.status(400).json({ message: "Could not parse sender email" });
+      }
+
+      const messageBody = text || (html ? html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "No message content");
+
+      const ticketRefMatch = subject.match(/Ref\s*#(\d+)/i);
+      const existingTicketId = ticketRefMatch ? parseInt(ticketRefMatch[1], 10) : null;
+
+      if (existingTicketId) {
+        const existingTicket = await storage.getTicket(existingTicketId);
+        if (existingTicket && existingTicket.isExternal && existingTicket.externalEmail?.toLowerCase() === senderEmail.toLowerCase()) {
+          await storage.createTicketMessage({
+            ticketId: existingTicketId,
+            senderId: null,
+            senderRole: "external",
+            message: messageBody,
+            attachmentUrl: null,
+            attachmentName: null,
+            isRead: false,
+          });
+
+          if (existingTicket.status === "resolved" || existingTicket.status === "closed") {
+            await storage.updateTicket(existingTicketId, { status: "open" });
+          }
+
+          const admins = await storage.getAllUsers({ role: "admin" });
+          const primaryAdmin = admins.find(a => a.email === "bekinsmart@gmail.com") || admins[0];
+          if (primaryAdmin) {
+            storage.createNotification({
+              title: "New Email Reply on Ticket",
+              message: `${senderName} (${senderEmail}) replied to ticket #${existingTicketId}: "${existingTicket.subject}".`,
+              type: "role",
+              targetRole: "admin",
+              targetUserId: null,
+              createdBy: primaryAdmin.id || "system",
+            }).catch((e) => console.error("Inbound email notification error:", e));
+          }
+
+          console.log(`[inbound-email] Reply added to ticket #${existingTicketId} from ${senderEmail}`);
+          return res.status(200).json({ success: true, action: "reply", ticketId: existingTicketId });
+        }
+      }
+
+      const cleanSubject = subject.replace(/^(Re:|Fwd?:)\s*/gi, "").trim() || "Email Support Request";
+
+      const ticket = await storage.createTicket({
+        userId: null,
+        subject: cleanSubject,
+        description: messageBody,
+        category: "email",
+        priority: "medium",
+        status: "open",
+        isExternal: true,
+        externalName: senderName,
+        externalEmail: senderEmail,
+      });
+
+      await storage.createTicketMessage({
+        ticketId: ticket.id,
+        senderId: null,
+        senderRole: "external",
+        message: messageBody,
+        attachmentUrl: null,
+        attachmentName: null,
+        isRead: false,
+      });
+
+      sendContactFormAcknowledgement(senderEmail, senderName, ticket.id, cleanSubject).catch(() => {});
+
+      const admins = await storage.getAllUsers({ role: "admin" });
+      const primaryAdmin = admins.find(a => a.email === "bekinsmart@gmail.com") || admins[0];
+      if (primaryAdmin?.email) {
+        sendTicketAdminNotifyEmail(
+          primaryAdmin.email,
+          `${primaryAdmin.firstName || ""} ${primaryAdmin.lastName || ""}`.trim() || "Admin",
+          ticket.id,
+          cleanSubject,
+          senderName,
+          "email",
+          "medium"
+        ).catch(() => {});
+      }
+
+      storage.createNotification({
+        title: "New Email Support Ticket",
+        message: `${senderName} (${senderEmail}) sent an email to support: "${cleanSubject}".`,
+        type: "role",
+        targetRole: "admin",
+        targetUserId: null,
+        createdBy: primaryAdmin?.id || "system",
+      }).catch((e) => console.error("Inbound email notification error:", e));
+
+      console.log(`[inbound-email] New ticket #${ticket.id} created from ${senderEmail}`);
+      res.status(200).json({ success: true, action: "created", ticketId: ticket.id });
+    } catch (err) {
+      console.error("Inbound email webhook error:", err);
+      res.status(500).json({ message: "Failed to process inbound email" });
+    }
+  });
+
   // === TICKETS ===
   
   // Create a support ticket (any authenticated user)
