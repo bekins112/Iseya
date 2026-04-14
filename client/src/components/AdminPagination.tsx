@@ -20,8 +20,8 @@ export function AdminPagination({ totalItems, currentPage, pageSize, onPageChang
   if (totalItems === 0) return null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4 pt-4 border-t" data-testid="pagination-controls">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="flex flex-col items-start gap-3 mt-4 pt-4 border-t" data-testid="pagination-controls">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>Show</span>
         <Select value={String(pageSize)} onValueChange={(v) => { onPageSizeChange(Number(v)); onPageChange(0); }}>
           <SelectTrigger className="w-[70px] h-8" data-testid="select-page-size">
@@ -37,7 +37,7 @@ export function AdminPagination({ totalItems, currentPage, pageSize, onPageChang
         <span className="mx-2">|</span>
         <span>{start}-{end} of {totalItems}</span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
