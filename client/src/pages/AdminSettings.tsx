@@ -8,9 +8,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui-extension";
-import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus, Phone, Mail, MapPin, Globe, Key, Youtube } from "lucide-react";
+import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus, Phone, Mail, MapPin, Globe, Key, Youtube, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -82,6 +83,7 @@ const contactSchema = z.object({
   app_phone: z.string().optional().default(""),
   app_email: z.string().optional().default(""),
   app_address: z.string().optional().default(""),
+  footer_about_description: z.string().optional().default(""),
 });
 
 const socialSchema = z.object({
@@ -130,7 +132,7 @@ export default function AdminSettings() {
     agent_job_post_fee: "5000", agent_job_post_discount: "0",
   }});
 
-  const contactForm = useForm({ resolver: zodResolver(contactSchema), defaultValues: { app_phone: "", app_email: "", app_address: "" }});
+  const contactForm = useForm({ resolver: zodResolver(contactSchema), defaultValues: { app_phone: "", app_email: "", app_address: "", footer_about_description: "" }});
   const socialForm = useForm({ resolver: zodResolver(socialSchema), defaultValues: { app_facebook: "", app_twitter: "", app_instagram: "", app_linkedin: "", app_tiktok: "" }});
   const paymentForm = useForm({ resolver: zodResolver(paymentSchema), defaultValues: { paystack_public_key: "", paystack_secret_key: "", flutterwave_public_key: "", flutterwave_secret_key: "" }});
   const youtubeForm = useForm({ resolver: zodResolver(youtubeSchema), defaultValues: { youtube_landing: "", youtube_employers: "", youtube_agents: "", youtube_applicants: "" }});
@@ -157,7 +159,7 @@ export default function AdminSettings() {
         agent_job_post_fee: settings.agent_job_post_fee || "5000",
         agent_job_post_discount: settings.agent_job_post_discount || "0",
       });
-      contactForm.reset({ app_phone: settings.app_phone || "", app_email: settings.app_email || "", app_address: settings.app_address || "" });
+      contactForm.reset({ app_phone: settings.app_phone || "", app_email: settings.app_email || "", app_address: settings.app_address || "", footer_about_description: settings.footer_about_description || "" });
       socialForm.reset({ app_facebook: settings.app_facebook || "", app_twitter: settings.app_twitter || "", app_instagram: settings.app_instagram || "", app_linkedin: settings.app_linkedin || "", app_tiktok: settings.app_tiktok || "" });
       paymentForm.reset({ paystack_public_key: settings.paystack_public_key || "", paystack_secret_key: settings.paystack_secret_key || "", flutterwave_public_key: settings.flutterwave_public_key || "", flutterwave_secret_key: settings.flutterwave_secret_key || "" });
       youtubeForm.reset({ youtube_landing: settings.youtube_landing || "", youtube_employers: settings.youtube_employers || "", youtube_agents: settings.youtube_agents || "", youtube_applicants: settings.youtube_applicants || "" });
@@ -396,6 +398,14 @@ export default function AdminSettings() {
                 <FormItem>
                   <FormLabel className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />Office Address</FormLabel>
                   <FormControl><Input placeholder="e.g. 15 Admiralty Way, Lekki, Lagos, Nigeria" {...field} data-testid="input-app-address" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={contactForm.control} name="footer_about_description" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1"><FileText className="w-3.5 h-3.5" />Footer About Us Description</FormLabel>
+                  <FormControl><Textarea placeholder="Brief description about your platform shown in the website footer" rows={3} {...field} data-testid="input-footer-about-description" /></FormControl>
+                  <FormDescription>This text appears under the logo in the website footer.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />

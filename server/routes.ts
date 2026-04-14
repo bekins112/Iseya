@@ -4033,6 +4033,7 @@ export async function registerRoutes(
     "youtube_applicants": "",
     "hide_unverified_details": "true",
     "restrict_free_employer_management": "true",
+    "footer_about_description": "Connecting Nigerian workers with opportunities. Find casual jobs or hire reliable workers through our trusted platform.",
     "auto_weekly_job_alerts": "true",
     "auto_application_reminders": "true",
     "job_alerts_schedule_days": "1",
@@ -4049,7 +4050,7 @@ export async function registerRoutes(
   ]);
 
   const TEXT_SETTINGS_KEYS = new Set([
-    "app_phone", "app_email", "app_address",
+    "app_phone", "app_email", "app_address", "footer_about_description",
     "job_alerts_schedule_days", "job_alerts_schedule_time",
     "app_reminders_schedule_days", "app_reminders_schedule_time",
     "app_facebook", "app_twitter", "app_instagram", "app_linkedin", "app_tiktok",

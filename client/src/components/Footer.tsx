@@ -18,8 +18,8 @@ export default function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <img src={iseyaLogo} alt="Iseya" className="h-8 w-auto" />
             </div>
-            <p className="text-muted-foreground text-sm max-w-md">
-              Connecting Nigerian workers with opportunities. Find casual jobs or hire reliable workers through our trusted platform.
+            <p className="text-muted-foreground text-sm max-w-md" data-testid="text-footer-about">
+              {appSettings?.footer_about_description || "Connecting Nigerian workers with opportunities. Find casual jobs or hire reliable workers through our trusted platform."}
             </p>
           </div>
           <div>
