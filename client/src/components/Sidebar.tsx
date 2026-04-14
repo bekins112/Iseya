@@ -76,7 +76,7 @@ export function Sidebar() {
     { href: "/admin/automated-emails", label: "Automated Emails", icon: Mail, perm: "canManageAutomatedEmails" },
     { href: "/admin/ads", label: "Ads & Popups", icon: Megaphone, perm: "canManageAds" },
     { href: "/admin/google-ads", label: "Google Settings", icon: MonitorPlay, perm: "canManageSettings" },
-    { href: "/admin/activity-logs", label: "Activity Logs", icon: Activity, perm: "canManageSettings" },
+    { href: "/admin/activity-logs", label: "Activity Logs", icon: Activity, perm: "canManageActivityLogs" },
     { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
     { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
   ];

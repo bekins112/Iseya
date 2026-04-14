@@ -971,6 +971,7 @@ export async function registerRoutes(
         canManageAds: input.permissions.canManageAds ?? false,
         canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
+        canManageActivityLogs: input.permissions.canManageActivityLogs ?? false,
       });
       
       res.status(201).json(adminPerms);
@@ -1023,6 +1024,7 @@ export async function registerRoutes(
         canManageAds: input.permissions.canManageAds ?? false,
         canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
+        canManageActivityLogs: input.permissions.canManageActivityLogs ?? false,
       });
 
       res.status(201).json(adminPerms);
@@ -4581,7 +4583,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/activity-logs", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageActivityLogs) {
       return res.status(403).json({ message: "You don't have permission to view activity logs" });
     }
     try {
@@ -4600,7 +4602,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/activity-logs", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageActivityLogs) {
       return res.status(403).json({ message: "You don't have permission to clear activity logs" });
     }
     try {
