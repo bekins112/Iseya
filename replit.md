@@ -19,7 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Session Management**: `express-session` with `connect-pg-simple` for PostgreSQL-stored sessions.
 - **Authentication**: Replit Auth (OpenID Connect) via Passport.js, supplemented by custom email/password authentication with bcrypt hashing and CAPTCHA protection. Includes Google OAuth integration and a secure password reset flow.
 - **Role-Based Access Control**: Granular permissions for users, employers, agents, and administrators. New users undergo an onboarding process. Features include agent job posting capabilities with credit-based or subscription models, and configurable gating for unverified applicants and free-tier employers via admin settings.
-- **Admin Features**: Comprehensive admin dashboard for managing users (CRUD, suspension, data export), jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, internal ads, and platform settings. Admin can rate applicants and manage external support tickets.
+- **Admin Features**: Comprehensive admin dashboard for managing users (CRUD, suspension, data export), jobs, applications, subscriptions, transactions, tickets, reports, verifications, notifications, internal ads, and platform settings. Admin can rate applicants and manage external support tickets. Includes an **Activity Logs** system that tracks all user and admin actions (logins, registrations, job CRUD, application status changes, verification reviews, settings updates) with filtering by category, pagination, detail view with metadata, and log clearing.
 
 ### Data Storage
 - **Database**: PostgreSQL.

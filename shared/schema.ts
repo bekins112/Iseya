@@ -490,6 +490,24 @@ export const insertGoogleAdPlacementSchema = createInsertSchema(googleAdPlacemen
 export type GoogleAdPlacement = typeof googleAdPlacements.$inferSelect;
 export type InsertGoogleAdPlacement = z.infer<typeof insertGoogleAdPlacementSchema>;
 
+export const activityLogs = pgTable("activity_logs", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").references(() => users.id),
+  userEmail: varchar("user_email"),
+  userRole: varchar("user_role"),
+  action: varchar("action").notNull(),
+  category: varchar("category").notNull(),
+  description: text("description").notNull(),
+  targetType: varchar("target_type"),
+  targetId: varchar("target_id"),
+  metadata: text("metadata"),
+  ipAddress: varchar("ip_address"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type ActivityLog = typeof activityLogs.$inferSelect;
+export type InsertActivityLog = typeof activityLogs.$inferInsert;
+
 export const fileUploads = pgTable("file_uploads", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   filePath: varchar("file_path").notNull().unique(),

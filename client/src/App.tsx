@@ -41,6 +41,7 @@ import AdminGoogleAds from "@/pages/AdminGoogleAds";
 import GoogleAdCodes from "@/components/GoogleAdCodes";
 import AdminAgentCredits from "@/pages/AdminAgentCredits";
 import AdminAutomatedEmails from "@/pages/AdminAutomatedEmails";
+import AdminActivityLogs from "@/pages/AdminActivityLogs";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
@@ -299,6 +300,11 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
+      <Route path="/admin/activity-logs">
+        <AuthenticatedLayout>
+          <AdminActivityLogs />
+        </AuthenticatedLayout>
+      </Route>
       <Route path="/admin/automated-emails">
         <AuthenticatedLayout>
           <AdminAutomatedEmails />

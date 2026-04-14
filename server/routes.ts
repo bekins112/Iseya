@@ -11,6 +11,7 @@ import { users } from "@shared/models/auth";
 import { eq, desc } from "drizzle-orm";
 import { jobs } from "@shared/schema";
 import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, createNewAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema } from "@shared/schema";
+import { logActivity } from "./activity-logger";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -346,6 +347,7 @@ export async function registerRoutes(
         }, siteUrl).catch(err => console.error("[facebook] Background post failed:", err));
       }
 
+      logActivity({ req, userId: user.id, userEmail: user.email || undefined, userRole: user.role || undefined, action: "create_job", category: "jobs", description: `${user.role === 'agent' ? 'Agent' : 'Employer'} posted job: ${job.title}`, targetType: "job", targetId: String(job.id) });
       res.status(201).json(job);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -466,6 +468,7 @@ export async function registerRoutes(
         applicantId: user.id
       });
       const app = await storage.createApplication(input);
+      logActivity({ req, action: "apply_job", category: "applications", description: `Applicant applied to job #${req.body.jobId}`, targetType: "application", targetId: String(app.id) });
       res.status(201).json(app);
 
       const jobForEmail = await storage.getJob(req.body.jobId);
@@ -599,6 +602,7 @@ export async function registerRoutes(
     try {
       const input = api.applications.updateStatus.input.parse(req.body);
       const updatedApp = await storage.updateApplicationStatus(appId, input.status);
+      logActivity({ req, action: `application_${input.status}`, category: "applications", description: `Application #${appId} status changed to ${input.status}`, targetType: "application", targetId: String(appId) });
       res.json(updatedApp);
 
       const applicant = await storage.getUser(application.applicantId);
@@ -787,6 +791,13 @@ export async function registerRoutes(
         updates.subscriptionEndDate = null;
       }
       const user = await storage.updateUser(req.params.id, updates);
+      const actions: string[] = [];
+      if (input.isSuspended === true) actions.push("suspended");
+      if (input.isSuspended === false) actions.push("unsuspended");
+      if (input.role) actions.push(`role changed to ${input.role}`);
+      if (input.subscriptionTier) actions.push(`subscription changed to ${input.subscriptionTier}`);
+      const desc = actions.length > 0 ? actions.join(", ") : "updated profile";
+      logActivity({ req, action: "update_user", category: "users", description: `Admin ${desc} user: ${user?.email || req.params.id}`, targetType: "user", targetId: req.params.id, metadata: input });
       res.json(user);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -807,6 +818,7 @@ export async function registerRoutes(
         return res.status(400).json({ message: "You cannot delete your own account" });
       }
       await storage.deleteUser(req.params.id);
+      logActivity({ req, action: "delete_user", category: "users", description: `Admin deleted user: ${targetUser.email || req.params.id}`, targetType: "user", targetId: req.params.id });
       res.json({ message: "User deleted successfully" });
     } catch (err) {
       console.error("Delete user error:", err);
@@ -885,6 +897,7 @@ export async function registerRoutes(
         updateData.deadline = updateData.deadline ? new Date(updateData.deadline) : null;
       }
       const job = await storage.updateJob(jobId, updateData);
+      logActivity({ req, action: "update_job", category: "jobs", description: `Admin updated job #${jobId}: ${job.title}`, targetType: "job", targetId: String(jobId), metadata: updateData });
       res.json(job);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -903,6 +916,7 @@ export async function registerRoutes(
     if (isNaN(jobId)) return res.status(400).json({ message: "Invalid job ID" });
     try {
       await storage.deleteJob(jobId);
+      logActivity({ req, action: "delete_job", category: "jobs", description: `Admin deleted job #${jobId}`, targetType: "job", targetId: String(jobId) });
       res.status(204).send();
     } catch (err) {
       res.status(400).json({ message: "Failed to delete job" });
@@ -3630,6 +3644,7 @@ export async function registerRoutes(
       await storage.updateUser(request.userId, { isVerified: true, verificationExpiry: expiryDate });
     }
 
+    logActivity({ req, action: `verification_${status}`, category: "verifications", description: `Admin ${status} verification for user ${request.userId}`, targetType: "verification", targetId: String(request.id) });
     res.json(updated);
 
     const verifiedUser = await storage.getUser(request.userId);
@@ -4479,6 +4494,7 @@ export async function registerRoutes(
     for (const s of settings) {
       result[s.key] = s.value;
     }
+    logActivity({ req, action: "update_settings", category: "settings", description: `Admin updated platform settings: ${Object.keys(updates).join(", ")}`, metadata: updates });
     res.json(result);
   });
 
@@ -4561,6 +4577,39 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("News push error:", err);
       res.status(500).json({ message: "Failed to send news push" });
+    }
+  });
+
+  app.get("/api/admin/activity-logs", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You don't have permission to view activity logs" });
+    }
+    try {
+      const { category, userId, action, limit, offset } = req.query;
+      const result = await storage.getActivityLogs({
+        category: category || undefined,
+        userId: userId || undefined,
+        action: action || undefined,
+        limit: limit ? Number(limit) : 50,
+        offset: offset ? Number(offset) : 0,
+      });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
+  app.delete("/api/admin/activity-logs", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You don't have permission to clear activity logs" });
+    }
+    try {
+      const { before } = req.query;
+      const deleted = await storage.clearActivityLogs(before ? new Date(before as string) : undefined);
+      await logActivity({ req, action: "clear_logs", category: "admin", description: `Cleared ${deleted} activity log entries`, metadata: { deleted } });
+      res.json({ message: `Cleared ${deleted} log entries`, deleted });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to clear activity logs" });
     }
   });
 

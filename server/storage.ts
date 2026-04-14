@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -155,6 +155,9 @@ export interface IStorage {
     failedTransactions: number;
     monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; total: number }[];
   }>;
+  createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
+  getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLog[]; total: number }>;
+  clearActivityLogs(before?: Date): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1080,6 +1083,36 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGoogleAdPlacement(id: number): Promise<void> {
     await db.delete(googleAdPlacements).where(eq(googleAdPlacements.id, id));
+  }
+
+  async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
+    const [created] = await db.insert(activityLogs).values(log).returning();
+    return created;
+  }
+
+  async getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLog[]; total: number }> {
+    const conditions: any[] = [];
+    if (filters?.category) conditions.push(eq(activityLogs.category, filters.category));
+    if (filters?.userId) conditions.push(eq(activityLogs.userId, filters.userId));
+    if (filters?.action) conditions.push(eq(activityLogs.action, filters.action));
+
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const limit = filters?.limit || 50;
+    const offset = filters?.offset || 0;
+
+    const [totalResult] = await db.select({ count: count() }).from(activityLogs).where(where);
+    const logs = await db.select().from(activityLogs).where(where).orderBy(desc(activityLogs.createdAt)).limit(limit).offset(offset);
+
+    return { logs, total: totalResult?.count || 0 };
+  }
+
+  async clearActivityLogs(before?: Date): Promise<number> {
+    if (before) {
+      const result = await db.delete(activityLogs).where(sql`${activityLogs.createdAt} < ${before}`).returning();
+      return result.length;
+    }
+    const result = await db.delete(activityLogs).returning();
+    return result.length;
   }
 }
 

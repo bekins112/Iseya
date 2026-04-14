@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { z } from "zod";
 import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
+import { logActivity } from "./activity-logger";
 import { users } from "@shared/models/auth";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -134,7 +135,7 @@ export async function setupAuth(app: Express) {
 
       req.session.userId = user.id;
       const { password: _, ...safeUser } = { ...user, emailVerified: false };
-
+      logActivity({ req, userId: user.id, userEmail: input.email, userRole: input.role || "applicant", action: "register", category: "auth", description: `New ${input.role || "applicant"} registered: ${input.email}` });
       res.status(201).json(safeUser);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -191,6 +192,7 @@ export async function setupAuth(app: Express) {
 
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
+      logActivity({ req, userId: user.id, userEmail: user.email || undefined, userRole: user.role || undefined, action: "login", category: "auth", description: `User logged in: ${user.email}` });
       res.json(safeUser);
     } catch (err: any) {
       if (err instanceof z.ZodError) {
