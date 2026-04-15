@@ -129,6 +129,20 @@ export default function AdminNotifications() {
     },
   });
 
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/notifications/all", { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Failed to clear");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
+      toast({ title: "Cleared", description: "All notifications have been cleared." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to clear notifications.", variant: "destructive" });
+    },
+  });
+
   const canSubmit = title.trim() && message.trim() &&
     (type !== "role" || targetRoles.length > 0) &&
     (type !== "individual" || targetEmail.trim());
@@ -342,7 +356,20 @@ export default function AdminNotifications() {
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Bell className="w-5 h-5 text-primary" />
                 Sent Notifications
-                <Badge variant="secondary" className="ml-auto">{notifications.length}</Badge>
+                <Badge variant="secondary" className="ml-2">{notifications.length}</Badge>
+                {notifications.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto text-destructive hover:text-destructive gap-1"
+                    onClick={() => clearAllMutation.mutate()}
+                    disabled={clearAllMutation.isPending}
+                    data-testid="button-clear-all-notifications"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Clear All
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>

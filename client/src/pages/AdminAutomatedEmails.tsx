@@ -76,7 +76,7 @@ export default function AdminAutomatedEmails() {
   const { toast } = useToast();
   const [newsTitle, setNewsTitle] = useState("");
   const [newsContent, setNewsContent] = useState("");
-  const [newsTarget, setNewsTarget] = useState("all");
+  const [newsTargets, setNewsTargets] = useState<string[]>(["all"]);
   const [sendNotification, setSendNotification] = useState(true);
   const [promoImage, setPromoImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -127,7 +127,7 @@ export default function AdminAutomatedEmails() {
       const formData = new FormData();
       formData.append("title", newsTitle);
       formData.append("content", newsContent);
-      formData.append("targetRole", newsTarget);
+      formData.append("targetRole", newsTargets.includes("all") ? "all" : newsTargets.join(","));
       formData.append("sendNotification", sendNotification ? "true" : "false");
       if (promoImage) {
         formData.append("image", promoImage);
@@ -147,7 +147,7 @@ export default function AdminAutomatedEmails() {
       toast({ title: "News Push Sent", description: data.message });
       setNewsTitle("");
       setNewsContent("");
-      setNewsTarget("all");
+      setNewsTargets(["all"]);
       setPromoImage(null);
       setImagePreview(null);
     },
@@ -475,33 +475,45 @@ export default function AdminAutomatedEmails() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="news-target">Target Audience</Label>
-              <Select value={newsTarget} onValueChange={setNewsTarget}>
-                <SelectTrigger data-testid="select-news-target">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="applicant">Applicants Only</SelectItem>
-                  <SelectItem value="employer">Employers Only</SelectItem>
-                  <SelectItem value="agent">Agents Only</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="space-y-3">
+            <Label>Target Audience</Label>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {[
+                { key: "all", label: "All Users" },
+                { key: "applicant", label: "Applicants" },
+                { key: "employer", label: "Employers" },
+                { key: "agent", label: "Agents" },
+              ].map((opt) => (
+                <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    data-testid={`checkbox-target-${opt.key}`}
+                    checked={newsTargets.includes(opt.key)}
+                    onCheckedChange={(checked) => {
+                      if (opt.key === "all") {
+                        setNewsTargets(checked ? ["all"] : []);
+                      } else {
+                        let next = checked
+                          ? [...newsTargets.filter(t => t !== "all"), opt.key]
+                          : newsTargets.filter(t => t !== opt.key);
+                        if (next.length === 0) next = ["all"];
+                        setNewsTargets(next);
+                      }
+                    }}
+                  />
+                  <span className="text-sm">{opt.label}</span>
+                </label>
+              ))}
             </div>
+          </div>
 
-            <div className="flex items-end pb-1">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="send-notification"
-                  data-testid="checkbox-send-notification"
-                  checked={sendNotification}
-                  onCheckedChange={(checked) => setSendNotification(!!checked)}
-                />
-                <Label htmlFor="send-notification" className="text-sm">Also send in-app notification</Label>
-              </div>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="send-notification"
+              data-testid="checkbox-send-notification"
+              checked={sendNotification}
+              onCheckedChange={(checked) => setSendNotification(!!checked)}
+            />
+            <Label htmlFor="send-notification" className="text-sm">Also send in-app notification</Label>
           </div>
 
           <Button

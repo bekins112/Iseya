@@ -3864,6 +3864,14 @@ export async function registerRoutes(
     res.json({ notification, message: responseMsg.join(". "), emailResult });
   });
 
+  app.delete("/api/admin/notifications/all", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
+      return res.status(403).json({ message: "You do not have permission to manage notifications" });
+    }
+    await storage.deleteAllAdminNotifications();
+    res.json({ success: true });
+  });
+
   app.delete("/api/admin/notifications/:id", isAuthenticated, isAdmin, async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageNotifications) {
       return res.status(403).json({ message: "You do not have permission to manage notifications" });
@@ -4560,22 +4568,42 @@ export async function registerRoutes(
       const imagePath = req.file ? req.file.path : undefined;
 
       const { runNewsPush } = await import("./scheduler");
-      const result = await runNewsPush(title, content, targetRole, imagePath);
+      const roles = targetRole && targetRole !== "all" ? targetRole.split(",").map((r: string) => r.trim()).filter(Boolean) : [];
+      let totalSent = 0;
+      let totalUsers = 0;
 
-      if (sendNotification) {
-        const notifData: any = {
-          title,
-          message: content.replace(/<[^>]*>/g, "").substring(0, 500),
-          type: targetRole && targetRole !== "all" ? "role" : "all",
-          createdBy: req.session.userId!,
-        };
-        if (targetRole && targetRole !== "all") {
-          notifData.targetRole = targetRole;
+      if (roles.length > 0) {
+        for (const role of roles) {
+          const result = await runNewsPush(title, content, role, imagePath);
+          totalSent += result.sent;
+          totalUsers += result.total;
         }
-        await storage.createNotification(notifData);
+        if (sendNotification) {
+          for (const role of roles) {
+            await storage.createNotification({
+              title,
+              message: content.replace(/<[^>]*>/g, "").substring(0, 500),
+              type: "role",
+              targetRole: role,
+              createdBy: req.session.userId!,
+            });
+          }
+        }
+      } else {
+        const result = await runNewsPush(title, content, "all", imagePath);
+        totalSent = result.sent;
+        totalUsers = result.total;
+        if (sendNotification) {
+          await storage.createNotification({
+            title,
+            message: content.replace(/<[^>]*>/g, "").substring(0, 500),
+            type: "all",
+            createdBy: req.session.userId!,
+          });
+        }
       }
 
-      res.json({ message: `News push sent to ${result.sent} of ${result.total} users.`, ...result });
+      res.json({ message: `News push sent to ${totalSent} of ${totalUsers} users.`, sent: totalSent, total: totalUsers });
     } catch (err: any) {
       console.error("News push error:", err);
       res.status(500).json({ message: "Failed to send news push" });

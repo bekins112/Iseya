@@ -114,6 +114,7 @@ export interface IStorage {
   markAllNotificationsRead(userId: string, role: string): Promise<void>;
   getAllNotifications(): Promise<Notification[]>;
   deleteNotification(id: number): Promise<void>;
+  deleteAllAdminNotifications(): Promise<void>;
 
   // Platform settings methods
   getSetting(key: string): Promise<string | null>;
@@ -896,6 +897,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteNotification(id: number): Promise<void> {
     await db.delete(notifications).where(eq(notifications.id, id));
+  }
+
+  async deleteAllAdminNotifications(): Promise<void> {
+    await db.delete(notifications);
   }
 
   // Platform settings methods
