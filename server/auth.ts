@@ -468,35 +468,46 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: any, cb) => cb(null, user));
   passport.deserializeUser((user: any, cb) => cb(null, user));
 
-  passport.use(
-    new GoogleStrategy(
-      {
-        clientID: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        callbackURL: "/api/auth/google/callback",
-        proxy: true,
-      },
-      async (_accessToken, _refreshToken, profile, done) => {
-        try {
-          done(null, {
-            googleId: profile.id,
-            email: profile.emails?.[0]?.value || "",
-            firstName: profile.name?.givenName || "",
-            lastName: profile.name?.familyName || "",
-            profileImageUrl: profile.photos?.[0]?.value || "",
-          });
-        } catch (err) {
-          done(err as Error);
-        }
-      }
-    )
-  );
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const googleOAuthEnabled = !!(googleClientId && googleClientSecret);
 
-  app.get("/api/auth/google", passport.authenticate("google", {
-    scope: ["profile", "email"],
-    prompt: "select_account",
-    session: false,
-  }));
+  if (googleOAuthEnabled) {
+    passport.use(
+      new GoogleStrategy(
+        {
+          clientID: googleClientId!,
+          clientSecret: googleClientSecret!,
+          callbackURL: "/api/auth/google/callback",
+          proxy: true,
+        },
+        async (_accessToken, _refreshToken, profile, done) => {
+          try {
+            done(null, {
+              googleId: profile.id,
+              email: profile.emails?.[0]?.value || "",
+              firstName: profile.name?.givenName || "",
+              lastName: profile.name?.familyName || "",
+              profileImageUrl: profile.photos?.[0]?.value || "",
+            });
+          } catch (err) {
+            done(err as Error);
+          }
+        }
+      )
+    );
+
+    app.get("/api/auth/google", passport.authenticate("google", {
+      scope: ["profile", "email"],
+      prompt: "select_account",
+      session: false,
+    }));
+  } else {
+    console.warn("[auth] Google OAuth disabled: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET not set");
+    app.get("/api/auth/google", (_req, res) => {
+      res.status(503).json({ message: "Google sign-in is not configured. Please contact support." });
+    });
+  }
 
   app.get("/api/auth/google/callback", (req, res, next) => {
     passport.authenticate("google", { session: false }, async (err: any, profile: any) => {
