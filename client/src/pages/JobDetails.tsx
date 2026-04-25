@@ -32,11 +32,13 @@ import {
   Share2,
   Copy,
   Send,
-  Users
+  Users,
+  Loader2
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SiWhatsapp, SiFacebook, SiLinkedin } from "react-icons/si";
 import { RiTwitterXFill } from "react-icons/ri";
+import { HiddenShareCard, generateShareCardBlob, downloadCardBlob } from "@/components/ShareJobCard";
 import { api } from "@shared/routes";
 import type { Job } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -121,6 +123,72 @@ export default function JobDetails() {
 
   const [profileIncompleteOpen, setProfileIncompleteOpen] = useState(false);
   const [profileMissingFields, setProfileMissingFields] = useState<string[]>([]);
+  const [isSharing, setIsSharing] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
+
+  const shareWithCard = async (platform: "whatsapp" | "twitter" | "facebook" | "linkedin") => {
+    if (!job) return;
+    setIsSharing(true);
+    try {
+      const url = getShareUrl();
+      const locText = [job.state, job.city].filter(Boolean).join(", ") || job.location;
+      const baseText = `Check out this job on Iṣéyá: ${job.title} in ${locText} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
+
+      const blob = await generateShareCardBlob(shareCardRef.current);
+
+      // Try native Web Share API with file (works on mobile WhatsApp/IG/etc.)
+      if (
+        blob &&
+        platform === "whatsapp" &&
+        typeof navigator.canShare === "function"
+      ) {
+        const file = new File([blob], `iseya-job.png`, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: `Iṣéyá Job: ${job.title}`,
+              text: `${baseText}\n${url}`,
+              files: [file],
+            });
+            return;
+          } catch (err: any) {
+            if (err?.name === "AbortError") return;
+          }
+        }
+      }
+
+      // Desktop fallback: download the image, then open the platform's share URL
+      if (blob) {
+        downloadCardBlob(blob, job.title);
+      }
+
+      let shareUrl = "";
+      switch (platform) {
+        case "whatsapp":
+          shareUrl = `https://wa.me/?text=${encodeURIComponent(baseText + "\n" + url)}`;
+          break;
+        case "twitter":
+          shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(baseText)}&url=${encodeURIComponent(url)}`;
+          break;
+        case "facebook":
+          shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+          break;
+        case "linkedin":
+          shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+          break;
+      }
+      window.open(shareUrl, "_blank");
+
+      if (blob) {
+        toast({
+          title: "Job card downloaded",
+          description: "Attach the downloaded image to your post for a richer share.",
+        });
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const handleApplyClick = () => {
     if (!user) {
@@ -418,57 +486,50 @@ export default function JobDetails() {
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-3" align="start">
                         <div className="flex flex-col gap-2">
-                          <p className="text-sm font-semibold mb-1">Share this job</p>
+                          <p className="text-sm font-semibold">Share this job</p>
+                          <p className="text-xs text-muted-foreground -mt-1 mb-1">
+                            A branded job card image is included automatically
+                          </p>
                           <div className="flex gap-2">
                             <Button
                               variant="outline"
                               size="icon"
+                              disabled={isSharing}
                               className="h-9 w-9 text-[#25D366] hover:bg-[#25D366]/10"
                               data-testid="button-share-whatsapp"
-                              onClick={() => {
-                                const url = getShareUrl();
-                                const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location} - ${formatSalary(job.salaryMin, job.salaryMax, job.wage)}`;
-                                window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank");
-                              }}
+                              onClick={() => shareWithCard("whatsapp")}
                             >
-                              <SiWhatsapp className="w-4 h-4" />
+                              {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <SiWhatsapp className="w-4 h-4" />}
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
+                              disabled={isSharing}
                               className="h-9 w-9 hover:bg-muted"
                               data-testid="button-share-twitter"
-                              onClick={() => {
-                                const url = getShareUrl();
-                                const text = `Check out this job on Iṣéyá: ${job.title} in ${[job.state, job.city].filter(Boolean).join(", ") || job.location}`;
-                                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
-                              }}
+                              onClick={() => shareWithCard("twitter")}
                             >
-                              <RiTwitterXFill className="w-4 h-4" />
+                              {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RiTwitterXFill className="w-4 h-4" />}
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
+                              disabled={isSharing}
                               className="h-9 w-9 text-[#1877F2] hover:bg-[#1877F2]/10"
                               data-testid="button-share-facebook"
-                              onClick={() => {
-                                const url = getShareUrl();
-                                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
-                              }}
+                              onClick={() => shareWithCard("facebook")}
                             >
-                              <SiFacebook className="w-4 h-4" />
+                              {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <SiFacebook className="w-4 h-4" />}
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
+                              disabled={isSharing}
                               className="h-9 w-9 text-[#0A66C2] hover:bg-[#0A66C2]/10"
                               data-testid="button-share-linkedin"
-                              onClick={() => {
-                                const url = getShareUrl();
-                                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
-                              }}
+                              onClick={() => shareWithCard("linkedin")}
                             >
-                              <SiLinkedin className="w-4 h-4" />
+                              {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <SiLinkedin className="w-4 h-4" />}
                             </Button>
                             <Button
                               variant="outline"
@@ -749,6 +810,8 @@ export default function JobDetails() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <HiddenShareCard ref={shareCardRef} jobTitle={job.title} />
 
       <Footer />
       <NewsletterBar />
