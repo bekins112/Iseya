@@ -61,6 +61,7 @@ import ForApplicants from "@/pages/ForApplicants";
 import ForAgents from "@/pages/ForAgents";
 import CookieConsent from "@/components/CookieConsent";
 import InstallPrompt from "@/components/InstallPrompt";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -329,6 +330,7 @@ function App() {
         <Router />
         <CookieConsent />
         <InstallPrompt />
+        <ScrollToTopButton />
       </TooltipProvider>
     </QueryClientProvider>
   );
