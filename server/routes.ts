@@ -178,6 +178,44 @@ export async function registerRoutes(
 ): Promise<Server> {
   await setupAuth(app);
 
+  // === SHARE CARD IMAGE (for social media OG previews) ===
+  app.get("/api/jobs/:idOrSlug/share-card.png", async (req, res) => {
+    try {
+      const { generateShareCardPng } = await import("./share-card");
+      const raw = req.params.idOrSlug || "";
+      const m = raw.match(/-(\d+)$/) || raw.match(/^(\d+)$/);
+      const jobId = m ? parseInt(m[1], 10) : NaN;
+      if (!jobId || isNaN(jobId)) {
+        res.status(400).send("Invalid job id");
+        return;
+      }
+      const job = await storage.getJob(jobId);
+      if (!job) {
+        res.status(404).send("Job not found");
+        return;
+      }
+      const result = await generateShareCardPng(job.id, job.title);
+      if (!result) {
+        res.status(500).send("Failed to generate image");
+        return;
+      }
+      const ifNoneMatch = req.headers["if-none-match"];
+      if (ifNoneMatch && ifNoneMatch === result.etag) {
+        res.status(304).end();
+        return;
+      }
+      res.set({
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=86400, s-maxage=86400",
+        ETag: result.etag,
+      });
+      res.send(result.png);
+    } catch (err) {
+      console.error("[share-card route] error:", err);
+      res.status(500).send("Internal error");
+    }
+  });
+
   // === USERS ===
   app.patch(api.users.update.path, isAuthenticated, async (req, res) => {
     const userId = req.session.userId!;
