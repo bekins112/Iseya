@@ -18,3 +18,15 @@ id = "YZ2BnSCQKjMSqsiGhAUnc"
 uri = "file://attached_assets/generated_videos/iseya_promo.mp4"
 type = "video"
 title = "Iṣéyá AI Promo Video (8s)"
+
+[[outputs]]
+id = "cuD2zLnajHGWk3rB06t8_"
+uri = "file://attached_assets/walkthrough/output/Iseya-Walkthrough-Guide-Mobile.pdf"
+type = "pdf"
+title = "Iṣéyá Mobile Walkthrough Guide (PDF, 20 pages)"
+
+[[outputs]]
+id = "odah-P3kM4IdjhuQBA08c"
+uri = "file://attached_assets/walkthrough/output/Iseya-Walkthrough-Mobile.mp4"
+type = "video"
+title = "Iṣéyá Mobile Walkthrough — Screen Recording (portrait, 1m 10s)"
