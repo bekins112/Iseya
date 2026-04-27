@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { SiInstagram, SiLinkedin, SiX, SiFacebook, SiTiktok } from "react-icons/si";
+import { SiInstagram, SiLinkedin, SiX, SiFacebook, SiTiktok, SiWhatsapp } from "react-icons/si";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 
 export default function Footer() {
@@ -84,6 +84,11 @@ export default function Footer() {
               {appSettings?.app_tiktok && (
                 <a href={appSettings.app_tiktok} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="TikTok">
                   <SiTiktok className="w-4 h-4" />
+                </a>
+              )}
+              {(appSettings?.app_whatsapp || "https://whatsapp.com/channel/0029VbBPaUfBVJl4r39xRu1y") && (
+                <a href={appSettings?.app_whatsapp || "https://whatsapp.com/channel/0029VbBPaUfBVJl4r39xRu1y"} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors" aria-label="WhatsApp Channel" data-testid="link-footer-whatsapp">
+                  <SiWhatsapp className="w-4 h-4" />
                 </a>
               )}
             </div>

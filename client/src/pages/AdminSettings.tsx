@@ -92,6 +92,7 @@ const socialSchema = z.object({
   app_instagram: z.string().optional().default(""),
   app_linkedin: z.string().optional().default(""),
   app_tiktok: z.string().optional().default(""),
+  app_whatsapp: z.string().optional().default(""),
 });
 
 const paymentSchema = z.object({
@@ -133,7 +134,7 @@ export default function AdminSettings() {
   }});
 
   const contactForm = useForm({ resolver: zodResolver(contactSchema), defaultValues: { app_phone: "", app_email: "", app_address: "", footer_about_description: "" }});
-  const socialForm = useForm({ resolver: zodResolver(socialSchema), defaultValues: { app_facebook: "", app_twitter: "", app_instagram: "", app_linkedin: "", app_tiktok: "" }});
+  const socialForm = useForm({ resolver: zodResolver(socialSchema), defaultValues: { app_facebook: "", app_twitter: "", app_instagram: "", app_linkedin: "", app_tiktok: "", app_whatsapp: "" }});
   const paymentForm = useForm({ resolver: zodResolver(paymentSchema), defaultValues: { paystack_public_key: "", paystack_secret_key: "", flutterwave_public_key: "", flutterwave_secret_key: "" }});
   const youtubeForm = useForm({ resolver: zodResolver(youtubeSchema), defaultValues: { youtube_landing: "", youtube_employers: "", youtube_agents: "", youtube_applicants: "" }});
 
@@ -160,7 +161,7 @@ export default function AdminSettings() {
         agent_job_post_discount: settings.agent_job_post_discount || "0",
       });
       contactForm.reset({ app_phone: settings.app_phone || "", app_email: settings.app_email || "", app_address: settings.app_address || "", footer_about_description: settings.footer_about_description || "" });
-      socialForm.reset({ app_facebook: settings.app_facebook || "", app_twitter: settings.app_twitter || "", app_instagram: settings.app_instagram || "", app_linkedin: settings.app_linkedin || "", app_tiktok: settings.app_tiktok || "" });
+      socialForm.reset({ app_facebook: settings.app_facebook || "", app_twitter: settings.app_twitter || "", app_instagram: settings.app_instagram || "", app_linkedin: settings.app_linkedin || "", app_tiktok: settings.app_tiktok || "", app_whatsapp: settings.app_whatsapp || "" });
       paymentForm.reset({ paystack_public_key: settings.paystack_public_key || "", paystack_secret_key: settings.paystack_secret_key || "", flutterwave_public_key: settings.flutterwave_public_key || "", flutterwave_secret_key: settings.flutterwave_secret_key || "" });
       youtubeForm.reset({ youtube_landing: settings.youtube_landing || "", youtube_employers: settings.youtube_employers || "", youtube_agents: settings.youtube_agents || "", youtube_applicants: settings.youtube_applicants || "" });
     }
@@ -460,6 +461,13 @@ export default function AdminSettings() {
                   <FormItem>
                     <FormLabel>TikTok</FormLabel>
                     <FormControl><Input placeholder="https://tiktok.com/@yourhandle" {...field} data-testid="input-app-tiktok" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={socialForm.control} name="app_whatsapp" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp Channel</FormLabel>
+                    <FormControl><Input placeholder="https://whatsapp.com/channel/..." {...field} data-testid="input-app-whatsapp" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
