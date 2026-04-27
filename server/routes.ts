@@ -1010,6 +1010,8 @@ export async function registerRoutes(
         canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
         canManageActivityLogs: input.permissions.canManageActivityLogs ?? false,
+        canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
+        canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
       });
       
       res.status(201).json(adminPerms);
@@ -1063,6 +1065,8 @@ export async function registerRoutes(
         canManageAgentCredits: input.permissions.canManageAgentCredits ?? false,
         canManageSettings: input.permissions.canManageSettings ?? false,
         canManageActivityLogs: input.permissions.canManageActivityLogs ?? false,
+        canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
+        canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
       });
 
       res.status(201).json(adminPerms);
@@ -4345,7 +4349,7 @@ export async function registerRoutes(
 
   // Admin: list all hiring companies
   app.get("/api/admin/hiring-companies", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageHiringCompanies) {
       return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
     }
     try {
@@ -4364,7 +4368,7 @@ export async function registerRoutes(
     isAdmin,
     uploadAdMedia.single("logo"),
     async (req: any, res) => {
-      if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      if (req.adminPermissions && !req.adminPermissions.canManageHiringCompanies) {
         return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
       }
       try {
@@ -4399,7 +4403,7 @@ export async function registerRoutes(
     isAdmin,
     uploadAdMedia.single("logo"),
     async (req: any, res) => {
-      if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      if (req.adminPermissions && !req.adminPermissions.canManageHiringCompanies) {
         return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
       }
       const id = Number(req.params.id);
@@ -4432,7 +4436,7 @@ export async function registerRoutes(
 
   // Admin: delete
   app.delete("/api/admin/hiring-companies/:id", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageHiringCompanies) {
       return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
     }
     const id = Number(req.params.id);
@@ -4480,7 +4484,7 @@ export async function registerRoutes(
   });
 
   app.get("/api/admin/google-ads", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageGoogleSettings) {
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     try {
@@ -4501,7 +4505,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/google-ads/settings", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageGoogleSettings) {
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     try {
@@ -4531,7 +4535,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/admin/google-ads", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageGoogleSettings) {
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     try {
@@ -4559,7 +4563,7 @@ export async function registerRoutes(
   });
 
   app.patch("/api/admin/google-ads/:id", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageGoogleSettings) {
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     const id = Number(req.params.id);
@@ -4588,7 +4592,7 @@ export async function registerRoutes(
   });
 
   app.delete("/api/admin/google-ads/:id", isAuthenticated, isAdmin, async (req: any, res) => {
-    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+    if (req.adminPermissions && !req.adminPermissions.canManageGoogleSettings) {
       return res.status(403).json({ message: "You do not have permission to manage ads" });
     }
     const id = Number(req.params.id);

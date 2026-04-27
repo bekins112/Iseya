@@ -181,6 +181,8 @@ export const adminPermissions = pgTable("admin_permissions", {
   canManageAgentCredits: boolean("can_manage_agent_credits").default(false),
   canManageSettings: boolean("can_manage_settings").default(false),
   canManageActivityLogs: boolean("can_manage_activity_logs").default(false),
+  canManageHiringCompanies: boolean("can_manage_hiring_companies").default(false),
+  canManageGoogleSettings: boolean("can_manage_google_settings").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -216,6 +218,8 @@ export const insertAdminPermissionsSchema = z.object({
   canManageAgentCredits: z.boolean().default(false),
   canManageSettings: z.boolean().default(false),
   canManageActivityLogs: z.boolean().default(false),
+  canManageHiringCompanies: z.boolean().default(false),
+  canManageGoogleSettings: z.boolean().default(false),
   createdBy: z.string().optional().nullable(),
 });
 
@@ -237,6 +241,8 @@ export const updateAdminPermissionsSchema = z.object({
   canManageAgentCredits: z.boolean().optional(),
   canManageSettings: z.boolean().optional(),
   canManageActivityLogs: z.boolean().optional(),
+  canManageHiringCompanies: z.boolean().optional(),
+  canManageGoogleSettings: z.boolean().optional(),
 });
 
 // Schema for admin user updates
@@ -300,6 +306,8 @@ export const createSubAdminSchema = z.object({
     canManageAgentCredits: z.boolean().optional(),
     canManageSettings: z.boolean().optional(),
     canManageActivityLogs: z.boolean().optional(),
+    canManageHiringCompanies: z.boolean().optional(),
+    canManageGoogleSettings: z.boolean().optional(),
   }),
 });
 
@@ -325,6 +333,8 @@ export const createNewAdminSchema = z.object({
     canManageAgentCredits: z.boolean().optional(),
     canManageSettings: z.boolean().optional(),
     canManageActivityLogs: z.boolean().optional(),
+    canManageHiringCompanies: z.boolean().optional(),
+    canManageGoogleSettings: z.boolean().optional(),
   }),
 });
 

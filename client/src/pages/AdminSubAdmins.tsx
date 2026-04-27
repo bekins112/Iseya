@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus, Megaphone, Coins, Mail, MonitorPlay, Activity } from "lucide-react";
+import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus, Megaphone, Coins, Mail, MonitorPlay, Activity, Building2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -39,6 +39,8 @@ const defaultPermissions = {
   canManageAgentCredits: false,
   canManageSettings: false,
   canManageActivityLogs: false,
+  canManageHiringCompanies: false,
+  canManageGoogleSettings: false,
 };
 
 const permissionLabels = [
@@ -55,7 +57,9 @@ const permissionLabels = [
   { key: "canManageAutomatedEmails", label: "Automated Emails", icon: Mail, description: "Can manage automated email schedules and send newsletters" },
   { key: "canManageAds", label: "Manage Ads & Popups", icon: Megaphone, description: "Can create and manage internal ads and popups" },
   { key: "canManageAgentCredits", label: "Manage Agent Credits", icon: Coins, description: "Can add, deduct, or set agent job post credits" },
-  { key: "canManageSettings", label: "Platform Settings & Google Settings", icon: SlidersHorizontal, description: "Can modify pricing, platform configuration, and Google Settings (AdSense, Ads, Analytics)" },
+  { key: "canManageHiringCompanies", label: "Manage Hiring Companies", icon: Building2, description: "Can add, edit, and remove featured hiring companies" },
+  { key: "canManageGoogleSettings", label: "Google Settings", icon: MonitorPlay, description: "Can configure Google AdSense, Google Ads, and Analytics" },
+  { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform-wide configuration" },
   { key: "canManageActivityLogs", label: "Activity Logs", icon: Activity, description: "Can view and clear platform activity logs" },
   { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
 ];
@@ -176,6 +180,8 @@ export default function AdminSubAdmins() {
         canManageAgentCredits: admin.permissions.canManageAgentCredits || false,
         canManageSettings: admin.permissions.canManageSettings || false,
         canManageActivityLogs: admin.permissions.canManageActivityLogs || false,
+        canManageHiringCompanies: admin.permissions.canManageHiringCompanies || false,
+        canManageGoogleSettings: admin.permissions.canManageGoogleSettings || false,
       });
     }
   };
@@ -280,8 +286,9 @@ export default function AdminSubAdmins() {
                           {admin.permissions.canManageAutomatedEmails && <Badge variant="outline" className="text-xs">Emails</Badge>}
                           {admin.permissions.canManageAds && <Badge variant="outline" className="text-xs">Ads</Badge>}
                           {admin.permissions.canManageAgentCredits && <Badge variant="outline" className="text-xs">Agent Credits</Badge>}
+                          {admin.permissions.canManageHiringCompanies && <Badge variant="outline" className="text-xs">Hiring Companies</Badge>}
+                          {admin.permissions.canManageGoogleSettings && <Badge variant="outline" className="text-xs">Google Settings</Badge>}
                           {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Settings</Badge>}
-                          {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Google Ads</Badge>}
                           {admin.permissions.canManageActivityLogs && <Badge variant="outline" className="text-xs">Activity Logs</Badge>}
                           {admin.permissions.canManageAdmins && <Badge variant="outline" className="text-xs">Admins</Badge>}
                         </>
