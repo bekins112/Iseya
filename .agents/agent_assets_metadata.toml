@@ -1,0 +1,20 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "EmZtomGSwilHnTkA7sCpq"
+uri = "file://attached_assets/walkthrough/output/Iseya-Walkthrough-Guide.pdf"
+type = "pdf"
+title = "Iṣéyá Walkthrough Guide (PDF, 21 pages)"
+
+[[outputs]]
+id = "VEUe735rXri-5FKIAV5pr"
+uri = "file://attached_assets/walkthrough/output/Iseya-Walkthrough.mp4"
+type = "video"
+title = "Iṣéyá Walkthrough — Screen Recording (1m 10s)"
+
+[[outputs]]
+id = "YZ2BnSCQKjMSqsiGhAUnc"
+uri = "file://attached_assets/generated_videos/iseya_promo.mp4"
+type = "video"
+title = "Iṣéyá AI Promo Video (8s)"
