@@ -1209,6 +1209,26 @@ export async function registerRoutes(
 
   app.post("/api/webhooks/inbound-email", async (req, res) => {
     try {
+      // Shared-secret authentication. Configure INBOUND_EMAIL_SECRET env var
+      // and pass the same value from your inbound-email forwarder via either:
+      //   - Header:  X-Webhook-Secret: <secret>
+      //   - Bearer:  Authorization: Bearer <secret>
+      //   - Query:   ?secret=<secret>
+      const expected = process.env.INBOUND_EMAIL_SECRET;
+      if (!expected) {
+        console.error("[inbound-email] INBOUND_EMAIL_SECRET is not configured; rejecting request");
+        return res.status(503).json({ message: "Inbound email is not configured" });
+      }
+      const headerSecret =
+        (req.header("x-webhook-secret") || "").trim() ||
+        (req.header("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+      const querySecret = typeof req.query.secret === "string" ? req.query.secret : "";
+      const provided = headerSecret || querySecret;
+      if (!provided || provided !== expected) {
+        console.warn("[inbound-email] Rejected request: invalid or missing secret");
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const { from, subject, text, html } = req.body;
 
       if (!from || !subject) {
