@@ -891,6 +891,8 @@ export default function Landing() {
         </div>
       </section>
 
+      <HiringCompaniesSection />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <PageAds page="landing" position="bottom" />
       </div>
@@ -899,5 +901,82 @@ export default function Landing() {
 
       <NewsletterBar />
     </div>
+  );
+}
+
+function HiringCompaniesSection() {
+  const { data: companies } = useQuery<Array<{ id: number; name: string; logoUrl: string; websiteUrl: string | null }>>({
+    queryKey: ["/api/hiring-companies"],
+  });
+
+  if (!companies || companies.length === 0) return null;
+
+  return (
+    <section className="py-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border-t border-gray-100 dark:border-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          viewport={{ once: true }}
+          className="text-center mb-10"
+        >
+          <Badge className="bg-primary/10 text-primary border-primary/20 mb-3">
+            <Building2 className="w-3 h-3 mr-1" />
+            Trusted by Leading Brands
+          </Badge>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+            Companies Currently Hiring in Nigeria
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Join thousands of professionals working with these top employers on Iṣéyá.
+          </p>
+        </motion.div>
+
+        <div
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6"
+          data-testid="grid-hiring-companies"
+        >
+          {companies.map((c, idx) => {
+            const inner = (
+              <div
+                className="aspect-square bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-center hover:shadow-lg hover:border-primary/40 transition-all duration-300 group"
+                data-testid={`logo-company-${c.id}`}
+              >
+                <img
+                  src={c.logoUrl}
+                  alt={c.name}
+                  title={c.name}
+                  loading="lazy"
+                  className="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 opacity-70 group-hover:opacity-100 transition-all duration-300"
+                />
+              </div>
+            );
+            return (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.04 }}
+                viewport={{ once: true }}
+              >
+                {c.websiteUrl ? (
+                  <a
+                    href={c.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Visit ${c.name}`}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  inner
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
   );
 }

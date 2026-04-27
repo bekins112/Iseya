@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog } from "@shared/schema";
+import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany } from "@shared/schema";
 import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -125,6 +125,14 @@ export interface IStorage {
   addNewsletterSubscriber(email: string): Promise<void>;
 
   // Internal Ads
+  // Hiring companies
+  createHiringCompany(c: InsertHiringCompany): Promise<HiringCompany>;
+  getHiringCompany(id: number): Promise<HiringCompany | undefined>;
+  getAllHiringCompanies(): Promise<HiringCompany[]>;
+  getActiveHiringCompanies(): Promise<HiringCompany[]>;
+  updateHiringCompany(id: number, updates: Partial<HiringCompany>): Promise<HiringCompany>;
+  deleteHiringCompany(id: number): Promise<void>;
+
   createAd(ad: InsertInternalAd): Promise<InternalAd>;
   getAd(id: number): Promise<InternalAd | undefined>;
   getAllAds(): Promise<InternalAd[]>;
@@ -1023,6 +1031,44 @@ export class DatabaseStorage implements IStorage {
 
   async addNewsletterSubscriber(email: string): Promise<void> {
     await db.insert(newsletterSubscribers).values({ email }).onConflictDoNothing();
+  }
+
+  async createHiringCompany(c: InsertHiringCompany): Promise<HiringCompany> {
+    const [created] = await db.insert(hiringCompanies).values(c).returning();
+    return created;
+  }
+
+  async getHiringCompany(id: number): Promise<HiringCompany | undefined> {
+    const [c] = await db.select().from(hiringCompanies).where(eq(hiringCompanies.id, id));
+    return c;
+  }
+
+  async getAllHiringCompanies(): Promise<HiringCompany[]> {
+    return await db
+      .select()
+      .from(hiringCompanies)
+      .orderBy(hiringCompanies.displayOrder, desc(hiringCompanies.createdAt));
+  }
+
+  async getActiveHiringCompanies(): Promise<HiringCompany[]> {
+    return await db
+      .select()
+      .from(hiringCompanies)
+      .where(eq(hiringCompanies.isActive, true))
+      .orderBy(hiringCompanies.displayOrder, desc(hiringCompanies.createdAt));
+  }
+
+  async updateHiringCompany(id: number, updates: Partial<HiringCompany>): Promise<HiringCompany> {
+    const [updated] = await db
+      .update(hiringCompanies)
+      .set(updates)
+      .where(eq(hiringCompanies.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteHiringCompany(id: number): Promise<void> {
+    await db.delete(hiringCompanies).where(eq(hiringCompanies.id, id));
   }
 
   async createAd(ad: InsertInternalAd): Promise<InternalAd> {

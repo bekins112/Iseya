@@ -476,6 +476,20 @@ export const insertInternalAdSchema = createInsertSchema(internalAds).omit({ id:
 export type InternalAd = typeof internalAds.$inferSelect;
 export type InsertInternalAd = z.infer<typeof insertInternalAdSchema>;
 
+export const hiringCompanies = pgTable("hiring_companies", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name").notNull(),
+  logoUrl: varchar("logo_url").notNull(),
+  websiteUrl: varchar("website_url"),
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertHiringCompanySchema = createInsertSchema(hiringCompanies).omit({ id: true, createdAt: true });
+export type HiringCompany = typeof hiringCompanies.$inferSelect;
+export type InsertHiringCompany = z.infer<typeof insertHiringCompanySchema>;
+
 export const googleAdPlacements = pgTable("google_ad_placements", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name").notNull(),

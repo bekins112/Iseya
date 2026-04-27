@@ -4330,6 +4330,124 @@ export async function registerRoutes(
     }
   });
 
+  // === HIRING COMPANIES ===
+
+  // Public: list active hiring companies (for landing page)
+  app.get("/api/hiring-companies", async (_req, res) => {
+    try {
+      const companies = await storage.getActiveHiringCompanies();
+      res.json(companies);
+    } catch (err) {
+      console.error("Error fetching hiring companies:", err);
+      res.status(500).json({ message: "Failed to fetch hiring companies" });
+    }
+  });
+
+  // Admin: list all hiring companies
+  app.get("/api/admin/hiring-companies", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
+    }
+    try {
+      const companies = await storage.getAllHiringCompanies();
+      res.json(companies);
+    } catch (err) {
+      console.error("Error fetching hiring companies:", err);
+      res.status(500).json({ message: "Failed to fetch hiring companies" });
+    }
+  });
+
+  // Admin: create
+  app.post(
+    "/api/admin/hiring-companies",
+    isAuthenticated,
+    isAdmin,
+    uploadAdMedia.single("logo"),
+    async (req: any, res) => {
+      if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+        return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
+      }
+      try {
+        const name = (req.body.name || "").toString().trim();
+        if (!name) return res.status(400).json({ message: "Company name is required" });
+        if (!req.file) return res.status(400).json({ message: "Company logo is required" });
+
+        const logoUrl = `/uploads/ads/${req.file.filename}`;
+        const websiteUrl = (req.body.websiteUrl || "").toString().trim() || null;
+        const displayOrder = req.body.displayOrder ? Number(req.body.displayOrder) : 0;
+        const isActive = req.body.isActive === undefined ? true : req.body.isActive === "true" || req.body.isActive === true;
+
+        const company = await storage.createHiringCompany({
+          name,
+          logoUrl,
+          websiteUrl,
+          displayOrder: isNaN(displayOrder) ? 0 : displayOrder,
+          isActive,
+        });
+        res.status(201).json(company);
+      } catch (err) {
+        console.error("Error creating hiring company:", err);
+        res.status(500).json({ message: "Failed to create hiring company" });
+      }
+    }
+  );
+
+  // Admin: update
+  app.patch(
+    "/api/admin/hiring-companies/:id",
+    isAuthenticated,
+    isAdmin,
+    uploadAdMedia.single("logo"),
+    async (req: any, res) => {
+      if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+        return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
+      }
+      const id = Number(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid company id" });
+      try {
+        const existing = await storage.getHiringCompany(id);
+        if (!existing) return res.status(404).json({ message: "Hiring company not found" });
+
+        const updates: Partial<{ name: string; logoUrl: string; websiteUrl: string | null; displayOrder: number; isActive: boolean }> = {};
+        if (typeof req.body.name === "string" && req.body.name.trim()) updates.name = req.body.name.trim();
+        if (typeof req.body.websiteUrl === "string") updates.websiteUrl = req.body.websiteUrl.trim() || null;
+        if (req.body.displayOrder !== undefined) {
+          const n = Number(req.body.displayOrder);
+          if (!isNaN(n)) updates.displayOrder = n;
+        }
+        if (req.body.isActive !== undefined) {
+          updates.isActive = req.body.isActive === "true" || req.body.isActive === true;
+        }
+        if (req.file) {
+          updates.logoUrl = `/uploads/ads/${req.file.filename}`;
+        }
+        const company = await storage.updateHiringCompany(id, updates);
+        res.json(company);
+      } catch (err) {
+        console.error("Error updating hiring company:", err);
+        res.status(500).json({ message: "Failed to update hiring company" });
+      }
+    }
+  );
+
+  // Admin: delete
+  app.delete("/api/admin/hiring-companies/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage hiring companies" });
+    }
+    const id = Number(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid company id" });
+    try {
+      const existing = await storage.getHiringCompany(id);
+      if (!existing) return res.status(404).json({ message: "Hiring company not found" });
+      await storage.deleteHiringCompany(id);
+      res.json({ message: "Hiring company deleted" });
+    } catch (err) {
+      console.error("Error deleting hiring company:", err);
+      res.status(500).json({ message: "Failed to delete hiring company" });
+    }
+  });
+
   // === GOOGLE ADS MANAGEMENT ===
 
   app.get("/api/google-ads/codes", async (_req, res) => {

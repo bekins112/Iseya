@@ -37,6 +37,7 @@ import AdminNotifications from "@/pages/AdminNotifications";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminTransactions from "@/pages/AdminTransactions";
 import AdminAds from "@/pages/AdminAds";
+import AdminHiringCompanies from "@/pages/AdminHiringCompanies";
 import AdminGoogleAds from "@/pages/AdminGoogleAds";
 import GoogleAdCodes from "@/components/GoogleAdCodes";
 import AdminAgentCredits from "@/pages/AdminAgentCredits";
@@ -286,6 +287,12 @@ function Router() {
       <Route path="/admin/ads">
         <AuthenticatedLayout>
           <AdminAds />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/hiring-companies">
+        <AuthenticatedLayout>
+          <AdminHiringCompanies />
         </AuthenticatedLayout>
       </Route>
 
