@@ -4378,6 +4378,7 @@ export async function registerRoutes(
         if (!req.file) return res.status(400).json({ message: "Company logo is required" });
 
         const logoUrl = `/uploads/ads/${req.file.filename}`;
+        storeFileInDb(logoUrl, req.file.path).catch(() => {});
         const websiteUrl = (req.body.websiteUrl || "").toString().trim() || null;
         const displayOrder = req.body.displayOrder ? Number(req.body.displayOrder) : 0;
         const isActive = req.body.isActive === undefined ? true : req.body.isActive === "true" || req.body.isActive === true;
@@ -4425,6 +4426,7 @@ export async function registerRoutes(
         }
         if (req.file) {
           updates.logoUrl = `/uploads/ads/${req.file.filename}`;
+          storeFileInDb(updates.logoUrl, req.file.path).catch(() => {});
         }
         const company = await storage.updateHiringCompany(id, updates);
         res.json(company);
