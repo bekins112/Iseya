@@ -1237,7 +1237,16 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const { from, subject, text, html } = req.body;
+      // Accept payload field aliases from common inbound providers:
+      //   - Resend Inbound / generic JSON: { from, subject, text, html }
+      //   - Postmark:                      { From, FromFull:{Email,Name}, Subject, TextBody, HtmlBody }
+      //   - Mailgun (JSON mode):           { sender, "From", "Subject", "body-plain", "body-html" }
+      //   - SendGrid Inbound Parse:        { from, subject, text, html, envelope }
+      const b = req.body || {};
+      const from = b.from || b.From || b.FromFull || b.sender || b.envelope?.from;
+      const subject = b.subject || b.Subject || "";
+      const text = b.text || b.TextBody || b["body-plain"] || b.plain;
+      const html = b.html || b.HtmlBody || b["body-html"];
 
       if (!from || !subject) {
         return res.status(400).json({ message: "Missing required email fields" });
@@ -1252,12 +1261,31 @@ export async function registerRoutes(
         const nameMatch = from.match(/^([^<]+)/);
         senderName = nameMatch ? nameMatch[1].trim().replace(/^"|"$/g, "") : senderEmail.split("@")[0];
       } else if (typeof from === "object") {
-        senderEmail = from.address || from.email || "";
-        senderName = from.name || senderEmail.split("@")[0];
+        senderEmail = from.Email || from.address || from.email || "";
+        senderName = from.Name || from.name || (senderEmail ? senderEmail.split("@")[0] : "");
       }
 
-      if (!senderEmail) {
+      // Strip any stray angle brackets/quotes
+      senderEmail = senderEmail.replace(/[<>"]/g, "").trim().toLowerCase();
+
+      if (!senderEmail || !senderEmail.includes("@")) {
         return res.status(400).json({ message: "Could not parse sender email" });
+      }
+
+      // Reject obvious auto-responders / bounces / loops to avoid ticket spam
+      const lowerSubject = String(subject).toLowerCase();
+      if (
+        senderEmail.startsWith("mailer-daemon@") ||
+        senderEmail.startsWith("postmaster@") ||
+        senderEmail.startsWith("noreply@") ||
+        senderEmail.startsWith("no-reply@") ||
+        lowerSubject.startsWith("auto:") ||
+        lowerSubject.includes("undeliverable") ||
+        lowerSubject.includes("delivery failure") ||
+        lowerSubject.includes("out of office")
+      ) {
+        console.log(`[inbound-email] Ignored auto/bounce mail from ${senderEmail} (${subject})`);
+        return res.status(200).json({ success: true, action: "ignored" });
       }
 
       const messageBody = text || (html ? html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "No message content");
