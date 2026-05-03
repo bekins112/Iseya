@@ -1,0 +1,649 @@
+import { useState } from "react";
+import { useMyApplications, useMyOffers, useRespondToOffer, useCounterOffer, useCancelApplication, useMyInterviews, useUpdateInterview } from "@/hooks/use-casual";
+import { useAuth } from "@/hooks/use-auth";
+import { PageHeader, StatusBadge } from "@/components/ui-extension";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "wouter";
+import { 
+  MapPin, 
+  Briefcase, 
+  Building2, 
+  Banknote, 
+  Gift, 
+  MessageSquare, 
+  CheckCircle2, 
+  XCircle,
+  Clock,
+  Send,
+  FileText,
+  Trash2,
+  AlertTriangle,
+  CalendarClock,
+  Calendar,
+  Video,
+  Phone,
+  Link2,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { usePageTitle } from "@/hooks/use-page-title";
+import { jobUrl } from "@/lib/slug-utils";
+
+type EnrichedApp = {
+  id: number;
+  jobId: number;
+  applicantId: string;
+  message: string | null;
+  status: string | null;
+  createdAt: string | null;
+  jobTitle: string;
+  jobLocation: string;
+  jobType: string;
+  jobCategory: string;
+  employerName: string;
+  employerLogo: string | null;
+  offer: {
+    id: number;
+    salary: number;
+    compensation: string | null;
+    note: string | null;
+    status: string;
+    counterSalary: number | null;
+    counterCompensation: string | null;
+    counterNote: string | null;
+    createdAt: string;
+  } | null;
+};
+
+function formatNaira(amount: number) {
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(amount);
+}
+
+function OfferDetailsDialog({
+  app,
+  open,
+  onOpenChange,
+}: {
+  app: EnrichedApp | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const respond = useRespondToOffer();
+  const counter = useCounterOffer();
+  const [showCounterForm, setShowCounterForm] = useState(false);
+  const [counterSalary, setCounterSalary] = useState("");
+  const [counterCompensation, setCounterCompensation] = useState("");
+  const [counterNote, setCounterNote] = useState("");
+
+  if (!app?.offer) return null;
+
+  const offer = app.offer;
+  const isPending = offer.status === "pending";
+  const isCountered = offer.status === "countered";
+
+  const handleSubmitCounter = () => {
+    const salary = Number(counterSalary);
+    if (!salary || salary <= 0) return;
+    counter.mutate({
+      offerId: offer.id,
+      counterSalary: salary,
+      counterCompensation: counterCompensation || undefined,
+      counterNote: counterNote || undefined,
+    }, {
+      onSuccess: () => {
+        setShowCounterForm(false);
+        setCounterSalary("");
+        setCounterCompensation("");
+        setCounterNote("");
+        onOpenChange(false);
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(val) => { onOpenChange(val); if (!val) setShowCounterForm(false); }}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Send className="w-5 h-5 text-primary" />
+            Job Offer Details
+          </DialogTitle>
+          <DialogDescription>
+            Offer from {app.employerName} for {app.jobTitle}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center gap-3 p-3 rounded-md bg-muted/50">
+            <Banknote className="w-5 h-5 text-primary shrink-0" />
+            <div>
+              <p className="text-xs text-muted-foreground">Employer's Offer</p>
+              <p className="font-bold text-lg" data-testid="text-offer-salary">{formatNaira(offer.salary)}</p>
+            </div>
+          </div>
+
+          {offer.compensation && (
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted/50">
+              <Gift className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs text-muted-foreground">Compensation / Benefits</p>
+                <p className="text-sm" data-testid="text-offer-compensation">{offer.compensation}</p>
+              </div>
+            </div>
+          )}
+
+          {offer.note && (
+            <div className="flex items-start gap-3 p-3 rounded-md bg-muted/50">
+              <MessageSquare className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs text-muted-foreground">Note from Employer</p>
+                <p className="text-sm" data-testid="text-offer-note">{offer.note}</p>
+              </div>
+            </div>
+          )}
+
+          {isCountered && offer.counterSalary && (
+            <div className="border border-amber-300 dark:border-amber-600 rounded-md p-3 bg-amber-50 dark:bg-amber-900/20 space-y-2">
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Your Counter Offer</p>
+              <p className="font-bold text-lg text-amber-800 dark:text-amber-300" data-testid="text-counter-salary">{formatNaira(offer.counterSalary)}</p>
+              {offer.counterCompensation && (
+                <p className="text-sm text-amber-700 dark:text-amber-400"><span className="font-medium">Benefits:</span> {offer.counterCompensation}</p>
+              )}
+              {offer.counterNote && (
+                <p className="text-sm text-amber-700 dark:text-amber-400"><span className="font-medium">Note:</span> {offer.counterNote}</p>
+              )}
+              <Badge variant="outline" className="text-amber-700 border-amber-400">Awaiting Employer Response</Badge>
+            </div>
+          )}
+
+          {!isPending && !isCountered && (
+            <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50">
+              {offer.status === "accepted" ? (
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-500" />
+              )}
+              <span className="font-medium capitalize">{offer.status}</span>
+            </div>
+          )}
+
+          {isPending && !showCounterForm && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    respond.mutate({ offerId: offer.id, status: "accepted" }, {
+                      onSuccess: () => onOpenChange(false),
+                    });
+                  }}
+                  disabled={respond.isPending || counter.isPending}
+                  data-testid="button-accept-offer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Accept
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={() => {
+                    respond.mutate({ offerId: offer.id, status: "declined" }, {
+                      onSuccess: () => onOpenChange(false),
+                    });
+                  }}
+                  disabled={respond.isPending || counter.isPending}
+                  data-testid="button-decline-offer"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Decline
+                </Button>
+              </div>
+              <Button
+                variant="secondary"
+                className="w-full gap-2"
+                onClick={() => {
+                  setCounterSalary(String(offer.salary));
+                  setShowCounterForm(true);
+                }}
+                disabled={respond.isPending || counter.isPending}
+                data-testid="button-counter-offer"
+              >
+                <Banknote className="w-4 h-4" />
+                Make Counter Offer
+              </Button>
+            </div>
+          )}
+
+          {isPending && showCounterForm && (
+            <div className="border rounded-md p-4 space-y-3 bg-muted/30">
+              <p className="font-semibold text-sm">Your Counter Offer</p>
+              <div>
+                <Label htmlFor="counter-salary" className="text-xs">Your Preferred Salary (NGN)</Label>
+                <Input
+                  id="counter-salary"
+                  type="number"
+                  placeholder="e.g. 150000"
+                  value={counterSalary}
+                  onChange={(e) => setCounterSalary(e.target.value)}
+                  data-testid="input-counter-salary"
+                />
+              </div>
+              <div>
+                <Label htmlFor="counter-compensation" className="text-xs">Benefits / Compensation (optional)</Label>
+                <Input
+                  id="counter-compensation"
+                  placeholder="e.g. Transport allowance, meals"
+                  value={counterCompensation}
+                  onChange={(e) => setCounterCompensation(e.target.value)}
+                  data-testid="input-counter-compensation"
+                />
+              </div>
+              <div>
+                <Label htmlFor="counter-note" className="text-xs">Note to Employer (optional)</Label>
+                <Textarea
+                  id="counter-note"
+                  placeholder="Explain why you're requesting this amount..."
+                  value={counterNote}
+                  onChange={(e) => setCounterNote(e.target.value)}
+                  className="min-h-[60px] resize-none"
+                  data-testid="input-counter-note"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 gap-2"
+                  onClick={handleSubmitCounter}
+                  disabled={counter.isPending || !counterSalary || Number(counterSalary) <= 0}
+                  data-testid="button-submit-counter"
+                >
+                  <Send className="w-4 h-4" />
+                  {counter.isPending ? "Sending..." : "Send Counter Offer"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowCounterForm(false)}
+                  disabled={counter.isPending}
+                  data-testid="button-cancel-counter"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CancelApplicationDialog({
+  app,
+  open,
+  onOpenChange,
+}: {
+  app: EnrichedApp | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const cancelApp = useCancelApplication();
+  if (!app) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+            Cancel Application
+          </DialogTitle>
+          <DialogDescription>
+            Are you sure you want to withdraw your application for <strong>{app.jobTitle}</strong>? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex items-center gap-2 pt-2">
+          <Button
+            variant="destructive"
+            className="flex-1 gap-2"
+            onClick={() => {
+              cancelApp.mutate(app.id, {
+                onSuccess: () => onOpenChange(false),
+              });
+            }}
+            disabled={cancelApp.isPending}
+            data-testid="button-confirm-cancel-application"
+          >
+            <Trash2 className="w-4 h-4" />
+            {cancelApp.isPending ? "Cancelling..." : "Yes, Cancel"}
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+            data-testid="button-keep-application"
+          >
+            Keep Application
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function Applications() {
+  usePageTitle("My Applications");
+  const { user } = useAuth();
+  const { data: applications, isLoading } = useMyApplications();
+  const { data: interviewsData } = useMyInterviews();
+  const [selectedApp, setSelectedApp] = useState<EnrichedApp | null>(null);
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+  const [cancelApp, setCancelApp] = useState<EnrichedApp | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+
+  const confirmInterviewMutation = useUpdateInterview();
+  const apps = (applications as EnrichedApp[] | undefined) || [];
+  const myInterviews = (interviewsData || []) as any[];
+  const isVerified = user?.isVerified || false;
+
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case "offered": return <Send className="w-4 h-4 text-blue-500" />;
+      case "accepted": return <CheckCircle2 className="w-4 h-4 text-green-600" />;
+      case "rejected": return <XCircle className="w-4 h-4 text-red-500" />;
+      default: return <Clock className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title="My Applications" description="Track the status of your job applications." />
+
+      {!isVerified && (
+        <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700" data-testid="banner-verification-required">
+          <CardContent className="p-4 flex items-start gap-3">
+            <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-amber-800 dark:text-amber-300">Verification Required</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                You need to get verified to manage your applications (cancel, respond to offers). You can still view your applications and apply for jobs.
+              </p>
+              <Link href="/verification">
+                <Button size="sm" className="mt-2 gap-1" data-testid="button-get-verified">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Get Verified
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => <div key={i} className="h-28 bg-muted rounded-xl animate-pulse" />)}
+        </div>
+      ) : apps.length === 0 ? (
+        <div className="text-center py-12 bg-muted/20 rounded-xl border border-dashed">
+          <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
+          <p className="text-muted-foreground">You haven't applied to any jobs yet.</p>
+          <Link href="/jobs">
+            <Button variant="ghost" className="mt-2" data-testid="link-browse-jobs">Browse Jobs</Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <AnimatePresence mode="popLayout">
+            {apps.map((app) => (
+              <motion.div
+                key={app.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                layout
+              >
+                <Card className="hover-elevate" data-testid={`card-application-${app.id}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="w-10 h-10 shrink-0 mt-0.5">
+                        {app.employerLogo && <AvatarImage src={app.employerLogo} alt={app.employerName} />}
+                        <AvatarFallback>
+                          <Building2 className="w-5 h-5" />
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div className="min-w-0">
+                            <h3 className="font-bold text-base truncate" data-testid={`text-job-title-${app.id}`}>
+                              {app.jobTitle}
+                            </h3>
+                            <p className="text-sm text-muted-foreground truncate" data-testid={`text-employer-${app.id}`}>
+                              {app.employerName}
+                            </p>
+                          </div>
+                          <StatusBadge status={app.status || "pending"} />
+                        </div>
+
+                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                          {app.jobLocation && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {app.jobLocation}
+                            </span>
+                          )}
+                          {app.jobType && (
+                            <span className="flex items-center gap-1">
+                              <Briefcase className="w-3 h-3" />
+                              {app.jobType}
+                            </span>
+                          )}
+                          {app.createdAt && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(app.createdAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+
+                        {app.offer ? (
+                          <div className="mt-3 p-2.5 rounded-md bg-muted/50 border border-border/50">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <Banknote className="w-4 h-4 text-primary" />
+                                <span className="font-semibold text-sm" data-testid={`text-offer-amount-${app.id}`}>
+                                  {formatNaira(app.offer.salary)}
+                                </span>
+                                <Badge variant={
+                                  app.offer.status === "accepted" ? "default" :
+                                  app.offer.status === "declined" ? "destructive" :
+                                  app.offer.status === "countered" ? "outline" : "secondary"
+                                } className={`text-xs ${app.offer.status === "countered" ? "border-amber-400 text-amber-700" : ""}`}>
+                                  {app.offer.status === "pending" ? "Offer Received" : app.offer.status === "countered" ? "Counter Sent" : app.offer.status}
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() => {
+                                  setSelectedApp(app);
+                                  setOfferDialogOpen(true);
+                                }}
+                                disabled={app.offer.status === "pending" && !isVerified}
+                                data-testid={`button-view-offer-${app.id}`}
+                              >
+                                {app.offer.status === "pending" ? (isVerified ? "Respond" : "Verify to Respond") : "View Details"}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : app.status === "offered" ? (
+                          <div className="mt-3 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-amber-600" />
+                              <span className="text-sm text-amber-700 dark:text-amber-400">Offer details are being processed. Please check back shortly.</span>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {(() => {
+                          const interview = myInterviews.find((i: any) => i.applicationId === app.id && (i.status === "scheduled" || i.status === "completed"));
+                          if (!interview) return null;
+                          const isCompleted = interview.status === "completed";
+                          const interviewDatePassed = (() => {
+                            if (!interview.interviewDate) return false;
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const iDate = new Date(interview.interviewDate);
+                            iDate.setHours(0, 0, 0, 0);
+                            return iDate <= today;
+                          })();
+                          return (
+                            <div className={`mt-3 p-2.5 rounded-md ${isCompleted ? "bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50" : "bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50"}`} data-testid={`interview-info-${app.id}`}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  {isCompleted ? (
+                                    <>
+                                      <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                      <span className="font-semibold text-sm text-green-700 dark:text-green-400">Interview Completed</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CalendarClock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                      <span className="font-semibold text-sm text-blue-800 dark:text-blue-300">Interview Scheduled</span>
+                                    </>
+                                  )}
+                                </div>
+                                {!isCompleted && interviewDatePassed && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950/30"
+                                    disabled={confirmInterviewMutation.isPending}
+                                    onClick={() => confirmInterviewMutation.mutate({ id: interview.id, status: "completed" })}
+                                    data-testid={`btn-confirm-interviewed-${app.id}`}
+                                  >
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    {confirmInterviewMutation.isPending ? "Confirming..." : "Confirm Interviewed"}
+                                  </Button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {interview.interviewDate ? new Date(interview.interviewDate).toLocaleDateString("en-NG", { weekday: "short", month: "short", day: "numeric" }) : "TBD"}
+                                </div>
+                                {interview.interviewTime && (
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {interview.interviewTime}
+                                  </div>
+                                )}
+                                {interview.interviewType === "video" && interview.meetingLink && (
+                                  <div className="col-span-2">
+                                    <a href={interview.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline">
+                                      <Video className="w-3 h-3" />
+                                      Join Video Call
+                                    </a>
+                                  </div>
+                                )}
+                                {interview.interviewType === "phone" && (
+                                  <div className="flex items-center gap-1 col-span-2">
+                                    <Phone className="w-3 h-3" />
+                                    Phone Interview
+                                  </div>
+                                )}
+                                {interview.interviewType === "in-person" && interview.location && (
+                                  <div className="flex items-center gap-1 col-span-2">
+                                    <MapPin className="w-3 h-3" />
+                                    {interview.location}
+                                  </div>
+                                )}
+                              </div>
+                              {interview.notes && (
+                                <p className="text-xs text-muted-foreground mt-1.5 italic">
+                                  {interview.notes}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {!isVerified && app.status === "pending" && (
+                          <div className="mt-3 p-2.5 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800" data-testid={`banner-verify-pending-${app.id}`}>
+                            <div className="flex items-start gap-2">
+                              <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Your profile is not verified</p>
+                                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                                  Employers cannot see your contact details or CV while unverified. Verified applicants are prioritised and more likely to get shortlisted. Get verified to boost your chances.
+                                </p>
+                                <Link href="/verification">
+                                  <Button size="sm" variant="outline" className="mt-1.5 h-7 text-xs gap-1 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/40" data-testid={`button-verify-now-${app.id}`}>
+                                    <ShieldCheck className="w-3 h-3" />
+                                    Get Verified Now
+                                  </Button>
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                          <Link href={jobUrl({ id: app.jobId, title: app.jobTitle })}>
+                            <Button variant="outline" size="sm" data-testid={`button-view-job-${app.id}`}>
+                              View Job
+                            </Button>
+                          </Link>
+                          {app.status !== "accepted" && isVerified && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1 text-destructive"
+                              onClick={() => {
+                                setCancelApp(app);
+                                setCancelDialogOpen(true);
+                              }}
+                              data-testid={`button-cancel-application-${app.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+
+      <OfferDetailsDialog
+        app={selectedApp}
+        open={offerDialogOpen}
+        onOpenChange={setOfferDialogOpen}
+      />
+
+      <CancelApplicationDialog
+        app={cancelApp}
+        open={cancelDialogOpen}
+        onOpenChange={setCancelDialogOpen}
+      />
+    </div>
+  );
+}

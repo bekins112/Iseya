@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Iṣéyá Job Marketplace"
+version = "1.0.0"
+id = "artifacts/iseya"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20023
+
+[services.development]
+run = "pnpm --filter @workspace/iseya run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/iseya", "run", "build" ]
+publicDir = "artifacts/iseya/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20023"
+BASE_PATH = "/"

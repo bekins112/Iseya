@@ -1,0 +1,358 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui-extension";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Search, Crown, Building2, Calendar, MoreVertical, ShieldAlert } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
+import { Redirect } from "wouter";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { User } from "@/lib/types";
+import { format } from "date-fns";
+import { AdminPagination, usePagination } from "@/components/AdminPagination";
+import { usePageTitle } from "@/hooks/use-page-title";
+
+export default function AdminSubscriptions() {
+  usePageTitle("Admin Subscriptions");
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ 
+    subscriptionStatus: "free" as "free" | "standard" | "premium" | "enterprise", 
+    subscriptionEndDate: "" 
+  });
+
+  const { data: settings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/admin/settings"],
+  });
+
+  const restrictFreeManagement = settings?.restrict_free_employer_management !== "false";
+
+  const toggleRestrictFreeMutation = useMutation({
+    mutationFn: async (value: boolean) => {
+      await apiRequest("PATCH", "/api/admin/settings", {
+        restrict_free_employer_management: value ? "true" : "false",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/settings"] });
+      toast({ title: "Setting updated", description: restrictFreeManagement ? "Free-tier employers can now manage applications without restrictions." : "Free-tier employers are now restricted from managing applications." });
+    },
+    onError: () => {
+      toast({ title: "Failed to update setting", variant: "destructive" });
+    },
+  });
+
+  const { data: employers = [], isLoading } = useQuery<User[]>({
+    queryKey: ["/api/admin/subscriptions", statusFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      const url = `/api/admin/subscriptions${params.toString() ? `?${params}` : ""}`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch subscriptions");
+      return res.json();
+    },
+  });
+
+  const updateSubscriptionMutation = useMutation({
+    mutationFn: async ({ userId, updates }: { userId: string; updates: { subscriptionStatus?: string; subscriptionEndDate?: string } }) => {
+      return apiRequest("PATCH", `/api/admin/subscriptions/${userId}`, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/subscriptions"] });
+      toast({ title: "Subscription updated successfully" });
+      setEditingUser(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to update subscription", variant: "destructive" });
+    },
+  });
+
+  if (user?.role !== "admin") {
+    return <Redirect to="/dashboard" />;
+  }
+
+  const filteredEmployers = employers.filter((e) => {
+    const matchesSearch = !search || 
+      e.firstName?.toLowerCase().includes(search.toLowerCase()) ||
+      e.lastName?.toLowerCase().includes(search.toLowerCase()) ||
+      e.email?.toLowerCase().includes(search.toLowerCase()) ||
+      e.companyName?.toLowerCase().includes(search.toLowerCase());
+    return matchesSearch;
+  });
+
+  const paginatedEmployers = usePagination(filteredEmployers, pageSize, page);
+
+  const paidCount = employers.filter(e => e.subscriptionStatus && e.subscriptionStatus !== "free").length;
+  const freeCount = employers.filter(e => !e.subscriptionStatus || e.subscriptionStatus === "free").length;
+
+  const openEditDialog = (employer: User) => {
+    setEditingUser(employer);
+    setEditForm({ 
+      subscriptionStatus: (employer.subscriptionStatus as "free" | "standard" | "premium" | "enterprise") || "free",
+      subscriptionEndDate: employer.subscriptionEndDate 
+        ? format(new Date(employer.subscriptionEndDate), "yyyy-MM-dd") 
+        : ""
+    });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingUser) return;
+    updateSubscriptionMutation.mutate({
+      userId: editingUser.id,
+      updates: {
+        subscriptionStatus: editForm.subscriptionStatus,
+        subscriptionEndDate: editForm.subscriptionEndDate || undefined,
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Subscription Management"
+        description="Manage employer and agent subscription plans"
+      />
+
+      <Card className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+        <CardContent className="flex items-center justify-between py-4 px-5">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div>
+              <Label htmlFor="restrict-free-toggle" className="font-medium text-sm cursor-pointer">
+                Restrict free-tier employer management
+              </Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When enabled, free-tier employers cannot manage jobs, update applicant status, or send offers.
+              </p>
+            </div>
+          </div>
+          <Switch
+            id="restrict-free-toggle"
+            data-testid="toggle-restrict-free"
+            checked={restrictFreeManagement}
+            disabled={toggleRestrictFreeMutation.isPending}
+            onCheckedChange={(checked) => toggleRestrictFreeMutation.mutate(checked)}
+          />
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Building2 className="w-4 h-4 text-blue-600" />
+              <span className="text-sm text-muted-foreground">Total Subscribers</span>
+            </div>
+            <p className="text-2xl font-bold">{employers.length}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Crown className="w-4 h-4 text-amber-600" />
+              <span className="text-sm text-muted-foreground">Paid Plans</span>
+            </div>
+            <p className="text-2xl font-bold">{paidCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Building2 className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Free Tier</span>
+            </div>
+            <p className="text-2xl font-bold">{freeCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or company..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-subscriptions"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px] shrink-0" data-testid="select-subscription-filter">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Subscriptions</SelectItem>
+                <SelectItem value="free">Basic (Free)</SelectItem>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
+                <SelectItem value="enterprise">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+              ))}
+            </div>
+          ) : filteredEmployers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>No subscribers found</p>
+            </div>
+          ) : (
+            <div className="space-y-2 overflow-x-auto">
+              {paginatedEmployers.map((employer) => (
+                <div
+                  key={employer.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                  data-testid={`subscription-row-${employer.id}`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                      {employer.profileImageUrl ? (
+                        <img src={employer.profileImageUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <Building2 className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">
+                        {employer.companyName || `${employer.firstName || ""} ${employer.lastName || ""}`.trim() || employer.email}
+                      </p>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <p className="text-sm text-muted-foreground truncate">{employer.email}</p>
+                        {employer.role === "agent" && (
+                          <Badge variant="outline" className="text-teal-700 border-teal-300 text-[10px] px-1.5 py-0 shrink-0">Agent</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 sm:ml-auto">
+                    <div className="text-right">
+                      {employer.subscriptionStatus === "enterprise" ? (
+                        <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                          <Crown className="w-3 h-3 mr-1" />
+                          Enterprise
+                        </Badge>
+                      ) : employer.subscriptionStatus === "premium" ? (
+                        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                          <Crown className="w-3 h-3 mr-1" />
+                          Premium
+                        </Badge>
+                      ) : employer.subscriptionStatus === "standard" ? (
+                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          Standard
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Basic</Badge>
+                      )}
+                      {employer.subscriptionEndDate && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Expires: {format(new Date(employer.subscriptionEndDate), "MMM d, yyyy")}
+                        </p>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="shrink-0" data-testid={`button-subscription-menu-${employer.id}`}>
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEditDialog(employer)}>
+                          Edit Subscription
+                        </DropdownMenuItem>
+                        {employer.subscriptionStatus !== "free" && (
+                          <DropdownMenuItem
+                            onClick={() => updateSubscriptionMutation.mutate({ 
+                              userId: employer.id, 
+                              updates: { subscriptionStatus: "free" } 
+                            })}
+                          >
+                            Reset to Basic (Free)
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+              <AdminPagination totalItems={filteredEmployers.length} currentPage={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Subscription</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Subscription Status</Label>
+              <Select 
+                value={editForm.subscriptionStatus} 
+                onValueChange={(v: "free" | "standard" | "premium" | "enterprise") => setEditForm({ ...editForm, subscriptionStatus: v })}
+              >
+                <SelectTrigger data-testid="select-edit-subscription">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Basic (Free)</SelectItem>
+                  <SelectItem value="standard">Standard (₦9,999/mo)</SelectItem>
+                  <SelectItem value="premium">Premium (₦24,999/mo)</SelectItem>
+                  <SelectItem value="enterprise">Enterprise (₦44,999/mo)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editForm.subscriptionStatus !== "free" && (
+              <div className="space-y-2">
+                <Label>Subscription End Date</Label>
+                <Input
+                  type="date"
+                  value={editForm.subscriptionEndDate}
+                  onChange={(e) => setEditForm({ ...editForm, subscriptionEndDate: e.target.value })}
+                  data-testid="input-subscription-end-date"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveEdit} 
+              disabled={updateSubscriptionMutation.isPending}
+              data-testid="button-save-subscription"
+            >
+              {updateSubscriptionMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

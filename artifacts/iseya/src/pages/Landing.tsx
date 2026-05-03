@@ -1,0 +1,982 @@
+import { useEffect, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
+import { Briefcase, ArrowRight, CheckCircle2, Star, Zap, Globe, Search, Building2, ChevronLeft, ChevronRight, Quote, UserPlus, FileSearch, Send, Handshake, ClipboardList, Users, BadgeCheck, MapPin, ChevronDown, UserCheck, Menu, X, CreditCard , Linkedin } from "lucide-react" ;
+import { SiInstagram, SiX, SiFacebook, SiTiktok } from "react-icons/si";
+import { Link, useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
+import workersImage from "@assets/file_0000000006b4722f93fd48732a248e00_1770125859585.png";
+import bannerImg1 from "@assets/file_00000000290071f4a0ad1bcee632895e_(1)_1770976988086.png";
+import bannerImg2 from "@assets/file_00000000290071f4a0ad1bcee632895e_1770976988300.png";
+import bannerImg3 from "@assets/file_00000000290071f4a0ad1bcee632895e_(2)_1770976988376.png";
+import NewsletterBar from "@/components/NewsletterBar";
+import PageAds from "@/components/PageAds";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import { usePageTitle } from "@/hooks/use-page-title";
+
+const bannerSlides = [
+  {
+    id: 1,
+    title: "Find Your Perfect Job",
+    subtitle: "Corporate, remote, freelance & casual opportunities across Nigeria",
+    image: bannerImg1,
+  },
+  {
+    id: 2,
+    title: "Hire Top Talent Fast",
+    subtitle: "Connect with skilled professionals and reliable workers instantly",
+    image: bannerImg2,
+  },
+  {
+    id: 3,
+    title: "Work Your Way",
+    subtitle: "Full-time, part-time, remote, freelance, or contract — you choose",
+    image: bannerImg3,
+  },
+];
+
+const testimonials = [
+  {
+    name: "Adewale Ogundimu",
+    role: "Delivery Rider, Lagos",
+    quote: "I found three delivery gigs within my first week on Iseya. The platform is so easy to use, and I love that I can pick jobs that fit my schedule.",
+    rating: 5,
+  },
+  {
+    name: "Chidinma Eze",
+    role: "Restaurant Owner, Abuja",
+    quote: "As a business owner, finding reliable part-time staff used to be a headache. With Iseya, I post a job and get qualified applicants within hours. It has saved me so much time.",
+    rating: 5,
+  },
+  {
+    name: "Tunde Bakare",
+    role: "Event Staff, Port Harcourt",
+    quote: "Iseya connected me with event companies I never knew existed in my area. I now work weekends at events and earn extra income to support my family.",
+    rating: 4,
+  },
+  {
+    name: "Funke Adeyemi",
+    role: "Hotel Manager, Lagos",
+    quote: "We hire temporary housekeeping staff through Iseya regularly. The workers are vetted and reliable. Our go-to platform for casual hires.",
+    rating: 5,
+  },
+  {
+    name: "Ibrahim Musa",
+    role: "Cleaner, Kano",
+    quote: "No CV needed, just my skills. I registered, applied, and got my first cleaning job the same day. Iseya is a game changer for people like me.",
+    rating: 5,
+  },
+  {
+    name: "Blessing Okafor",
+    role: "Catering Business, Enugu",
+    quote: "I use Iseya to find waiters and kitchen assistants whenever I have a big catering order. The subscription plan is affordable and worth every naira.",
+    rating: 4,
+  },
+];
+
+
+function TestimonialsCarousel({ testimonialIndex, setTestimonialIndex }: { testimonialIndex: number; setTestimonialIndex: (v: number | ((p: number) => number)) => void }) {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTestimonialIndex((prev: number) => (prev + 1) % testimonials.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [setTestimonialIndex]);
+
+  return (
+    <section className="py-24 bg-muted/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">What Our Members Say</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Real stories from workers and employers who found success on Iseya.</p>
+        </motion.div>
+
+        <div className="relative">
+          <div className="overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={testimonialIndex}
+                initial={{ opacity: 0, x: 80 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -80 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                className="grid md:grid-cols-2 gap-8"
+              >
+                {[0, 1].map((offset) => {
+                  const idx = (testimonialIndex + offset) % testimonials.length;
+                  const testimonial = testimonials[idx];
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-card p-8 rounded-md border shadow-sm relative"
+                      data-testid={`card-testimonial-${idx}`}
+                    >
+                      <Quote className="w-8 h-8 text-primary/20 absolute top-6 right-6" />
+                      <div className="flex gap-1 mb-4">
+                        {Array.from({ length: 5 }).map((_, s) => (
+                          <Star
+                            key={s}
+                            className={`w-4 h-4 ${s < testimonial.rating ? "text-primary fill-primary" : "text-muted-foreground/30"}`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-muted-foreground leading-relaxed mb-6">"{testimonial.quote}"</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                          {testimonial.name.split(" ").map(n => n[0]).join("")}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm" data-testid={`text-testimonial-name-${idx}`}>{testimonial.name}</div>
+                          <div className="text-xs text-muted-foreground">{testimonial.role}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <button
+            onClick={() => setTestimonialIndex((prev: number) => (prev - 1 + testimonials.length) % testimonials.length)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 p-2 rounded-full bg-card border shadow-sm text-foreground transition-colors"
+            aria-label="Previous testimonial"
+            data-testid="button-testimonial-prev"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setTestimonialIndex((prev: number) => (prev + 1) % testimonials.length)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 p-2 rounded-full bg-card border shadow-sm text-foreground transition-colors"
+            aria-label="Next testimonial"
+            data-testid="button-testimonial-next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 mt-8">
+          {testimonials.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setTestimonialIndex(i)}
+              className={`w-2.5 h-2.5 rounded-full transition-all ${
+                testimonialIndex === i ? "bg-primary w-6" : "bg-muted-foreground/30"
+              }`}
+              aria-label={`Go to testimonial ${i + 1}`}
+              data-testid={`button-testimonial-dot-${i}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function Landing() {
+  usePageTitle();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const [, setLocation] = useLocation();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [howItWorksTab, setHowItWorksTab] = useState<"seeker" | "employer">("seeker");
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+
+  const { data: appSettings } = useQuery<Record<string, string>>({
+    queryKey: ["/api/settings/public"],
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
+  }, []);
+
+  
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 100 },
+    },
+  };
+
+  return (
+    <div className="min-h-screen bg-background font-sans selection:bg-primary/20">
+      <Header />
+
+      <section className="relative pt-16 overflow-hidden">
+        <div className="relative h-48 sm:h-64 md:h-80 lg:h-96 w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0"
+            >
+              <img
+                src={bannerSlides[currentSlide].image}
+                alt={bannerSlides[currentSlide].title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/30" />
+              <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
+                <motion.h2
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-4 drop-shadow-lg"
+                >
+                  {bannerSlides[currentSlide].title}
+                </motion.h2>
+                <motion.p
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-lg sm:text-xl md:text-2xl text-white/90 max-w-2xl drop-shadow"
+                >
+                  {bannerSlides[currentSlide].subtitle}
+                </motion.p>
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="mt-6"
+                >
+                  <Link href="/browse-jobs">
+                    <Button size="lg" variant="secondary" className="font-semibold shadow-lg" data-testid="button-banner-browse">
+                      Browse Jobs
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
+                  </Link>
+                </motion.div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-sm"
+            aria-label="Previous slide"
+            data-testid="button-banner-prev"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors backdrop-blur-sm"
+            aria-label="Next slide"
+            data-testid="button-banner-next"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {bannerSlides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  currentSlide === index
+                    ? "bg-white w-8"
+                    : "bg-white/50 hover:bg-white/70"
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+                data-testid={`button-banner-dot-${index}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <PageAds page="landing" position="top" />
+      </div>
+
+      <section className="relative pt-16 pb-20 lg:pt-20 lg:pb-28 px-4 overflow-hidden">
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute top-0 right-0 -mr-40 -mt-40 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-50"
+        />
+        <motion.div
+          animate={{ scale: [1, 1.3, 1], rotate: [0, -90, 0] }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-0 left-0 -ml-40 -mb-40 w-96 h-96 bg-accent/20 rounded-full blur-3xl opacity-50"
+        />
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="max-w-7xl mx-auto text-center relative z-10"
+        >
+          <motion.h1
+            variants={itemVariants}
+            className="text-5xl md:text-7xl font-display font-extrabold text-foreground tracking-tight mb-6 text-balance leading-[1.1]"
+          >
+            Start Finding <span className="text-primary italic">Jobs</span> Today
+          </motion.h1>
+          <motion.p
+            variants={itemVariants}
+            className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 text-balance leading-relaxed"
+          >
+            Discover flexible work opportunities near you. No CV required, just your skills and availability.
+          </motion.p>
+
+          <motion.div
+            variants={itemVariants}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8"
+          >
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button size="lg" className="text-lg font-bold px-8 shadow-lg shadow-primary/20 group" data-testid="button-hero-dashboard">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/register">
+                <Button size="lg" className="text-lg font-bold px-8 shadow-lg shadow-primary/20 group" data-testid="button-hero-register">
+                  Get Started
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            )}
+            <Link href="/browse-jobs">
+              <Button size="lg" variant="outline" className="text-lg font-bold px-8" data-testid="button-hero-browse">
+                <Search className="mr-2 w-5 h-5" />
+                Browse Jobs
+              </Button>
+            </Link>
+          </motion.div>
+
+          {!isAuthenticated && (
+            <motion.p
+              variants={itemVariants}
+              className="mt-4 text-sm text-muted-foreground"
+            >
+              Already have an account?{" "}
+              <Link href="/login" className="text-primary font-semibold hover:underline" data-testid="link-hero-login">
+                Sign in here
+              </Link>
+            </motion.p>
+          )}
+        </motion.div>
+      </section>
+
+      <section className="py-20 border-y bg-muted/20">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { label: "Active Jobs", value: "2.5k+" },
+              { label: "Workers", value: "10k+" },
+              { label: "Cities", value: "50+" },
+              { label: "Rating", value: "4.9/5" }
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center"
+              >
+                <div className="text-3xl md:text-4xl font-display font-bold text-primary mb-1">{stat.value}</div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 bg-gradient-to-b from-muted/30 to-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8"
+          >
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-3" data-testid="text-search-heading">Find Jobs That Match You</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Search and discover flexible work opportunities near you.</p>
+          </motion.div>
+
+          <motion.form
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const query = (form.elements.namedItem("landingSearch") as HTMLInputElement).value.trim();
+              setLocation(query ? `/browse-jobs?q=${encodeURIComponent(query)}` : "/browse-jobs");
+            }}
+            className="max-w-2xl mx-auto mb-8"
+            data-testid="form-landing-search"
+          >
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  name="landingSearch"
+                  placeholder="Search jobs, categories, locations..."
+                  className="pl-12 h-12 rounded-xl text-base"
+                  data-testid="input-landing-search"
+                />
+              </div>
+              <Button type="submit" size="lg" className="h-12 rounded-xl px-6 font-semibold" data-testid="button-landing-search">
+                Search
+              </Button>
+            </div>
+          </motion.form>
+
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-center"
+          >
+            <p className="text-sm text-muted-foreground mb-3 font-medium">Popular Searches</p>
+            <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
+              {[
+                "Software Developer",
+                "Accountant",
+                "Sales Executive",
+                "Customer Service",
+                "Driver",
+                "Nurse",
+                "Admin & Office",
+                "Marketing",
+                "Engineering",
+                "Remote",
+                "Lagos",
+                "Abuja",
+                "Part-time",
+              ].map((tag) => (
+                <Link key={tag} href={`/browse-jobs?q=${encodeURIComponent(tag)}`}>
+                  <Badge
+                    variant="outline"
+                    className="px-3 py-1.5 text-sm cursor-pointer hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all"
+                    data-testid={`badge-popular-${tag.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    {tag}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+            <Link href="/browse-jobs" className="inline-block mt-5">
+              <Button variant="ghost" className="font-semibold text-primary gap-1" data-testid="link-view-all-jobs">
+                View All Jobs <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <PageAds page="landing" position="middle" />
+      </div>
+
+      <section className="py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-20"
+          >
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">Built for Modern Work</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Everything you need to find or list casual work in minutes.</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: <Zap className="w-8 h-8 text-primary" />,
+                title: "Instant Matching",
+                desc: "Our algorithm finds the best jobs near you instantly. No more endless searching."
+              },
+              {
+                icon: <Globe className="w-8 h-8 text-accent" />,
+                title: "Local Focus",
+                desc: "Find work right in your neighborhood. Support local businesses and save on commute."
+              },
+              {
+                icon: <Star className="w-8 h-8 text-yellow-500" />,
+                title: "Verified Trust",
+                desc: "Every user goes through a verification process to ensure a safe community for all."
+              }
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                className="bg-card p-10 rounded-3xl border shadow-sm group"
+              >
+                <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
+                  {feature.icon}
+                </div>
+                <h3 className="text-2xl font-bold mb-4">{feature.title}</h3>
+                <p className="text-muted-foreground text-lg leading-relaxed">{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-24 border-y bg-gradient-to-b from-background via-primary/[0.03] to-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">Simple & Fast</span>
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">How It Works</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Get started in just a few simple steps — whether you're looking for work or hiring.</p>
+          </motion.div>
+
+          <div className="flex items-center justify-center mb-14">
+            <div className="inline-flex rounded-full bg-muted p-1">
+              <button
+                onClick={() => setHowItWorksTab("seeker")}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${howItWorksTab === "seeker" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+                data-testid="button-how-seeker"
+              >
+                <Search className="w-4 h-4" />
+                I'm Looking for Work
+              </button>
+              <button
+                onClick={() => setHowItWorksTab("employer")}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${howItWorksTab === "employer" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+                data-testid="button-how-employer"
+              >
+                <Building2 className="w-4 h-4" />
+                I'm Hiring
+              </button>
+            </div>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={howItWorksTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+                {(howItWorksTab === "seeker" ? [
+                  {
+                    step: 1,
+                    icon: <UserPlus className="w-6 h-6" />,
+                    title: "Create Your Account",
+                    desc: "Sign up for free in under a minute. Set your role as a job seeker, add your age, skills, and location.",
+                    color: "from-blue-500/20 to-blue-600/5",
+                    iconBg: "bg-blue-500/10 text-blue-600",
+                  },
+                  {
+                    step: 2,
+                    icon: <FileSearch className="w-6 h-6" />,
+                    title: "Browse Jobs Near You",
+                    desc: "Search by category, location, and type. Filter for part-time, full-time, or temporary work that fits your schedule.",
+                    color: "from-amber-500/20 to-amber-600/5",
+                    iconBg: "bg-amber-500/10 text-amber-600",
+                  },
+                  {
+                    step: 3,
+                    icon: <Send className="w-6 h-6" />,
+                    title: "Apply Instantly",
+                    desc: "Found a job you like? Apply with one tap. No CV needed — just your skills and a short message to the employer.",
+                    color: "from-green-500/20 to-green-600/5",
+                    iconBg: "bg-green-500/10 text-green-600",
+                  },
+                  {
+                    step: 4,
+                    icon: <Handshake className="w-6 h-6" />,
+                    title: "Get Hired & Earn",
+                    desc: "Employers review your profile and accept your application. Agree on terms, start working, and get paid.",
+                    color: "from-purple-500/20 to-purple-600/5",
+                    iconBg: "bg-purple-500/10 text-purple-600",
+                  },
+                ] : [
+                  {
+                    step: 1,
+                    icon: <UserPlus className="w-6 h-6" />,
+                    title: "Register Your Business",
+                    desc: "Create an employer account with your company name, business category, and location. It only takes a minute.",
+                    color: "from-blue-500/20 to-blue-600/5",
+                    iconBg: "bg-blue-500/10 text-blue-600",
+                  },
+                  {
+                    step: 2,
+                    icon: <ClipboardList className="w-6 h-6" />,
+                    title: "Post a Job",
+                    desc: "Describe the role, set salary range, location, and requirements. Your listing goes live instantly for job seekers to find.",
+                    color: "from-amber-500/20 to-amber-600/5",
+                    iconBg: "bg-amber-500/10 text-amber-600",
+                  },
+                  {
+                    step: 3,
+                    icon: <Users className="w-6 h-6" />,
+                    title: "Review Applicants",
+                    desc: "Browse applications as they arrive. View candidate profiles, experience, and verification status to find the right fit.",
+                    color: "from-green-500/20 to-green-600/5",
+                    iconBg: "bg-green-500/10 text-green-600",
+                  },
+                  {
+                    step: 4,
+                    icon: <BadgeCheck className="w-6 h-6" />,
+                    title: "Hire & Get Started",
+                    desc: "Accept the best candidate, send them an offer, and fill your position quickly and reliably. It's that simple.",
+                    color: "from-purple-500/20 to-purple-600/5",
+                    iconBg: "bg-purple-500/10 text-purple-600",
+                  },
+                ]).map((item) => (
+                  <motion.div
+                    key={item.step}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: item.step * 0.1 }}
+                    className="relative group"
+                    data-testid={`step-${howItWorksTab}-${item.step}`}
+                  >
+                    <div className={`rounded-2xl border bg-gradient-to-b ${item.color} p-6 h-full transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shadow-sm">
+                          {item.step}
+                        </div>
+                        <div className="h-px flex-1 bg-border/60" />
+                      </div>
+                      <div className={`w-12 h-12 rounded-xl ${item.iconBg} flex items-center justify-center mb-4`}>
+                        {item.icon}
+                      </div>
+                      <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mb-14"
+              >
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold mb-1">
+                    {howItWorksTab === "seeker" ? "Watch: How to Find Jobs on Iṣéyá" : "Watch: How to Hire on Iṣéyá"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {howItWorksTab === "seeker" ? "See how easy it is to find and apply for casual jobs near you." : "See how quickly you can post a job and start receiving applicants."}
+                  </p>
+                </div>
+                <div className="max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-xl shadow-black/10 border border-border/40 bg-black aspect-video">
+                  <iframe
+                    className="w-full h-full"
+                    src={howItWorksTab === "seeker"
+                      ? "https://www.youtube.com/embed/y_1k2lhK76Q"
+                      : "https://www.youtube.com/embed/y_1k2lhK76Q"
+                    }
+                    title={howItWorksTab === "seeker" ? "Iṣéyá Job Seeker Demo" : "Iṣéyá Employer Demo"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    data-testid={`video-demo-${howItWorksTab}`}
+                  />
+                </div>
+              </motion.div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link href={howItWorksTab === "seeker" ? "/register" : "/register"}>
+                  <Button size="lg" className="gap-2 px-8 shadow-md" data-testid="button-how-get-started">
+                    {howItWorksTab === "seeker" ? "Start Finding Jobs" : "Start Hiring Today"}
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+                <Link href="/browse-jobs">
+                  <Button size="lg" variant="ghost" className="gap-2 text-muted-foreground" data-testid="button-how-browse">
+                    <Search className="w-4 h-4" />
+                    Browse Jobs First
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </section>
+
+      <TestimonialsCarousel testimonialIndex={testimonialIndex} setTestimonialIndex={setTestimonialIndex} />
+
+      <section className="py-20 bg-primary/5">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="w-16 h-16 mx-auto bg-accent/10 rounded-2xl flex items-center justify-center mb-6">
+              <Building2 className="w-8 h-8 text-accent" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Looking to Hire?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+              Post jobs and find reliable workers fast. Create an employer account and start hiring within minutes.
+            </p>
+            <Link href={isAuthenticated ? "/dashboard" : "/register"}>
+              <Button size="lg" className="font-bold px-8 group" data-testid="button-employer-cta">
+                {isAuthenticated ? "Go to Dashboard" : "Create Employer Account"}
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-20 bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <Badge className="mb-4 px-3 py-1 text-sm bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-400" data-testid="badge-become-agent">
+                <Briefcase className="w-3 h-3 mr-1.5" /> Earn Money on Iṣéyá
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Earn Money as a Recruitment Agent</h2>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                Turn your network into income. Join Iṣéyá as an agent, connect employers with verified workers, and earn commission on every successful placement. No office needed — work from anywhere in Nigeria.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  "Earn commission on every job placement you make",
+                  "Build a steady income stream with multiple clients",
+                  "No startup capital needed — start earning immediately",
+                  "Grow your recruitment business on your own terms",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/for-agents">
+                  <Button size="lg" className="font-bold gap-2 group bg-teal-600 hover:bg-teal-700 text-white" data-testid="button-become-agent">
+                    Start Earning Today <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button size="lg" variant="outline" className="font-medium gap-2" data-testid="button-register-agent">
+                    Register as Agent
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="grid grid-cols-2 gap-4"
+            >
+              {[
+                { icon: CreditCard, label: "Earn Per Placement", value: "Commission-based" },
+                { icon: Handshake, label: "Multiple Clients", value: "Unlimited earning" },
+                { icon: Users, label: "Verified Workers", value: "Ready to hire" },
+                { icon: Star, label: "Work Anywhere", value: "No office needed" },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-card p-5 rounded-xl border text-center" data-testid={`stat-agent-${stat.label.toLowerCase().replace(/\s/g, "-")}`}>
+                  <stat.icon className="w-8 h-8 text-teal-600 dark:text-teal-400 mx-auto mb-2" />
+                  <div className="font-bold text-sm">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-32 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl md:text-5xl font-display font-bold mb-8">Ready to jump in?</h2>
+              <div className="space-y-6">
+                {[
+                  "No resumes required",
+                  "Chat directly with employers",
+                  "Flexible working hours",
+                  "Interview Assistant",
+                  "24/7 Support",
+                  "100% Job Guarantee",
+                  "18+ Age protected community"
+                ].map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex items-center gap-4 group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center group-hover:bg-primary transition-colors">
+                      <CheckCircle2 className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
+                    </div>
+                    <span className="text-xl font-medium">{item}</span>
+                  </motion.div>
+                ))}
+              </div>
+              <div className="mt-10">
+                <Link href={isAuthenticated ? "/dashboard" : "/register"}>
+                  <Button size="lg" className="font-bold group" data-testid="button-bottom-register">
+                    {isAuthenticated ? "Go to Dashboard" : "Create Free Account"}
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-accent/30 rounded-3xl blur-2xl -z-10 animate-pulse" />
+              <img
+                src={workersImage}
+                alt="Nigerian casual workers - construction, hospitality, waitstaff, and cleaning professionals"
+                className="rounded-3xl shadow-2xl border-4 border-white dark:border-gray-800"
+              />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      <HiringCompaniesSection />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <PageAds page="landing" position="bottom" />
+      </div>
+
+      <Footer />
+
+      <NewsletterBar />
+    </div>
+  );
+}
+
+function HiringCompaniesSection() {
+  const { data: companies } = useQuery<Array<{ id: number; name: string; logoUrl: string; websiteUrl: string | null }>>({
+    queryKey: ["/api/hiring-companies"],
+  });
+
+  if (!companies || companies.length === 0) return null;
+
+  return (
+    <section className="py-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border-t border-gray-100 dark:border-gray-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          viewport={{ once: true }}
+          className="text-center mb-10"
+        >
+          <Badge className="bg-primary/10 text-primary border-primary/20 mb-3">
+            <Building2 className="w-3 h-3 mr-1" />
+            Trusted by Leading Brands
+          </Badge>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
+            Companies Currently Hiring in Nigeria
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Join thousands of professionals working with these top employers on Iṣéyá.
+          </p>
+        </motion.div>
+
+        <div
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6"
+          data-testid="grid-hiring-companies"
+        >
+          {companies.map((c, idx) => {
+            const inner = (
+              <div
+                className="aspect-square bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-center hover:shadow-lg hover:border-primary/40 transition-all duration-300 group"
+                data-testid={`logo-company-${c.id}`}
+              >
+                <img
+                  src={c.logoUrl}
+                  alt={c.name}
+                  title={c.name}
+                  loading="lazy"
+                  className="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 opacity-70 group-hover:opacity-100 transition-all duration-300"
+                />
+              </div>
+            );
+            return (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.04 }}
+                viewport={{ once: true }}
+              >
+                {c.websiteUrl ? (
+                  <a
+                    href={c.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Visit ${c.name}`}
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  inner
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
