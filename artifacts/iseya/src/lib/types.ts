@@ -105,7 +105,32 @@ export interface AdminPermissions {
   canManageTransactions?: boolean | null;
   canManageAds?: boolean | null;
   canManageHiringCompanies?: boolean | null;
+  canManageChats?: boolean | null;
   createdAt?: Date | null;
+}
+
+export interface ChatConversation {
+  id: number;
+  sessionId: string;
+  userId?: string | null;
+  visitorName?: string | null;
+  visitorEmail?: string | null;
+  mode: "bot" | "human";
+  status: "open" | "closed";
+  adminId?: string | null;
+  unreadForAdmin?: number | null;
+  unreadForUser?: number | null;
+  lastMessageAt?: string | null;
+  createdAt?: string | null;
+}
+
+export interface ChatMessage {
+  id: number;
+  conversationId: number;
+  sender: "user" | "bot" | "admin" | "system";
+  senderUserId?: string | null;
+  content: string;
+  createdAt?: string | null;
 }
 
 export interface Ticket {

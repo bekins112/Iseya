@@ -43,6 +43,8 @@ import GoogleAdCodes from "@/components/GoogleAdCodes";
 import AdminAgentCredits from "@/pages/AdminAgentCredits";
 import AdminAutomatedEmails from "@/pages/AdminAutomatedEmails";
 import AdminActivityLogs from "@/pages/AdminActivityLogs";
+import AdminChats from "@/pages/AdminChats";
+import ChatWidget from "@/components/ChatWidget";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
@@ -319,6 +321,12 @@ function Router() {
         </AuthenticatedLayout>
       </Route>
 
+      <Route path="/admin/chats">
+        <AuthenticatedLayout>
+          <AdminChats />
+        </AuthenticatedLayout>
+      </Route>
+
       <Route path="/admin">
         <AdminLogin />
       </Route>
@@ -339,6 +347,7 @@ function App() {
           <CookieConsent />
           <InstallPrompt />
           <ScrollToTopButton />
+          <ChatWidget />
         </WouterRouter>
       </TooltipProvider>
     </QueryClientProvider>

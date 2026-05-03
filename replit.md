@@ -37,6 +37,16 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Captcha: svg-captcha (requires `fonts/Comismsh.ttf`)
 - Internal shared code in `src/shared/` (routes.ts, models/auth.ts)
 
+### Chatbot widget (Iṣéyá)
+- Floating chat bubble (`artifacts/iseya/src/components/ChatWidget.tsx`) mounted in `App.tsx` (hidden on `/admin/*`, `/onboarding`, `/verify-email`).
+- Visitor session id stored in `localStorage` key `iseya_chat_session_id`.
+- Polls `/api/chat/:sessionId/messages?since=` every 4s.
+- Bot powered by Anthropic via Replit AI Integrations (`AI_INTEGRATIONS_ANTHROPIC_*` env vars; auto-provisioned by `setupReplitAIIntegrations`). Model: `claude-sonnet-4-6`. SDK: `@anthropic-ai/sdk` (api-server dep).
+- "Talk to a human" flips `chat_conversations.mode` to `human` and queues for admin (`unreadForAdmin++`).
+- Admin page `AdminChats.tsx` at `/admin/chats` (sidebar link gated by `canManageChats` perm). Polls `/api/admin/chat/conversations` every 5s. Take over / Return to bot / Close.
+- DB tables: `chat_conversations`, `chat_messages` in `lib/db/src/schema/schema.ts`. Permission column `canManageChats` added to `admin_permissions`.
+- All chat routes registered in `artifacts/api-server/src/routes/chat.ts` (mounted via `registerChatRoutes(app)` at end of `registerRoutes`).
+
 ### `lib/db` — Database Package
 - Drizzle ORM schema in `src/schema/` (table definitions only, no drizzle-zod)
 - Zod schemas in `src/zod-schemas.ts` (separate from schema files to avoid drizzle-kit conflicts)

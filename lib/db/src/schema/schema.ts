@@ -180,6 +180,7 @@ export const adminPermissions = pgTable("admin_permissions", {
   canManageActivityLogs: boolean("can_manage_activity_logs").default(false),
   canManageHiringCompanies: boolean("can_manage_hiring_companies").default(false),
   canManageGoogleSettings: boolean("can_manage_google_settings").default(false),
+  canManageChats: boolean("can_manage_chats").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -381,6 +382,42 @@ export const fileUploads = pgTable("file_uploads", {
   mimeType: varchar("mime_type").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Visitor/user chatbot conversations + admin handoff
+export const chatConversations = pgTable("chat_conversations", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  sessionId: varchar("session_id").notNull().unique(),
+  accessToken: varchar("access_token"),
+  userId: varchar("user_id").references(() => users.id),
+  visitorName: varchar("visitor_name"),
+  visitorEmail: varchar("visitor_email"),
+  mode: varchar("mode").notNull().default("bot"),
+  status: varchar("status").notNull().default("open"),
+  adminId: varchar("admin_id").references(() => users.id),
+  unreadForAdmin: integer("unread_for_admin").default(0),
+  unreadForUser: integer("unread_for_user").default(0),
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  statusLastIdx: index("chat_conv_status_last_idx").on(t.status, t.lastMessageAt),
+}));
+
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatConversation = typeof chatConversations.$inferInsert;
+
+export const chatMessages = pgTable("chat_messages", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  conversationId: integer("conversation_id").notNull().references(() => chatConversations.id, { onDelete: "cascade" }),
+  sender: varchar("sender").notNull(),
+  senderUserId: varchar("sender_user_id").references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (t) => ({
+  convIdx: index("chat_msg_conv_idx").on(t.conversationId, t.id),
+}));
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;

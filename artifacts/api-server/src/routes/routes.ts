@@ -13,6 +13,7 @@ import { jobs } from "@workspace/db";
 import * as scheduler from "../scheduler";
 import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, createNewAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema } from "@workspace/db";
 import { logActivity } from "../activity-logger";
+import { registerChatRoutes } from "./chat";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -4826,6 +4827,9 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to clear activity logs" });
     }
   });
+
+  // Visitor + admin chat (bot with human handoff)
+  registerChatRoutes(app);
 
   return httpServer;
 }
