@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: var(--slide-primary);
+  --color-accent: var(--slide-accent);
+  --color-bg: var(--slide-bg);
+  --color-cream: var(--slide-cream);
+  --color-text: var(--slide-text);
+  --color-ink: var(--slide-ink);
+  --color-muted: var(--slide-muted);
+  --color-card: var(--slide-card);
+  --font-display: var(--font-display-family);
+  --font-body: var(--font-body-family);
+}
+
+:root {
+  /* Iṣéyá brand palette — derived exactly from artifacts/iseya/src/index.css HSL tokens */
+  --slide-primary: #f2b90d;     /* HSL 45 90% 50% — primary yellow-gold */
+  --slide-accent: #e6ac00;      /* HSL 45 100% 45% — accent deeper gold */
+  --slide-bg: #fffdf5;          /* HSL 48 100% 98% — cream background */
+  --slide-cream: #fcfaf3;       /* HSL 48 60% 97% — card cream */
+  --slide-text: #241f0f;        /* HSL 45 40% 10% — warm ink (foreground) */
+  --slide-ink: #241f0f;         /* same warm ink for hero panels */
+  --slide-muted: #756e57;       /* HSL 45 15% 40% — muted-foreground */
+  --slide-card: #fcfaf3;        /* HSL 48 60% 97% — card */
+  --font-display-family: "Outfit", system-ui, sans-serif;
+  --font-body-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--slide-bg);
+  color: var(--slide-text);
+  font-family: var(--font-body-family);
+}
+
+.slide {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.slide-viewer {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}

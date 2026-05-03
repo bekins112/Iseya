@@ -1,0 +1,98 @@
+[
+  {
+    "id": "11111111-1111-4111-8111-000000000001",
+    "position": 1,
+    "filepath": "src/pages/slides/Cover.tsx",
+    "title": "Cover",
+    "description": "Title slide — Iṣéyá: Nigeria's casual work marketplace.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000002",
+    "position": 2,
+    "filepath": "src/pages/slides/Problem.tsx",
+    "title": "The Problem",
+    "description": "Casual work in Nigeria is stuck offline.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000003",
+    "position": 3,
+    "filepath": "src/pages/slides/Solution.tsx",
+    "title": "The Solution",
+    "description": "A mobile-first marketplace for Nigerian work.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000004",
+    "position": 4,
+    "filepath": "src/pages/slides/Product.tsx",
+    "title": "The Product",
+    "description": "Role-based experiences with verification and Naira-native payments.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000005",
+    "position": 5,
+    "filepath": "src/pages/slides/Market.tsx",
+    "title": "Market Opportunity",
+    "description": "Africa's largest informal labour market is going online.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000006",
+    "position": 6,
+    "filepath": "src/pages/slides/BusinessModel.tsx",
+    "title": "Business Model",
+    "description": "Tiered subscriptions, Naira-native, paid via Paystack and Flutterwave.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000007",
+    "position": 7,
+    "filepath": "src/pages/slides/Traction.tsx",
+    "title": "What's Already Built",
+    "description": "Verification, RBAC, email automation, Facebook auto-posting and more.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000008",
+    "position": 8,
+    "filepath": "src/pages/slides/CompetitiveEdge.tsx",
+    "title": "Competitive Edge",
+    "description": "Local-first, trust layer, agent network and dual payment rails.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000009",
+    "position": 9,
+    "filepath": "src/pages/slides/GoToMarket.tsx",
+    "title": "Go-to-Market",
+    "description": "City-by-city, supply-side first.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000010",
+    "position": 10,
+    "filepath": "src/pages/slides/Team.tsx",
+    "title": "Team",
+    "description": "Founding team — placeholder names to replace before sending.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000011",
+    "position": 11,
+    "filepath": "src/pages/slides/TheAsk.tsx",
+    "title": "The Ask",
+    "description": "Seed round, use of funds and 18-month milestones.",
+    "speakerNotes": ""
+  },
+  {
+    "id": "11111111-1111-4111-8111-000000000012",
+    "position": 12,
+    "filepath": "src/pages/slides/Closing.tsx",
+    "title": "Closing",
+    "description": "Build the future of work in Nigeria — contact and call to action.",
+    "speakerNotes": ""
+  }
+]

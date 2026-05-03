@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/pitch/"
+title = "Iṣéyá Investor Pitch"
+version = "1.0.0"
+id = "artifacts/iseya-investor-pitch"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/pitch/" ]
+localPort = 21635
+
+[services.development]
+run = "pnpm --filter @workspace/iseya-investor-pitch run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/iseya-investor-pitch", "run", "build" ]
+publicDir = "artifacts/iseya-investor-pitch/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21635"
+BASE_PATH = "/pitch/"
