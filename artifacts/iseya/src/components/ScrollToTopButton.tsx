@@ -31,7 +31,7 @@ export default function ScrollToTopButton() {
       onClick={scrollToTop}
       data-testid="button-scroll-to-top"
       className={cn(
-        "fixed z-40 bottom-6 right-6 md:bottom-8 md:right-8",
+        "fixed z-40 bottom-6 right-6 md:bottom-24 md:right-6",
         "h-11 w-11 md:h-12 md:w-12 rounded-full",
         "bg-primary text-primary-foreground shadow-lg",
         "flex items-center justify-center",
