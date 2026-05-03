@@ -3,6 +3,7 @@ import { MessageCircle, X, Send, UserRound, Bot, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import type { ChatConversation, ChatMessage } from "@/lib/types";
+import { playNotificationSound } from "@/lib/notificationSound";
 
 const STORAGE_KEY = "iseya_chat_credentials_v1";
 const POLL_INTERVAL_MS = 4000;
@@ -186,11 +187,12 @@ export default function ChatWidget() {
           conversation: data.conversation || s.conversation,
           messages: [...s.messages, ...newMsgs],
         }));
-        if (!open) {
-          const inbound = newMsgs.filter(
-            (m) => m.sender === "bot" || m.sender === "admin" || m.sender === "system",
-          ).length;
-          if (inbound) setUnread((u) => u + inbound);
+        const inbound = newMsgs.filter(
+          (m) => m.sender === "bot" || m.sender === "admin" || m.sender === "system",
+        ).length;
+        if (inbound) {
+          playNotificationSound();
+          if (!open) setUnread((u) => u + inbound);
         }
       } else if (data.conversation) {
         setState((s) => ({ ...s, conversation: data.conversation }));

@@ -12,6 +12,7 @@ import { usePageTitle } from "@/hooks/use-page-title";
 import type { ChatConversation, ChatMessage } from "@/lib/types";
 import { MessageCircle, Send, X, Bot, UserRound, RefreshCw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { playNotificationSound } from "@/lib/notificationSound";
 
 export default function AdminChats() {
   usePageTitle("Admin Chats");
@@ -127,6 +128,36 @@ export default function AdminChats() {
     (n, c) => n + (c.unreadForAdmin || 0),
     0,
   );
+
+  // Beep when total unread for admin grows (new visitor messages arrived).
+  const lastUnreadRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (lastUnreadRef.current === null) {
+      lastUnreadRef.current = totalUnread;
+      return;
+    }
+    if (totalUnread > lastUnreadRef.current) {
+      playNotificationSound();
+    }
+    lastUnreadRef.current = totalUnread;
+  }, [totalUnread]);
+
+  // Beep when a new visitor message arrives in the currently open detail view.
+  const lastDetailMsgIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    const msgs = detail?.messages;
+    if (!msgs || msgs.length === 0) return;
+    const lastId = msgs[msgs.length - 1].id;
+    const lastSender = msgs[msgs.length - 1].sender;
+    if (lastDetailMsgIdRef.current === null) {
+      lastDetailMsgIdRef.current = lastId;
+      return;
+    }
+    if (lastId > lastDetailMsgIdRef.current && lastSender === "user") {
+      playNotificationSound();
+    }
+    lastDetailMsgIdRef.current = lastId;
+  }, [detail?.messages]);
 
   return (
     <div>
