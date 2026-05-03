@@ -58,6 +58,7 @@ export const insertAdminPermissionsSchema = z.object({
   canManageActivityLogs: z.boolean().default(false),
   canManageHiringCompanies: z.boolean().default(false),
   canManageGoogleSettings: z.boolean().default(false),
+  canManageChats: z.boolean().default(false),
   createdBy: z.string().optional().nullable(),
 });
 
@@ -80,6 +81,7 @@ export const updateAdminPermissionsSchema = z.object({
   canManageActivityLogs: z.boolean().optional(),
   canManageHiringCompanies: z.boolean().optional(),
   canManageGoogleSettings: z.boolean().optional(),
+  canManageChats: z.boolean().optional(),
 });
 
 export const adminUpdateUserSchema = z.object({
@@ -142,6 +144,7 @@ export const createSubAdminSchema = z.object({
     canManageActivityLogs: z.boolean().optional(),
     canManageHiringCompanies: z.boolean().optional(),
     canManageGoogleSettings: z.boolean().optional(),
+    canManageChats: z.boolean().optional(),
   }),
 });
 
@@ -169,6 +172,7 @@ export const createNewAdminSchema = z.object({
     canManageActivityLogs: z.boolean().optional(),
     canManageHiringCompanies: z.boolean().optional(),
     canManageGoogleSettings: z.boolean().optional(),
+    canManageChats: z.boolean().optional(),
   }),
 });
 

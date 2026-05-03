@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus, Megaphone, Coins, Mail, MonitorPlay, Activity, Building2 } from "lucide-react";
+import { Shield, UserPlus, MoreVertical, Trash2, Settings, Users, Briefcase, FileText, Eye, Crown, DollarSign, Ticket, Flag, ShieldCheck, Bell, SlidersHorizontal, Plus, Megaphone, Coins, Mail, MonitorPlay, Activity, Building2, MessageCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
@@ -41,6 +41,7 @@ const defaultPermissions = {
   canManageActivityLogs: false,
   canManageHiringCompanies: false,
   canManageGoogleSettings: false,
+  canManageChats: false,
 };
 
 const permissionLabels = [
@@ -61,6 +62,7 @@ const permissionLabels = [
   { key: "canManageGoogleSettings", label: "Google Settings", icon: MonitorPlay, description: "Can configure Google AdSense, Google Ads, and Analytics" },
   { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform-wide configuration" },
   { key: "canManageActivityLogs", label: "Activity Logs", icon: Activity, description: "Can view and clear platform activity logs" },
+  { key: "canManageChats", label: "Manage Live Chats", icon: MessageCircle, description: "Can take over visitor chats from the bot and reply as the Iṣéyá team" },
   { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
 ];
 
@@ -182,6 +184,7 @@ export default function AdminSubAdmins() {
         canManageActivityLogs: admin.permissions.canManageActivityLogs || false,
         canManageHiringCompanies: admin.permissions.canManageHiringCompanies || false,
         canManageGoogleSettings: admin.permissions.canManageGoogleSettings || false,
+        canManageChats: admin.permissions.canManageChats || false,
       });
     }
   };
@@ -290,6 +293,7 @@ export default function AdminSubAdmins() {
                           {admin.permissions.canManageGoogleSettings && <Badge variant="outline" className="text-xs">Google Settings</Badge>}
                           {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Settings</Badge>}
                           {admin.permissions.canManageActivityLogs && <Badge variant="outline" className="text-xs">Activity Logs</Badge>}
+                          {admin.permissions.canManageChats && <Badge variant="outline" className="text-xs">Chats</Badge>}
                           {admin.permissions.canManageAdmins && <Badge variant="outline" className="text-xs">Admins</Badge>}
                         </>
                       )}

@@ -1014,6 +1014,7 @@ export async function registerRoutes(
         canManageActivityLogs: input.permissions.canManageActivityLogs ?? false,
         canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
         canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
+        canManageChats: input.permissions.canManageChats ?? false,
       });
       
       res.status(201).json(adminPerms);
@@ -1069,6 +1070,7 @@ export async function registerRoutes(
         canManageActivityLogs: input.permissions.canManageActivityLogs ?? false,
         canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
         canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
+        canManageChats: input.permissions.canManageChats ?? false,
       });
 
       res.status(201).json(adminPerms);
