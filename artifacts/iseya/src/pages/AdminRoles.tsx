@@ -71,6 +71,24 @@ const permissionLabels = [
 
 type PermKey = (typeof permissionLabels)[number]["key"];
 
+const DEFAULT_ROLE_COLOR = "#64748b";
+
+const ROLE_COLOR_PRESETS = [
+  { value: "#0ea5e9", label: "Sky" },
+  { value: "#16a34a", label: "Green" },
+  { value: "#a855f7", label: "Purple" },
+  { value: "#f59e0b", label: "Amber" },
+  { value: "#ef4444", label: "Red" },
+  { value: "#ec4899", label: "Pink" },
+  { value: "#14b8a6", label: "Teal" },
+  { value: "#6366f1", label: "Indigo" },
+  { value: "#64748b", label: "Slate" },
+];
+
+function isValidHex(c: string) {
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c);
+}
+
 function emptyPerms(): Record<PermKey, boolean> {
   const init = {} as Record<PermKey, boolean>;
   for (const p of permissionLabels) init[p.key] = p.key === "canViewStats";
@@ -86,6 +104,7 @@ export default function AdminRoles() {
   const [removing, setRemoving] = useState<AdminRole | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [color, setColor] = useState<string>(DEFAULT_ROLE_COLOR);
   const [perms, setPerms] = useState<Record<PermKey, boolean>>(emptyPerms());
 
   if (user && user.role !== "admin") return <Redirect to="/dashboard" />;
@@ -99,6 +118,7 @@ export default function AdminRoles() {
       const res = await apiRequest("POST", "/api/admin/roles", {
         name: name.trim(),
         description: description.trim() || null,
+        color: isValidHex(color) ? color : null,
         ...perms,
       });
       return res.json();
@@ -120,6 +140,7 @@ export default function AdminRoles() {
       const res = await apiRequest("PATCH", `/api/admin/roles/${editing.id}`, {
         name: name.trim(),
         description: description.trim() || null,
+        color: isValidHex(color) ? color : null,
         ...perms,
       });
       return res.json();
@@ -155,6 +176,7 @@ export default function AdminRoles() {
     setEditing(null);
     setName("");
     setDescription("");
+    setColor(DEFAULT_ROLE_COLOR);
     setPerms(emptyPerms());
     setDialogOpen(true);
   }
@@ -163,6 +185,7 @@ export default function AdminRoles() {
     setEditing(role);
     setName(role.name);
     setDescription(role.description || "");
+    setColor(role.color && isValidHex(role.color) ? role.color : DEFAULT_ROLE_COLOR);
     const next = emptyPerms();
     for (const p of permissionLabels) next[p.key] = !!(role as any)[p.key];
     setPerms(next);
@@ -239,6 +262,12 @@ export default function AdminRoles() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          aria-hidden="true"
+                          className="inline-block w-3 h-3 rounded-full border border-border shrink-0"
+                          style={{ backgroundColor: role.color && isValidHex(role.color) ? role.color : DEFAULT_ROLE_COLOR }}
+                          data-testid={`role-color-${role.id}`}
+                        />
                         <p className="font-medium">{role.name}</p>
                         {role.isSystem && <Badge variant="secondary">System</Badge>}
                         <Badge variant="outline" className="text-xs">
@@ -323,6 +352,49 @@ export default function AdminRoles() {
                 rows={2}
                 data-testid="input-role-description"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Color</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                {ROLE_COLOR_PRESETS.map((preset) => {
+                  const selected = color.toLowerCase() === preset.value.toLowerCase();
+                  return (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => setColor(preset.value)}
+                      title={preset.label}
+                      aria-label={`Color ${preset.label}`}
+                      aria-pressed={selected}
+                      className={`w-7 h-7 rounded-full border-2 transition-transform ${
+                        selected ? "border-foreground scale-110" : "border-border hover:scale-105"
+                      }`}
+                      style={{ backgroundColor: preset.value }}
+                      data-testid={`color-preset-${preset.label.toLowerCase()}`}
+                    />
+                  );
+                })}
+                <div className="flex items-center gap-2 ml-auto">
+                  <input
+                    type="color"
+                    value={isValidHex(color) ? color : DEFAULT_ROLE_COLOR}
+                    onChange={(e) => setColor(e.target.value)}
+                    className="w-9 h-9 rounded cursor-pointer border border-border bg-transparent"
+                    aria-label="Pick custom color"
+                    data-testid="input-role-color"
+                  />
+                  <Input
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    placeholder="#64748b"
+                    className="w-28 font-mono text-xs"
+                    data-testid="input-role-color-hex"
+                  />
+                </div>
+              </div>
+              {!isValidHex(color) && (
+                <p className="text-xs text-destructive">Enter a valid hex color (e.g. #0ea5e9). Defaults will be used otherwise.</p>
+              )}
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
