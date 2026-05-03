@@ -46,25 +46,25 @@ const defaultPermissions = {
 };
 
 const permissionLabels = [
-  { key: "canViewStats", label: "View Statistics", icon: Eye, description: "Can view platform stats and analytics" },
-  { key: "canManageUsers", label: "Manage Users", icon: Users, description: "Can view, edit, and manage all users" },
-  { key: "canManageJobs", label: "Manage Jobs", icon: Briefcase, description: "Can edit, activate/deactivate, and delete jobs" },
-  { key: "canManageApplications", label: "Manage Applications", icon: FileText, description: "Can view and manage all applications" },
-  { key: "canManageSubscriptions", label: "Manage Subscriptions", icon: Crown, description: "Can view and update user subscriptions" },
-  { key: "canManageTransactions", label: "View Transactions", icon: DollarSign, description: "Can view transaction history and revenue stats" },
-  { key: "canManageTickets", label: "Manage Tickets", icon: Ticket, description: "Can view and respond to support tickets" },
-  { key: "canManageReports", label: "Manage Reports", icon: Flag, description: "Can review and resolve user reports" },
-  { key: "canManageVerifications", label: "Manage Verifications", icon: ShieldCheck, description: "Can approve or reject verification requests" },
-  { key: "canManageNotifications", label: "Send Notifications", icon: Bell, description: "Can create and manage platform notifications" },
-  { key: "canManageAutomatedEmails", label: "Automated Emails", icon: Mail, description: "Can manage automated email schedules and send newsletters" },
-  { key: "canManageAds", label: "Manage Ads & Popups", icon: Megaphone, description: "Can create and manage internal ads and popups" },
-  { key: "canManageAgentCredits", label: "Manage Agent Credits", icon: Coins, description: "Can add, deduct, or set agent job post credits" },
-  { key: "canManageHiringCompanies", label: "Manage Hiring Companies", icon: Building2, description: "Can add, edit, and remove featured hiring companies" },
-  { key: "canManageGoogleSettings", label: "Google Settings", icon: MonitorPlay, description: "Can configure Google AdSense, Google Ads, and Analytics" },
-  { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform-wide configuration" },
-  { key: "canManageActivityLogs", label: "Activity Logs", icon: Activity, description: "Can view and clear platform activity logs" },
-  { key: "canManageChats", label: "Manage Live Chats", icon: MessageCircle, description: "Can take over visitor chats from the bot and reply as the Iṣéyá team" },
-  { key: "canManageAdmins", label: "Manage Admins", icon: Shield, description: "Can create and manage other sub-admins" },
+  { key: "canViewStats", label: "View Statistics", short: "Stats", icon: Eye, description: "Can view platform stats and analytics" },
+  { key: "canManageUsers", label: "Manage Users", short: "Users", icon: Users, description: "Can view, edit, and manage all users" },
+  { key: "canManageJobs", label: "Manage Jobs", short: "Jobs", icon: Briefcase, description: "Can edit, activate/deactivate, and delete jobs" },
+  { key: "canManageApplications", label: "Manage Applications", short: "Apps", icon: FileText, description: "Can view and manage all applications" },
+  { key: "canManageSubscriptions", label: "Manage Subscriptions", short: "Subs", icon: Crown, description: "Can view and update user subscriptions" },
+  { key: "canManageTransactions", label: "View Transactions", short: "Txns", icon: DollarSign, description: "Can view transaction history and revenue stats" },
+  { key: "canManageTickets", label: "Manage Tickets", short: "Tickets", icon: Ticket, description: "Can view and respond to support tickets" },
+  { key: "canManageReports", label: "Manage Reports", short: "Reports", icon: Flag, description: "Can review and resolve user reports" },
+  { key: "canManageVerifications", label: "Manage Verifications", short: "Verify", icon: ShieldCheck, description: "Can approve or reject verification requests" },
+  { key: "canManageNotifications", label: "Send Notifications", short: "Notifs", icon: Bell, description: "Can create and manage platform notifications" },
+  { key: "canManageAutomatedEmails", label: "Automated Emails", short: "Emails", icon: Mail, description: "Can manage automated email schedules and send newsletters" },
+  { key: "canManageAds", label: "Manage Ads & Popups", short: "Ads", icon: Megaphone, description: "Can create and manage internal ads and popups" },
+  { key: "canManageAgentCredits", label: "Manage Agent Credits", short: "Agent Credits", icon: Coins, description: "Can add, deduct, or set agent job post credits" },
+  { key: "canManageHiringCompanies", label: "Manage Hiring Companies", short: "Hiring Companies", icon: Building2, description: "Can add, edit, and remove featured hiring companies" },
+  { key: "canManageGoogleSettings", label: "Google Settings", short: "Google Settings", icon: MonitorPlay, description: "Can configure Google AdSense, Google Ads, and Analytics" },
+  { key: "canManageSettings", label: "Platform Settings", short: "Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform-wide configuration" },
+  { key: "canManageActivityLogs", label: "Activity Logs", short: "Activity Logs", icon: Activity, description: "Can view and clear platform activity logs" },
+  { key: "canManageChats", label: "Manage Live Chats", short: "Chats", icon: MessageCircle, description: "Can take over visitor chats from the bot and reply as the Iṣéyá team" },
+  { key: "canManageAdmins", label: "Manage Admins", short: "Admins", icon: Shield, description: "Can create and manage other sub-admins" },
 ];
 
 export default function AdminSubAdmins() {
@@ -281,39 +281,79 @@ export default function AdminSubAdmins() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="hidden md:flex flex-wrap gap-1 max-w-[340px] items-center">
-                      {admin.assignedRole && (
-                        <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
-                          <ShieldCheck className="w-3 h-3 mr-1" />
-                          {admin.assignedRole.name}
-                        </Badge>
-                      )}
-                      {!admin.permissions ? (
-                        <Badge className="text-xs">Full Access</Badge>
-                      ) : (
-                        <>
-                          {admin.permissions.canViewStats && <Badge variant="outline" className="text-xs">Stats</Badge>}
-                          {admin.permissions.canManageUsers && <Badge variant="outline" className="text-xs">Users</Badge>}
-                          {admin.permissions.canManageJobs && <Badge variant="outline" className="text-xs">Jobs</Badge>}
-                          {admin.permissions.canManageApplications && <Badge variant="outline" className="text-xs">Apps</Badge>}
-                          {admin.permissions.canManageSubscriptions && <Badge variant="outline" className="text-xs">Subs</Badge>}
-                          {admin.permissions.canManageTransactions && <Badge variant="outline" className="text-xs">Txns</Badge>}
-                          {admin.permissions.canManageTickets && <Badge variant="outline" className="text-xs">Tickets</Badge>}
-                          {admin.permissions.canManageReports && <Badge variant="outline" className="text-xs">Reports</Badge>}
-                          {admin.permissions.canManageVerifications && <Badge variant="outline" className="text-xs">Verify</Badge>}
-                          {admin.permissions.canManageNotifications && <Badge variant="outline" className="text-xs">Notifs</Badge>}
-                          {admin.permissions.canManageAutomatedEmails && <Badge variant="outline" className="text-xs">Emails</Badge>}
-                          {admin.permissions.canManageAds && <Badge variant="outline" className="text-xs">Ads</Badge>}
-                          {admin.permissions.canManageAgentCredits && <Badge variant="outline" className="text-xs">Agent Credits</Badge>}
-                          {admin.permissions.canManageHiringCompanies && <Badge variant="outline" className="text-xs">Hiring Companies</Badge>}
-                          {admin.permissions.canManageGoogleSettings && <Badge variant="outline" className="text-xs">Google Settings</Badge>}
-                          {admin.permissions.canManageSettings && <Badge variant="outline" className="text-xs">Settings</Badge>}
-                          {admin.permissions.canManageActivityLogs && <Badge variant="outline" className="text-xs">Activity Logs</Badge>}
-                          {admin.permissions.canManageChats && <Badge variant="outline" className="text-xs">Chats</Badge>}
-                          {admin.permissions.canManageAdmins && <Badge variant="outline" className="text-xs">Admins</Badge>}
-                        </>
-                      )}
-                    </div>
+                    {(() => {
+                      const role = admin.assignedRole;
+                      const perms = admin.permissions;
+                      const fromRole = (key: string) =>
+                        !!role && !!role[key as keyof AdminRole];
+                      const overrideOnly = (key: string) =>
+                        !!perms && !!perms[key as keyof AdminPermissions] && !fromRole(key);
+                      const roleBadges = perms
+                        ? permissionLabels.filter((p) => fromRole(p.key))
+                        : [];
+                      const overrideBadges = perms
+                        ? permissionLabels.filter((p) => overrideOnly(p.key))
+                        : [];
+                      const hasAny = roleBadges.length > 0 || overrideBadges.length > 0;
+                      return (
+                        <div
+                          className="hidden md:flex flex-col items-end gap-1 max-w-[360px]"
+                          data-testid={`admin-badges-${admin.id}`}
+                        >
+                          <div className="flex flex-wrap gap-1 justify-end items-center">
+                            {role && (
+                              <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
+                                <ShieldCheck className="w-3 h-3 mr-1" />
+                                {role.name}
+                              </Badge>
+                            )}
+                            {!perms ? (
+                              <Badge className="text-xs">Full Access</Badge>
+                            ) : (
+                              <>
+                                {roleBadges.map((p) => (
+                                  <Badge
+                                    key={`role-${p.key}`}
+                                    title={`From role${role ? ` "${role.name}"` : ""}: ${p.label}`}
+                                    className="text-xs bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
+                                    data-testid={`badge-role-${admin.id}-${p.key}`}
+                                  >
+                                    {p.short}
+                                  </Badge>
+                                ))}
+                                {overrideBadges.map((p) => (
+                                  <Badge
+                                    key={`override-${p.key}`}
+                                    variant="outline"
+                                    title={`Per-user override: ${p.label}`}
+                                    className="text-xs"
+                                    data-testid={`badge-override-${admin.id}-${p.key}`}
+                                  >
+                                    {p.short}
+                                  </Badge>
+                                ))}
+                              </>
+                            )}
+                          </div>
+                          {perms && hasAny && (role || overrideBadges.length > 0) && (
+                            <div className="flex flex-wrap gap-2 items-center text-[10px] text-muted-foreground justify-end">
+                              {role && roleBadges.length > 0 && (
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="inline-block w-2 h-2 rounded-sm bg-primary/40 border border-primary/40" />
+                                  from role
+                                </span>
+                              )}
+                              {overrideBadges.length > 0 && (
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="inline-block w-2 h-2 rounded-sm border border-border bg-background" />
+                                  per-user override
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     {admin.id !== user?.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
