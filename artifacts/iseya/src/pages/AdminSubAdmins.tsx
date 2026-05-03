@@ -501,43 +501,121 @@ export default function AdminSubAdmins() {
               Update permissions for {editingAdmin?.firstName || editingAdmin?.email}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4 overflow-y-auto flex-1">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Role</Label>
-              <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
-                <SelectTrigger data-testid="select-role-edit">
-                  <SelectValue placeholder="No role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No role — use per-user permissions only</SelectItem>
-                  {roles.map((r) => (
-                    <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Effective access = role permissions OR per-user overrides below.
-              </p>
-            </div>
-            <Label>Per-user Overrides</Label>
-            {permissionLabels.map((perm) => (
-              <div key={perm.key} className="flex items-center justify-between p-3 rounded-lg border">
-                <div className="flex items-center gap-2">
-                  <perm.icon className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">{perm.label}</p>
-                    <p className="text-xs text-muted-foreground">{perm.description}</p>
-                  </div>
+          {(() => {
+            const previewRole =
+              selectedRoleId === "none"
+                ? null
+                : roles.find((r) => String(r.id) === selectedRoleId) ?? null;
+            const fromRole = (key: string) =>
+              !!previewRole && !!previewRole[key as keyof AdminRole];
+            const effective = (key: string) =>
+              fromRole(key) || !!permissions[key as keyof typeof permissions];
+            const effectiveCount = permissionLabels.filter((p) => effective(p.key)).length;
+            const fromRoleCount = permissionLabels.filter((p) => fromRole(p.key)).length;
+            const overrideOnlyCount = permissionLabels.filter(
+              (p) => !fromRole(p.key) && !!permissions[p.key as keyof typeof permissions],
+            ).length;
+            return (
+              <div className="space-y-3 py-4 overflow-y-auto flex-1">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Role</Label>
+                  <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                    <SelectTrigger data-testid="select-role-edit">
+                      <SelectValue placeholder="No role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No role — use per-user permissions only</SelectItem>
+                      {roles.map((r) => (
+                        <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Effective access = role permissions OR per-user overrides below.
+                  </p>
                 </div>
-                <Switch
-                  checked={permissions[perm.key as keyof typeof permissions]}
-                  onCheckedChange={(checked) => 
-                    setPermissions({ ...permissions, [perm.key]: checked })
-                  }
-                />
+
+                <div
+                  className="rounded-lg border bg-muted/30 p-3 space-y-1.5"
+                  data-testid="effective-access-summary"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">Effective access</p>
+                    <Badge variant="secondary" className="text-xs">
+                      {effectiveCount} / {permissionLabels.length}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {previewRole ? (
+                      <>
+                        <span className="font-medium text-foreground">{fromRoleCount}</span> from role
+                        {" "}<span className="font-medium text-foreground">{previewRole.name}</span>,{" "}
+                        <span className="font-medium text-foreground">{overrideOnlyCount}</span> from per-user overrides.
+                      </>
+                    ) : (
+                      <>
+                        No role assigned —{" "}
+                        <span className="font-medium text-foreground">{overrideOnlyCount}</span> from per-user overrides.
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <Label>Per-user Overrides</Label>
+                {permissionLabels.map((perm) => {
+                  const grantedByRole = fromRole(perm.key);
+                  const overrideOn = !!permissions[perm.key as keyof typeof permissions];
+                  const isEffective = grantedByRole || overrideOn;
+                  return (
+                    <div
+                      key={perm.key}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        grantedByRole ? "bg-primary/5 border-primary/20" : ""
+                      }`}
+                      data-testid={`edit-perm-row-${perm.key}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <perm.icon
+                          className={`w-4 h-4 shrink-0 ${
+                            isEffective ? "text-primary" : "text-muted-foreground"
+                          }`}
+                        />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm font-medium">{perm.label}</p>
+                            {grantedByRole && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1.5 py-0 h-4 border-primary/40 text-primary bg-primary/10"
+                                data-testid={`badge-from-role-${perm.key}`}
+                              >
+                                <ShieldCheck className="w-2.5 h-2.5 mr-0.5" />
+                                from role
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {grantedByRole
+                              ? `Already granted by ${previewRole?.name ?? "role"}${
+                                  overrideOn ? " (override also on)" : ""
+                                }`
+                              : perm.description}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={overrideOn}
+                        onCheckedChange={(checked) =>
+                          setPermissions({ ...permissions, [perm.key]: checked })
+                        }
+                        data-testid={`switch-edit-${perm.key}`}
+                      />
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingAdmin(null)}>
               Cancel
