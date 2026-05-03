@@ -49,6 +49,7 @@ export interface IStorage {
   updateRole(id: number, updates: Partial<InsertAdminRole>): Promise<AdminRole>;
   deleteRole(id: number): Promise<void>;
   countAdminsWithRole(roleId: number): Promise<number>;
+  seedDefaultRoles(): Promise<void>;
   getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }>;
   getDetailedStats(): Promise<{
     usersByRole: { role: string; count: number }[];
@@ -493,6 +494,57 @@ export class DatabaseStorage implements IStorage {
     // Unassign role from any admins, then delete role
     await db.update(adminPermissions).set({ roleId: null }).where(eq(adminPermissions.roleId, id));
     await db.delete(adminRoles).where(eq(adminRoles.id, id));
+  }
+
+  async seedDefaultRoles(): Promise<void> {
+    const defaults: InsertAdminRole[] = [
+      {
+        name: "Support Lead",
+        description: "Handles support tickets, live chats, reports, and outbound notifications.",
+        color: "#0ea5e9",
+        isSystem: true,
+        canViewStats: true,
+        canManageTickets: true,
+        canManageReports: true,
+        canManageChats: true,
+        canManageNotifications: true,
+      },
+      {
+        name: "Finance",
+        description: "Reviews subscriptions, transactions, and agent credit balances.",
+        color: "#16a34a",
+        isSystem: true,
+        canViewStats: true,
+        canManageSubscriptions: true,
+        canManageTransactions: true,
+        canManageAgentCredits: true,
+      },
+      {
+        name: "Content Manager",
+        description: "Curates jobs, hiring companies, ads, and automated email content.",
+        color: "#a855f7",
+        isSystem: true,
+        canViewStats: true,
+        canManageJobs: true,
+        canManageHiringCompanies: true,
+        canManageAds: true,
+        canManageAutomatedEmails: true,
+      },
+      {
+        name: "Verifications Reviewer",
+        description: "Reviews identity verification requests and related user reports.",
+        color: "#f59e0b",
+        isSystem: true,
+        canViewStats: true,
+        canManageVerifications: true,
+        canManageReports: true,
+        canManageUsers: true,
+      },
+    ];
+
+    for (const role of defaults) {
+      await db.insert(adminRoles).values(role).onConflictDoNothing({ target: adminRoles.name });
+    }
   }
 
   async countAdminsWithRole(roleId: number): Promise<number> {

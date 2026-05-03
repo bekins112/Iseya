@@ -40,6 +40,13 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
   await ensureAdminAccount();
 
+  try {
+    const { storage } = await import("./storage");
+    await storage.seedDefaultRoles();
+  } catch (err) {
+    logger.error({ err }, "[seedDefaultRoles] failed");
+  }
+
   const { startScheduler } = await import("./scheduler");
   startScheduler();
 
