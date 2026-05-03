@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "tku_FYhHORWTXjgxrlVpG"
+uri = "file://.local/outputs/I--y-.pptx"
+type = "slides"
+title = "Iṣéyá.pptx"
+
+[[outputs]]
+id = "bHG3-9lzFlA2qFzxOOaY4"
+uri = "file://.local/outputs/I--y-.pdf"
+type = "pdf"
+title = "Iṣéyá.pdf"

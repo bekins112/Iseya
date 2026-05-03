@@ -133,3 +133,18 @@
 .delay-100 { animation-delay: 100ms; }
 .delay-200 { animation-delay: 200ms; }
 .delay-300 { animation-delay: 300ms; }
+
+@keyframes hiring-companies-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.hiring-companies-marquee:hover .hiring-companies-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiring-companies-track {
+    animation: none !important;
+  }
+}

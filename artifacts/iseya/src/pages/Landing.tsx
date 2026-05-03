@@ -934,47 +934,57 @@ function HiringCompaniesSection() {
         </motion.div>
 
         <div
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6"
+          className="hiring-companies-marquee group/marquee relative overflow-hidden"
           data-testid="grid-hiring-companies"
+          style={{
+            maskImage:
+              "linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%)",
+          }}
         >
-          {companies.map((c, idx) => {
-            const inner = (
-              <div
-                className="aspect-square bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-center hover:shadow-lg hover:border-primary/40 transition-all duration-300 group"
-                data-testid={`logo-company-${c.id}`}
-              >
-                <img
-                  src={c.logoUrl}
-                  alt={c.name}
-                  title={c.name}
-                  loading="lazy"
-                  className="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 opacity-70 group-hover:opacity-100 transition-all duration-300"
-                />
-              </div>
-            );
-            return (
-              <motion.div
-                key={c.id}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: idx * 0.04 }}
-                viewport={{ once: true }}
-              >
-                {c.websiteUrl ? (
-                  <a
-                    href={c.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Visit ${c.name}`}
-                  >
-                    {inner}
-                  </a>
-                ) : (
-                  inner
-                )}
-              </motion.div>
-            );
-          })}
+          <div
+            className="hiring-companies-track flex w-max gap-4 sm:gap-6"
+            style={{
+              animation: `hiring-companies-scroll ${Math.max(
+                20,
+                companies.length * 4
+              )}s linear infinite`,
+            }}
+          >
+            {[...companies, ...companies].map((c, idx) => {
+              const inner = (
+                <div
+                  className="w-32 sm:w-40 md:w-44 aspect-square bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-center hover:shadow-lg hover:border-primary/40 transition-all duration-300 group shrink-0"
+                  data-testid={`logo-company-${c.id}`}
+                >
+                  <img
+                    src={c.logoUrl}
+                    alt={c.name}
+                    title={c.name}
+                    loading="lazy"
+                    className="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 opacity-70 group-hover:opacity-100 transition-all duration-300"
+                  />
+                </div>
+              );
+              return (
+                <div key={`${c.id}-${idx}`} className="shrink-0">
+                  {c.websiteUrl ? (
+                    <a
+                      href={c.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Visit ${c.name}`}
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    inner
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
