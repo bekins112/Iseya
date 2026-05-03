@@ -261,83 +261,97 @@ export default function AdminSubAdmins() {
             </div>
           ) : (
             <div className="space-y-3">
-              {admins.map((admin) => (
+              {admins.map((admin) => {
+                const role = admin.assignedRole;
+                const perms = admin.permissions;
+                const fromRole = (key: string) =>
+                  !!role && !!role[key as keyof AdminRole];
+                const overrideOnly = (key: string) =>
+                  !!perms && !!perms[key as keyof AdminPermissions] && !fromRole(key);
+                const roleBadges = perms
+                  ? permissionLabels.filter((p) => fromRole(p.key))
+                  : [];
+                const overrideBadges = perms
+                  ? permissionLabels.filter((p) => overrideOnly(p.key))
+                  : [];
+                const hasAny = roleBadges.length > 0 || overrideBadges.length > 0;
+                return (
                 <div
                   key={admin.id}
-                  className="flex items-center justify-between p-4 rounded-lg border"
+                  className="flex items-start md:items-center justify-between gap-3 p-4 rounded-lg border"
                   data-testid={`admin-row-${admin.id}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
                       <Shield className="w-5 h-5 text-primary" />
                     </div>
-                    <div>
-                      <p className="font-medium">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
                         {admin.firstName && admin.lastName 
                           ? `${admin.firstName} ${admin.lastName}` 
                           : admin.email || "Unknown"}
                       </p>
-                      <p className="text-sm text-muted-foreground">{admin.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {(() => {
-                      const role = admin.assignedRole;
-                      const perms = admin.permissions;
-                      const fromRole = (key: string) =>
-                        !!role && !!role[key as keyof AdminRole];
-                      const overrideOnly = (key: string) =>
-                        !!perms && !!perms[key as keyof AdminPermissions] && !fromRole(key);
-                      const roleBadges = perms
-                        ? permissionLabels.filter((p) => fromRole(p.key))
-                        : [];
-                      const overrideBadges = perms
-                        ? permissionLabels.filter((p) => overrideOnly(p.key))
-                        : [];
-                      const hasAny = roleBadges.length > 0 || overrideBadges.length > 0;
-                      return (
-                        <div
-                          className="hidden md:flex flex-col items-end gap-1 max-w-[360px]"
-                          data-testid={`admin-badges-${admin.id}`}
-                        >
-                          <div className="flex flex-wrap gap-1 justify-end items-center">
-                            {role && (
-                              <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
-                                <ShieldCheck className="w-3 h-3 mr-1" />
-                                {role.name}
-                              </Badge>
-                            )}
-                            {!perms ? (
-                              <Badge className="text-xs">Full Access</Badge>
-                            ) : (
-                              <>
-                                {roleBadges.map((p) => (
-                                  <Badge
-                                    key={`role-${p.key}`}
-                                    title={`From role${role ? ` "${role.name}"` : ""}: ${p.label}`}
-                                    className="text-xs bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
-                                    data-testid={`badge-role-${admin.id}-${p.key}`}
-                                  >
-                                    {p.short}
-                                  </Badge>
-                                ))}
-                                {overrideBadges.map((p) => (
-                                  <Badge
-                                    key={`override-${p.key}`}
-                                    variant="outline"
-                                    title={`Per-user override: ${p.label}`}
-                                    className="text-xs"
-                                    data-testid={`badge-override-${admin.id}-${p.key}`}
-                                  >
-                                    {p.short}
-                                  </Badge>
-                                ))}
-                              </>
-                            )}
-                          </div>
-                          {perms && hasAny && (role || overrideBadges.length > 0) && (
-                            <div className="flex flex-wrap gap-2 items-center text-[10px] text-muted-foreground justify-end">
-                              {role && roleBadges.length > 0 && (
+                      <p className="text-sm text-muted-foreground truncate">{admin.email}</p>
+                      {/* Mobile-only role + permissions summary */}
+                      <details
+                        className="md:hidden mt-2 group"
+                        data-testid={`admin-badges-mobile-${admin.id}`}
+                      >
+                        <summary className="list-none cursor-pointer flex flex-wrap items-center gap-1.5 text-xs">
+                          {role ? (
+                            <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
+                              <ShieldCheck className="w-3 h-3 mr-1" />
+                              {role.name}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">No role</Badge>
+                          )}
+                          {!perms ? (
+                            <Badge className="text-xs">Full Access</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {roleBadges.length} from role
+                              {overrideBadges.length > 0 && ` • ${overrideBadges.length} override${overrideBadges.length === 1 ? "" : "s"}`}
+                            </span>
+                          )}
+                          {perms && hasAny && (
+                            <span className="text-[10px] text-primary underline-offset-2 group-open:hidden">
+                              show
+                            </span>
+                          )}
+                          {perms && hasAny && (
+                            <span className="text-[10px] text-primary underline-offset-2 hidden group-open:inline">
+                              hide
+                            </span>
+                          )}
+                        </summary>
+                        {perms && hasAny && (
+                          <div className="mt-2 space-y-2">
+                            <div className="flex flex-wrap gap-1">
+                              {roleBadges.map((p) => (
+                                <Badge
+                                  key={`m-role-${p.key}`}
+                                  title={`From role${role ? ` "${role.name}"` : ""}: ${p.label}`}
+                                  className="text-xs bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
+                                  data-testid={`badge-mobile-role-${admin.id}-${p.key}`}
+                                >
+                                  {p.short}
+                                </Badge>
+                              ))}
+                              {overrideBadges.map((p) => (
+                                <Badge
+                                  key={`m-override-${p.key}`}
+                                  variant="outline"
+                                  title={`Per-user override: ${p.label}`}
+                                  className="text-xs"
+                                  data-testid={`badge-mobile-override-${admin.id}-${p.key}`}
+                                >
+                                  {p.short}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="flex flex-wrap gap-2 items-center text-[10px] text-muted-foreground">
+                              {roleBadges.length > 0 && (
                                 <span className="inline-flex items-center gap-1">
                                   <span className="inline-block w-2 h-2 rounded-sm bg-primary/40 border border-primary/40" />
                                   from role
@@ -350,10 +364,68 @@ export default function AdminSubAdmins() {
                                 </span>
                               )}
                             </div>
+                          </div>
+                        )}
+                      </details>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="hidden md:flex flex-col items-end gap-1 max-w-[360px]"
+                      data-testid={`admin-badges-${admin.id}`}
+                    >
+                      <div className="flex flex-wrap gap-1 justify-end items-center">
+                        {role && (
+                          <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
+                            <ShieldCheck className="w-3 h-3 mr-1" />
+                            {role.name}
+                          </Badge>
+                        )}
+                        {!perms ? (
+                          <Badge className="text-xs">Full Access</Badge>
+                        ) : (
+                          <>
+                            {roleBadges.map((p) => (
+                              <Badge
+                                key={`role-${p.key}`}
+                                title={`From role${role ? ` "${role.name}"` : ""}: ${p.label}`}
+                                className="text-xs bg-primary/10 text-primary border-primary/30 hover:bg-primary/15"
+                                data-testid={`badge-role-${admin.id}-${p.key}`}
+                              >
+                                {p.short}
+                              </Badge>
+                            ))}
+                            {overrideBadges.map((p) => (
+                              <Badge
+                                key={`override-${p.key}`}
+                                variant="outline"
+                                title={`Per-user override: ${p.label}`}
+                                className="text-xs"
+                                data-testid={`badge-override-${admin.id}-${p.key}`}
+                              >
+                                {p.short}
+                              </Badge>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                      {perms && hasAny && (role || overrideBadges.length > 0) && (
+                        <div className="flex flex-wrap gap-2 items-center text-[10px] text-muted-foreground justify-end">
+                          {role && roleBadges.length > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="inline-block w-2 h-2 rounded-sm bg-primary/40 border border-primary/40" />
+                              from role
+                            </span>
+                          )}
+                          {overrideBadges.length > 0 && (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="inline-block w-2 h-2 rounded-sm border border-border bg-background" />
+                              per-user override
+                            </span>
                           )}
                         </div>
-                      );
-                    })()}
+                      )}
+                    </div>
                     {admin.id !== user?.id && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -378,7 +450,8 @@ export default function AdminSubAdmins() {
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
