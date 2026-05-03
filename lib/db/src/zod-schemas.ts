@@ -38,8 +38,66 @@ export const insertInternalAdSchema = createInsertSchema(internalAds);
 export const insertHiringCompanySchema = createInsertSchema(hiringCompanies);
 export const insertGoogleAdPlacementSchema = createInsertSchema(googleAdPlacements);
 
+const permissionFields = {
+  canManageUsers: z.boolean().default(false),
+  canManageJobs: z.boolean().default(false),
+  canManageApplications: z.boolean().default(false),
+  canManageAdmins: z.boolean().default(false),
+  canViewStats: z.boolean().default(true),
+  canManageSubscriptions: z.boolean().default(false),
+  canManageTransactions: z.boolean().default(false),
+  canManageTickets: z.boolean().default(false),
+  canManageReports: z.boolean().default(false),
+  canManageVerifications: z.boolean().default(false),
+  canManageNotifications: z.boolean().default(false),
+  canManageAutomatedEmails: z.boolean().default(false),
+  canManageAds: z.boolean().default(false),
+  canManageAgentCredits: z.boolean().default(false),
+  canManageSettings: z.boolean().default(false),
+  canManageActivityLogs: z.boolean().default(false),
+  canManageHiringCompanies: z.boolean().default(false),
+  canManageGoogleSettings: z.boolean().default(false),
+  canManageChats: z.boolean().default(false),
+};
+
+export const insertAdminRoleSchema = z.object({
+  name: z.string().min(2, "Role name must be at least 2 characters").max(60),
+  description: z.string().max(500).optional().nullable(),
+  color: z.string().max(20).optional().nullable(),
+  ...permissionFields,
+});
+
+export const updateAdminRoleSchema = z.object({
+  name: z.string().min(2).max(60).optional(),
+  description: z.string().max(500).optional().nullable(),
+  color: z.string().max(20).optional().nullable(),
+  canManageUsers: z.boolean().optional(),
+  canManageJobs: z.boolean().optional(),
+  canManageApplications: z.boolean().optional(),
+  canManageAdmins: z.boolean().optional(),
+  canViewStats: z.boolean().optional(),
+  canManageSubscriptions: z.boolean().optional(),
+  canManageTransactions: z.boolean().optional(),
+  canManageTickets: z.boolean().optional(),
+  canManageReports: z.boolean().optional(),
+  canManageVerifications: z.boolean().optional(),
+  canManageNotifications: z.boolean().optional(),
+  canManageAutomatedEmails: z.boolean().optional(),
+  canManageAds: z.boolean().optional(),
+  canManageAgentCredits: z.boolean().optional(),
+  canManageSettings: z.boolean().optional(),
+  canManageActivityLogs: z.boolean().optional(),
+  canManageHiringCompanies: z.boolean().optional(),
+  canManageGoogleSettings: z.boolean().optional(),
+  canManageChats: z.boolean().optional(),
+});
+
+export type InsertAdminRole = z.infer<typeof insertAdminRoleSchema>;
+export type UpdateAdminRole = z.infer<typeof updateAdminRoleSchema>;
+
 export const insertAdminPermissionsSchema = z.object({
   userId: z.string(),
+  roleId: z.number().int().positive().optional().nullable(),
   canManageUsers: z.boolean().default(false),
   canManageJobs: z.boolean().default(false),
   canManageApplications: z.boolean().default(false),
@@ -63,6 +121,7 @@ export const insertAdminPermissionsSchema = z.object({
 });
 
 export const updateAdminPermissionsSchema = z.object({
+  roleId: z.number().int().positive().optional().nullable(),
   canManageUsers: z.boolean().optional(),
   canManageJobs: z.boolean().optional(),
   canManageApplications: z.boolean().optional(),
@@ -125,6 +184,7 @@ export const adminUpdateJobSchema = z.object({
 
 export const createSubAdminSchema = z.object({
   userId: z.string(),
+  roleId: z.number().int().positive().optional().nullable(),
   permissions: z.object({
     canManageUsers: z.boolean().optional(),
     canManageJobs: z.boolean().optional(),
@@ -153,6 +213,7 @@ export const createNewAdminSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
+  roleId: z.number().int().positive().optional().nullable(),
   permissions: z.object({
     canManageUsers: z.boolean().optional(),
     canManageJobs: z.boolean().optional(),

@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany } from "@workspace/db";
+import { users, jobs, applications, adminPermissions, adminRoles, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type AdminRole, type InsertAdminRole, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany } from "@workspace/db";
 import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -42,7 +42,13 @@ export interface IStorage {
   createAdminPermissions(permissions: InsertAdminPermissions): Promise<AdminPermissions>;
   updateAdminPermissions(userId: string, permissions: Partial<AdminPermissions>): Promise<AdminPermissions>;
   deleteAdminPermissions(userId: string): Promise<void>;
-  getAllAdmins(): Promise<(User & { permissions?: AdminPermissions })[]>;
+  getAllAdmins(): Promise<(User & { permissions?: AdminPermissions; assignedRole?: AdminRole })[]>;
+  getAllRoles(): Promise<AdminRole[]>;
+  getRole(id: number): Promise<AdminRole | undefined>;
+  createRole(role: InsertAdminRole): Promise<AdminRole>;
+  updateRole(id: number, updates: Partial<InsertAdminRole>): Promise<AdminRole>;
+  deleteRole(id: number): Promise<void>;
+  countAdminsWithRole(roleId: number): Promise<number>;
   getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }>;
   getDetailedStats(): Promise<{
     usersByRole: { role: string; count: number }[];
@@ -167,6 +173,36 @@ export interface IStorage {
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLog[]; total: number }>;
   clearActivityLogs(before?: Date): Promise<number>;
+}
+
+const PERMISSION_KEYS = [
+  "canManageUsers",
+  "canManageJobs",
+  "canManageApplications",
+  "canManageAdmins",
+  "canViewStats",
+  "canManageSubscriptions",
+  "canManageTransactions",
+  "canManageTickets",
+  "canManageReports",
+  "canManageVerifications",
+  "canManageNotifications",
+  "canManageAutomatedEmails",
+  "canManageAds",
+  "canManageAgentCredits",
+  "canManageSettings",
+  "canManageActivityLogs",
+  "canManageHiringCompanies",
+  "canManageGoogleSettings",
+  "canManageChats",
+] as const;
+
+function mergePermissionsWithRole(perms: AdminPermissions, role: AdminRole): AdminPermissions {
+  const merged: any = { ...perms };
+  for (const key of PERMISSION_KEYS) {
+    merged[key] = !!((perms as any)[key] || (role as any)[key]);
+  }
+  return merged as AdminPermissions;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -383,6 +419,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAdminPermissions(userId: string): Promise<AdminPermissions | undefined> {
     const [perms] = await db.select().from(adminPermissions).where(eq(adminPermissions.userId, userId));
+    if (!perms) return undefined;
+    if (perms.roleId) {
+      const [role] = await db.select().from(adminRoles).where(eq(adminRoles.id, perms.roleId));
+      if (role) return mergePermissionsWithRole(perms, role);
+    }
     return perms;
   }
 
@@ -404,15 +445,62 @@ export class DatabaseStorage implements IStorage {
     await db.delete(adminPermissions).where(eq(adminPermissions.userId, userId));
   }
 
-  async getAllAdmins(): Promise<(User & { permissions?: AdminPermissions })[]> {
+  async getAllAdmins(): Promise<(User & { permissions?: AdminPermissions; assignedRole?: AdminRole })[]> {
     const adminUsers = await db.select().from(users).where(eq(users.role, "admin")).orderBy(desc(users.createdAt));
     const result = await Promise.all(
       adminUsers.map(async (user) => {
-        const permissions = await this.getAdminPermissions(user.id);
-        return { ...user, permissions };
+        // IMPORTANT: return RAW per-user permissions here (not merged with role)
+        // so the edit form shows actual overrides, not role-derived flags.
+        const [permissions] = await db
+          .select()
+          .from(adminPermissions)
+          .where(eq(adminPermissions.userId, user.id));
+        let assignedRole: AdminRole | undefined;
+        if (permissions?.roleId) {
+          const [r] = await db.select().from(adminRoles).where(eq(adminRoles.id, permissions.roleId));
+          assignedRole = r;
+        }
+        return { ...user, permissions, assignedRole };
       })
     );
     return result;
+  }
+
+  async getAllRoles(): Promise<AdminRole[]> {
+    return await db.select().from(adminRoles).orderBy(adminRoles.name);
+  }
+
+  async getRole(id: number): Promise<AdminRole | undefined> {
+    const [role] = await db.select().from(adminRoles).where(eq(adminRoles.id, id));
+    return role;
+  }
+
+  async createRole(role: InsertAdminRole): Promise<AdminRole> {
+    const [r] = await db.insert(adminRoles).values(role).returning();
+    return r;
+  }
+
+  async updateRole(id: number, updates: Partial<InsertAdminRole>): Promise<AdminRole> {
+    const [r] = await db
+      .update(adminRoles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(adminRoles.id, id))
+      .returning();
+    return r;
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    // Unassign role from any admins, then delete role
+    await db.update(adminPermissions).set({ roleId: null }).where(eq(adminPermissions.roleId, id));
+    await db.delete(adminRoles).where(eq(adminRoles.id, id));
+  }
+
+  async countAdminsWithRole(roleId: number): Promise<number> {
+    const [row] = await db
+      .select({ count: count() })
+      .from(adminPermissions)
+      .where(eq(adminPermissions.roleId, roleId));
+    return row?.count ?? 0;
   }
 
   async getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }> {

@@ -9,9 +9,9 @@ import bcrypt from "bcryptjs";
 import { db } from "../db";
 import { users } from "../shared/models/auth";
 import { eq, desc } from "drizzle-orm";
-import { jobs } from "@workspace/db";
+import { jobs, adminPermissions } from "@workspace/db";
 import * as scheduler from "../scheduler";
-import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, createNewAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema } from "@workspace/db";
+import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, createNewAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema, insertAdminRoleSchema, updateAdminRoleSchema } from "@workspace/db";
 import { logActivity } from "../activity-logger";
 import { registerChatRoutes } from "./chat";
 import multer from "multer";
@@ -988,14 +988,23 @@ export async function registerRoutes(
     
     try {
       const input = createSubAdminSchema.parse(req.body);
-      
-      // Update user role to admin
-      await storage.updateUser(input.userId, { role: 'admin' });
-      
-      // Create permissions with defaults
-      const adminPerms = await storage.createAdminPermissions({
-        userId: input.userId,
-        createdBy: req.adminUser.id,
+
+      // Validate roleId if provided
+      if (input.roleId) {
+        const role = await storage.getRole(input.roleId);
+        if (!role) return res.status(404).json({ message: "Role not found" });
+      }
+
+      // Atomic: promote to admin AND create permissions, or roll both back.
+      // Without a transaction, a failed permissions insert leaves the user
+      // marked admin with no permissions row, which the middleware treats
+      // as unrestricted access.
+      const adminPerms = await db.transaction(async (tx) => {
+        await tx.update(users).set({ role: "admin" }).where(eq(users.id, input.userId));
+        const [perms] = await tx.insert(adminPermissions).values({
+          userId: input.userId,
+          createdBy: req.adminUser.id,
+          roleId: input.roleId ?? null,
         canManageUsers: input.permissions.canManageUsers ?? false,
         canManageJobs: input.permissions.canManageJobs ?? false,
         canManageApplications: input.permissions.canManageApplications ?? false,
@@ -1015,8 +1024,10 @@ export async function registerRoutes(
         canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
         canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
         canManageChats: input.permissions.canManageChats ?? false,
+        }).returning();
+        return perms;
       });
-      
+
       res.status(201).json(adminPerms);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -1034,6 +1045,12 @@ export async function registerRoutes(
     try {
       const input = createNewAdminSchema.parse(req.body);
 
+      // Validate roleId if provided
+      if (input.roleId) {
+        const role = await storage.getRole(input.roleId);
+        if (!role) return res.status(404).json({ message: "Role not found" });
+      }
+
       const [existing] = await db.select().from(users).where(eq(users.email, input.email));
       if (existing) {
         return res.status(400).json({ message: "An account with this email already exists" });
@@ -1041,17 +1058,22 @@ export async function registerRoutes(
 
       const hashedPassword = await bcrypt.hash(input.password, 10);
 
-      const [newUser] = await db.insert(users).values({
-        email: input.email,
-        password: hashedPassword,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        role: "admin",
-      }).returning();
+      // Atomic: create user + permissions together; if either fails, rollback
+      // both so we never leave a `role='admin'` user without a permissions row
+      // (which middleware treats as unrestricted access).
+      const adminPerms = await db.transaction(async (tx) => {
+        const [newUser] = await tx.insert(users).values({
+          email: input.email,
+          password: hashedPassword,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          role: "admin",
+        }).returning();
 
-      const adminPerms = await storage.createAdminPermissions({
-        userId: newUser.id,
-        createdBy: req.adminUser.id,
+        const [perms] = await tx.insert(adminPermissions).values({
+          userId: newUser.id,
+          createdBy: req.adminUser.id,
+          roleId: input.roleId ?? null,
         canManageUsers: input.permissions.canManageUsers ?? false,
         canManageJobs: input.permissions.canManageJobs ?? false,
         canManageApplications: input.permissions.canManageApplications ?? false,
@@ -1071,6 +1093,8 @@ export async function registerRoutes(
         canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
         canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
         canManageChats: input.permissions.canManageChats ?? false,
+        }).returning();
+        return perms;
       });
 
       res.status(201).json(adminPerms);
@@ -1090,6 +1114,11 @@ export async function registerRoutes(
     
     try {
       const input = updateAdminPermissionsSchema.parse(req.body);
+      // Validate roleId if provided
+      if (input.roleId !== undefined && input.roleId !== null) {
+        const role = await storage.getRole(input.roleId);
+        if (!role) return res.status(404).json({ message: "Role not found" });
+      }
       const perms = await storage.updateAdminPermissions(req.params.userId, input);
       res.json(perms);
     } catch (err) {
@@ -1113,6 +1142,103 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (err) {
       res.status(400).json({ message: "Failed to remove admin" });
+    }
+  });
+
+  // ===== Admin Roles =====
+  app.get("/api/admin/roles", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to view roles" });
+    }
+    try {
+      const roles = await storage.getAllRoles();
+      const withCounts = await Promise.all(
+        roles.map(async (r) => ({
+          ...r,
+          adminCount: await storage.countAdminsWithRole(r.id),
+        })),
+      );
+      res.json(withCounts);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to load roles" });
+    }
+  });
+
+  app.post("/api/admin/roles", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to create roles" });
+    }
+    try {
+      const input = insertAdminRoleSchema.parse(req.body);
+      const role = await storage.createRole({ ...input, createdBy: req.adminUser.id });
+      res.status(201).json(role);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      if (err?.code === "23505") {
+        return res.status(400).json({ message: "A role with that name already exists" });
+      }
+      res.status(400).json({ message: "Failed to create role" });
+    }
+  });
+
+  app.patch("/api/admin/roles/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to update roles" });
+    }
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Invalid role id" });
+      const input = updateAdminRoleSchema.parse(req.body);
+      const role = await storage.updateRole(id, input);
+      res.json(role);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      if (err?.code === "23505") {
+        return res.status(400).json({ message: "A role with that name already exists" });
+      }
+      res.status(400).json({ message: "Failed to update role" });
+    }
+  });
+
+  app.delete("/api/admin/roles/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to delete roles" });
+    }
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) return res.status(400).json({ message: "Invalid role id" });
+      const role = await storage.getRole(id);
+      if (!role) return res.status(404).json({ message: "Role not found" });
+      if (role.isSystem) return res.status(400).json({ message: "System roles cannot be deleted" });
+      await storage.deleteRole(id);
+      res.status(204).send();
+    } catch (err) {
+      res.status(400).json({ message: "Failed to delete role" });
+    }
+  });
+
+  app.patch("/api/admin/admins/:userId/role", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAdmins) {
+      return res.status(403).json({ message: "You don't have permission to assign roles" });
+    }
+    try {
+      const { roleId } = req.body as { roleId: number | null };
+      const normalized = roleId === null || roleId === undefined ? null : Number(roleId);
+      if (normalized !== null && (!Number.isInteger(normalized) || normalized <= 0)) {
+        return res.status(400).json({ message: "Invalid role id" });
+      }
+      if (normalized !== null) {
+        const role = await storage.getRole(normalized);
+        if (!role) return res.status(404).json({ message: "Role not found" });
+      }
+      const perms = await storage.updateAdminPermissions(req.params.userId, { roleId: normalized });
+      res.json(perms);
+    } catch (err) {
+      res.status(400).json({ message: "Failed to assign role" });
     }
   });
 

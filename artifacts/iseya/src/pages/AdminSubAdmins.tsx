@@ -15,11 +15,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { Redirect } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { User, AdminPermissions } from "@/lib/types";
+import type { User, AdminPermissions, AdminRole } from "@/lib/types";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 interface AdminWithPermissions extends User {
   permissions?: AdminPermissions;
+  assignedRole?: AdminRole | null;
 }
 
 const defaultPermissions = {
@@ -77,6 +78,7 @@ export default function AdminSubAdmins() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [newAdminForm, setNewAdminForm] = useState({ email: "", password: "", firstName: "", lastName: "" });
   const [permissions, setPermissions] = useState({ ...defaultPermissions });
+  const [selectedRoleId, setSelectedRoleId] = useState<string>("none");
 
   const { data: admins = [], isLoading: adminsLoading } = useQuery<AdminWithPermissions[]>({
     queryKey: ["/api/admin/admins"],
@@ -86,8 +88,12 @@ export default function AdminSubAdmins() {
     queryKey: ["/api/admin/users"],
   });
 
+  const { data: roles = [] } = useQuery<AdminRole[]>({
+    queryKey: ["/api/admin/roles"],
+  });
+
   const createAdminMutation = useMutation({
-    mutationFn: async (data: { userId: string; permissions: typeof permissions }) => {
+    mutationFn: async (data: { userId: string; roleId: number | null; permissions: typeof permissions }) => {
       return apiRequest("POST", "/api/admin/admins", data);
     },
     onSuccess: () => {
@@ -103,7 +109,7 @@ export default function AdminSubAdmins() {
   });
 
   const createNewAdminMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string; firstName: string; lastName: string; permissions: typeof permissions }) => {
+    mutationFn: async (data: { email: string; password: string; firstName: string; lastName: string; roleId: number | null; permissions: typeof permissions }) => {
       const res = await apiRequest("POST", "/api/admin/admins/create-new", data);
       return res.json();
     },
@@ -157,6 +163,7 @@ export default function AdminSubAdmins() {
     setSelectedUserId("");
     setNewAdminForm({ email: "", password: "", firstName: "", lastName: "" });
     setPermissions({ ...defaultPermissions });
+    setSelectedRoleId("none");
     setAddMode("new");
   };
 
@@ -164,6 +171,7 @@ export default function AdminSubAdmins() {
 
   const openEditDialog = (admin: AdminWithPermissions) => {
     setEditingAdmin(admin);
+    setSelectedRoleId(admin.permissions?.roleId ? String(admin.permissions.roleId) : "none");
     if (admin.permissions) {
       setPermissions({
         canManageUsers: admin.permissions.canManageUsers || false,
@@ -190,12 +198,13 @@ export default function AdminSubAdmins() {
   };
 
   const handleCreateAdmin = () => {
+    const roleId = selectedRoleId === "none" ? null : Number(selectedRoleId);
     if (addMode === "existing") {
       if (!selectedUserId) {
         toast({ title: "Please select a user", variant: "destructive" });
         return;
       }
-      createAdminMutation.mutate({ userId: selectedUserId, permissions });
+      createAdminMutation.mutate({ userId: selectedUserId, roleId, permissions });
     } else {
       if (!newAdminForm.email || !newAdminForm.password || !newAdminForm.firstName || !newAdminForm.lastName) {
         toast({ title: "Please fill in all fields", variant: "destructive" });
@@ -205,13 +214,14 @@ export default function AdminSubAdmins() {
         toast({ title: "Password must be at least 6 characters", variant: "destructive" });
         return;
       }
-      createNewAdminMutation.mutate({ ...newAdminForm, permissions });
+      createNewAdminMutation.mutate({ ...newAdminForm, roleId, permissions });
     }
   };
 
   const handleUpdatePermissions = () => {
     if (!editingAdmin) return;
-    updatePermissionsMutation.mutate({ userId: editingAdmin.id, perms: permissions });
+    const roleId = selectedRoleId === "none" ? null : Number(selectedRoleId);
+    updatePermissionsMutation.mutate({ userId: editingAdmin.id, perms: { ...permissions, roleId } });
   };
 
   const isCreating = createAdminMutation.isPending || createNewAdminMutation.isPending;
@@ -271,7 +281,13 @@ export default function AdminSubAdmins() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="hidden md:flex flex-wrap gap-1 max-w-[300px]">
+                    <div className="hidden md:flex flex-wrap gap-1 max-w-[340px] items-center">
+                      {admin.assignedRole && (
+                        <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
+                          <ShieldCheck className="w-3 h-3 mr-1" />
+                          {admin.assignedRole.name}
+                        </Badge>
+                      )}
                       {!admin.permissions ? (
                         <Badge className="text-xs">Full Access</Badge>
                       ) : (
@@ -421,8 +437,26 @@ export default function AdminSubAdmins() {
               </div>
             )}
 
+            <div className="space-y-1.5">
+              <Label className="text-xs">Role (optional)</Label>
+              <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                <SelectTrigger data-testid="select-role-add">
+                  <SelectValue placeholder="No role — use per-user permissions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No role — use per-user permissions only</SelectItem>
+                  {roles.map((r) => (
+                    <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Effective permissions = role permissions + any per-user toggles below.
+              </p>
+            </div>
+
             <div className="space-y-3">
-              <Label>Permissions</Label>
+              <Label>Per-user Overrides</Label>
               {permissionLabels.map((perm) => (
                 <div key={perm.key} className="flex items-center justify-between p-3 rounded-lg border">
                   <div className="flex items-center gap-2">
@@ -468,6 +502,24 @@ export default function AdminSubAdmins() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4 overflow-y-auto flex-1">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Role</Label>
+              <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
+                <SelectTrigger data-testid="select-role-edit">
+                  <SelectValue placeholder="No role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No role — use per-user permissions only</SelectItem>
+                  {roles.map((r) => (
+                    <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Effective access = role permissions OR per-user overrides below.
+              </p>
+            </div>
+            <Label>Per-user Overrides</Label>
             {permissionLabels.map((perm) => (
               <div key={perm.key} className="flex items-center justify-between p-3 rounded-lg border">
                 <div className="flex items-center gap-2">

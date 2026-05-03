@@ -82,6 +82,7 @@ export function Sidebar() {
     { href: "/admin/google-ads", label: "Google Settings", icon: MonitorPlay, perm: "canManageGoogleSettings" },
     { href: "/admin/activity-logs", label: "Activity Logs", icon: Activity, perm: "canManageActivityLogs" },
     { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
+    { href: "/admin/roles", label: "Roles & Permissions", icon: ShieldCheck, perm: "canManageAdmins" },
     { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
   ];
 

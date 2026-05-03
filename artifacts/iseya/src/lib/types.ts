@@ -93,20 +93,58 @@ export interface Application {
 export interface AdminPermissions {
   id: number;
   userId: string;
+  roleId?: number | null;
   canManageUsers?: boolean | null;
   canManageJobs?: boolean | null;
+  canManageApplications?: boolean | null;
+  canManageAdmins?: boolean | null;
+  canViewStats?: boolean | null;
   canManageSubscriptions?: boolean | null;
   canViewStatistics?: boolean | null;
   canManageTickets?: boolean | null;
   canManageReports?: boolean | null;
   canManageVerifications?: boolean | null;
   canManageNotifications?: boolean | null;
+  canManageAutomatedEmails?: boolean | null;
   canManageSettings?: boolean | null;
   canManageTransactions?: boolean | null;
   canManageAds?: boolean | null;
+  canManageAgentCredits?: boolean | null;
+  canManageActivityLogs?: boolean | null;
   canManageHiringCompanies?: boolean | null;
+  canManageGoogleSettings?: boolean | null;
   canManageChats?: boolean | null;
   createdAt?: Date | null;
+}
+
+export interface AdminRole {
+  id: number;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+  isSystem?: boolean | null;
+  canManageUsers?: boolean | null;
+  canManageJobs?: boolean | null;
+  canManageApplications?: boolean | null;
+  canManageAdmins?: boolean | null;
+  canViewStats?: boolean | null;
+  canManageSubscriptions?: boolean | null;
+  canManageTransactions?: boolean | null;
+  canManageTickets?: boolean | null;
+  canManageReports?: boolean | null;
+  canManageVerifications?: boolean | null;
+  canManageNotifications?: boolean | null;
+  canManageAutomatedEmails?: boolean | null;
+  canManageAds?: boolean | null;
+  canManageAgentCredits?: boolean | null;
+  canManageSettings?: boolean | null;
+  canManageActivityLogs?: boolean | null;
+  canManageHiringCompanies?: boolean | null;
+  canManageGoogleSettings?: boolean | null;
+  canManageChats?: boolean | null;
+  adminCount?: number;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface ChatConversation {

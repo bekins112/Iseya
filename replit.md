@@ -37,6 +37,13 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Captcha: svg-captcha (requires `fonts/Comismsh.ttf`)
 - Internal shared code in `src/shared/` (routes.ts, models/auth.ts)
 
+### Admin Roles & Permissions
+- New `admin_roles` table in `lib/db/src/schema/schema.ts` mirroring all `canManage*` flags from `admin_permissions`. `admin_permissions.roleId` is a nullable FK to `admin_roles` (onDelete: set null).
+- `storage.getAdminPermissions()` merges role flags into the user's permissions row (effective = role flag OR per-user flag), so existing sub-admins without a role keep working unchanged.
+- New API endpoints (all gated by `canManageAdmins`): `GET/POST /api/admin/roles`, `PATCH/DELETE /api/admin/roles/:id`, `PATCH /api/admin/admins/:userId/role`. Sub-admin create endpoints (`/api/admin/admins`, `/api/admin/admins/create-new`) and `PATCH /api/admin/admins/:userId/permissions` accept an optional `roleId`.
+- Admin UI page `AdminRoles.tsx` at `/admin/roles` (Sidebar link gated by `canManageAdmins`). Lists all roles with assigned-admin counts; create/edit/delete with permission switch grid. System roles (`isSystem=true`) cannot be deleted.
+- `AdminSubAdmins.tsx` now shows a Role dropdown in the Add and Edit dialogs and displays a role badge next to each admin in the list. Role assignments persist via the standard create/permissions endpoints.
+
 ### Chatbot widget (Iṣéyá)
 - Floating chat bubble (`artifacts/iseya/src/components/ChatWidget.tsx`) mounted in `App.tsx` (hidden on `/admin/*`, `/onboarding`, `/verify-email`).
 - Visitor session id stored in `localStorage` key `iseya_chat_session_id`.

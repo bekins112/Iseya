@@ -158,10 +158,45 @@ export const verificationRequests = pgTable("verification_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Admin roles — reusable permission bundles assigned to sub-admins
+export const adminRoles = pgTable("admin_roles", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  color: varchar("color"),
+  isSystem: boolean("is_system").default(false),
+  canManageUsers: boolean("can_manage_users").default(false),
+  canManageJobs: boolean("can_manage_jobs").default(false),
+  canManageApplications: boolean("can_manage_applications").default(false),
+  canManageAdmins: boolean("can_manage_admins").default(false),
+  canViewStats: boolean("can_view_stats").default(true),
+  canManageSubscriptions: boolean("can_manage_subscriptions").default(false),
+  canManageTransactions: boolean("can_manage_transactions").default(false),
+  canManageTickets: boolean("can_manage_tickets").default(false),
+  canManageReports: boolean("can_manage_reports").default(false),
+  canManageVerifications: boolean("can_manage_verifications").default(false),
+  canManageNotifications: boolean("can_manage_notifications").default(false),
+  canManageAutomatedEmails: boolean("can_manage_automated_emails").default(false),
+  canManageAds: boolean("can_manage_ads").default(false),
+  canManageAgentCredits: boolean("can_manage_agent_credits").default(false),
+  canManageSettings: boolean("can_manage_settings").default(false),
+  canManageActivityLogs: boolean("can_manage_activity_logs").default(false),
+  canManageHiringCompanies: boolean("can_manage_hiring_companies").default(false),
+  canManageGoogleSettings: boolean("can_manage_google_settings").default(false),
+  canManageChats: boolean("can_manage_chats").default(false),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AdminRole = typeof adminRoles.$inferSelect;
+export type InsertAdminRole = typeof adminRoles.$inferInsert;
+
 // Admin permissions table for sub-admin access control
 export const adminPermissions = pgTable("admin_permissions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: varchar("user_id").notNull().references(() => users.id),
+  roleId: integer("role_id").references(() => adminRoles.id, { onDelete: "set null" }),
   canManageUsers: boolean("can_manage_users").default(false),
   canManageJobs: boolean("can_manage_jobs").default(false),
   canManageApplications: boolean("can_manage_applications").default(false),

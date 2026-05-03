@@ -28,6 +28,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminJobs from "@/pages/AdminJobs";
 import AdminSubAdmins from "@/pages/AdminSubAdmins";
+import AdminRoles from "@/pages/AdminRoles";
 import AdminSubscriptions from "@/pages/AdminSubscriptions";
 import AdminStatistics from "@/pages/AdminStatistics";
 import AdminTickets from "@/pages/AdminTickets";
@@ -235,6 +236,12 @@ function Router() {
       <Route path="/admin/sub-admins">
         <AuthenticatedLayout>
           <AdminSubAdmins />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/roles">
+        <AuthenticatedLayout>
+          <AdminRoles />
         </AuthenticatedLayout>
       </Route>
 
