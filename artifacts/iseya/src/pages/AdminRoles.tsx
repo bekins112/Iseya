@@ -46,6 +46,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/use-page-title";
 import type { AdminRole } from "@/lib/types";
+import { DEFAULT_ROLE_COLOR, isValidHex, RoleColorDot } from "@/lib/roleColor";
 
 const permissionLabels = [
   { key: "canViewStats", label: "View Statistics", icon: Eye },
@@ -71,8 +72,6 @@ const permissionLabels = [
 
 type PermKey = (typeof permissionLabels)[number]["key"];
 
-const DEFAULT_ROLE_COLOR = "#64748b";
-
 const ROLE_COLOR_PRESETS = [
   { value: "#0ea5e9", label: "Sky" },
   { value: "#16a34a", label: "Green" },
@@ -84,10 +83,6 @@ const ROLE_COLOR_PRESETS = [
   { value: "#6366f1", label: "Indigo" },
   { value: "#64748b", label: "Slate" },
 ];
-
-function isValidHex(c: string) {
-  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c);
-}
 
 function emptyPerms(): Record<PermKey, boolean> {
   const init = {} as Record<PermKey, boolean>;
@@ -262,10 +257,9 @@ export default function AdminRoles() {
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          aria-hidden="true"
-                          className="inline-block w-3 h-3 rounded-full border border-border shrink-0"
-                          style={{ backgroundColor: role.color && isValidHex(role.color) ? role.color : DEFAULT_ROLE_COLOR }}
+                        <RoleColorDot
+                          color={role.color}
+                          size="md"
                           data-testid={`role-color-${role.id}`}
                         />
                         <p className="font-medium">{role.name}</p>

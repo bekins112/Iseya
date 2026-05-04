@@ -17,6 +17,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User, AdminPermissions, AdminRole } from "@/lib/types";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { RoleColorDot } from "@/lib/roleColor";
 
 interface AdminWithPermissions extends User {
   permissions?: AdminPermissions;
@@ -299,8 +300,15 @@ export default function AdminSubAdmins() {
                       >
                         <summary className="list-none cursor-pointer flex flex-wrap items-center gap-1.5 text-xs">
                           {role ? (
-                            <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
-                              <ShieldCheck className="w-3 h-3 mr-1" />
+                            <Badge
+                              className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20"
+                              data-testid={`admin-role-badge-mobile-${admin.id}`}
+                            >
+                              <RoleColorDot
+                                color={role.color}
+                                className="mr-1"
+                                data-testid={`admin-role-color-mobile-${admin.id}`}
+                              />
                               {role.name}
                             </Badge>
                           ) : (
@@ -376,8 +384,15 @@ export default function AdminSubAdmins() {
                     >
                       <div className="flex flex-wrap gap-1 justify-end items-center">
                         {role && (
-                          <Badge className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
-                            <ShieldCheck className="w-3 h-3 mr-1" />
+                          <Badge
+                            className="text-xs bg-primary/15 text-primary border-primary/30 hover:bg-primary/20"
+                            data-testid={`admin-role-badge-${admin.id}`}
+                          >
+                            <RoleColorDot
+                              color={role.color}
+                              className="mr-1"
+                              data-testid={`admin-role-color-${admin.id}`}
+                            />
                             {role.name}
                           </Badge>
                         )}
@@ -559,7 +574,12 @@ export default function AdminSubAdmins() {
                 <SelectContent>
                   <SelectItem value="none">No role — use per-user permissions only</SelectItem>
                   {roles.map((r) => (
-                    <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                    <SelectItem key={r.id} value={String(r.id)}>
+                      <span className="inline-flex items-center gap-2">
+                        <RoleColorDot color={r.color} />
+                        {r.name}
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -639,7 +659,12 @@ export default function AdminSubAdmins() {
                     <SelectContent>
                       <SelectItem value="none">No role — use per-user permissions only</SelectItem>
                       {roles.map((r) => (
-                        <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
+                        <SelectItem key={r.id} value={String(r.id)}>
+                          <span className="inline-flex items-center gap-2">
+                            <RoleColorDot color={r.color} />
+                            {r.name}
+                          </span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
