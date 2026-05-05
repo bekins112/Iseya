@@ -65,6 +65,37 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
+## Auth & Required Secrets
+
+End-to-end auth flows (register, captcha-gated login, password reset, email
+verification, Google OAuth, admin login, authenticated/admin pages) are wired
+and verified against the live API.
+
+Required secrets (already configured in this workspace):
+
+- `SESSION_SECRET` — express-session signing key
+- `RESEND_API_KEY`, `RESEND_SENDER_EMAIL` — transactional email via Resend
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — passport-google-oauth20
+- `PAYSTACK_PUBLIC_KEY`, `PAYSTACK_SECRET_KEY` — payments
+- `INBOUND_EMAIL_SECRET` — inbound email webhook
+- `DATABASE_URL` — Postgres (also used by `connect-pg-simple` session store)
+
+If `RESEND_API_KEY` is missing, registration/forgot-password still succeed but
+the verification/reset code is logged to the API server console as a fallback
+(see `artifacts/api-server/src/auth.ts`).
+
+To re-verify the end-to-end auth flow at any time:
+
+```
+pnpm --filter @workspace/scripts run verify-auth-e2e
+```
+
+The script in `scripts/src/verify-auth-e2e.ts` exercises the captcha endpoint,
+register, session-based `/api/auth/user`, captcha-gated login, applicant
+endpoints (`/api/jobs`, `/api/my-applications`, `/api/notifications`),
+forgot-password, the Google OAuth redirect, and admin login + admin endpoints
+(`/api/admin/users`, `/api/admin/jobs`, `/api/admin/applications`).
+
 ## Important Notes
 
 - `drizzle-zod` v0.7 with zod 3.25 (which includes v4 core): `.omit()` fails for columns already excluded by drizzle-zod (generated identity, defaultNow). Use `createInsertSchema(table)` without `.omit()`.

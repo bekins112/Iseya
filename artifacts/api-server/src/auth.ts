@@ -238,9 +238,15 @@ export async function setupAuth(app: Express) {
       try {
         const { sendPasswordResetEmail } = await import("./email");
         const userName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
-        await sendPasswordResetEmail(user.email!, userName, code);
+        const sent = await sendPasswordResetEmail(user.email!, userName, code);
+        if (!sent && process.env.NODE_ENV !== "production") {
+          console.log(`[Password Reset] Code for ${user.email}: ${code}`);
+        }
       } catch (emailErr) {
         console.error("Failed to send reset email:", emailErr);
+        if (process.env.NODE_ENV !== "production") {
+          console.log(`[Password Reset] Code for ${user.email}: ${code}`);
+        }
       }
 
       res.json({ message: "If an account exists with that email, a reset code has been sent." });
