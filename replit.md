@@ -20,7 +20,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ### `artifacts/iseya` — Iṣéyá Job Marketplace (React + Vite)
 - Preview path: `/`
 - Port: 20023
-- Frontend of the Iṣéyá job marketplace, ported from `.migration-backup/client/`
+- Frontend of the Iṣéyá job marketplace
 - Tailwind CSS v3, wouter v3 (with `WouterRouter base` for path routing)
 - Local type definitions in `src/lib/types.ts` (replaces `@shared/schema`)
 - Local Zod schemas in `src/lib/schemas.ts` (replaces `@shared/schema` insert schemas)
@@ -30,7 +30,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 ### `artifacts/api-server` — API Server (Express 5 + Node.js)
 - Preview path: `/api`
 - Port: 8080
-- Backend ported from `.migration-backup/server/`
+- Backend for the Iṣéyá job marketplace
 - Auth: passport-local + passport-google-oauth20, sessions via connect-pg-simple
 - File uploads: multer, stored in `uploads/` and DB via file-storage module
 - Email: Mailjet via node-mailjet + Resend
