@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield, Mail, Lock, AlertCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Shield, Mail, Lock, AlertCircle, Eye, EyeOff, RefreshCw, Volume2 } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -21,10 +21,34 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [captchaKey, setCaptchaKey] = useState(Date.now());
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState("");
 
   const refreshCaptcha = useCallback(() => {
     setCaptchaAnswer("");
+    setAudioError("");
     setCaptchaKey(Date.now());
+  }, []);
+
+  const playAudioCaptcha = useCallback(async () => {
+    setAudioError("");
+    setAudioLoading(true);
+    try {
+      const res = await fetch(`/api/auth/captcha/audio?t=${Date.now()}`, { credentials: "include" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Could not load audio CAPTCHA.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } catch (err: any) {
+      setAudioError(err.message || "Could not play audio CAPTCHA.");
+    } finally {
+      setAudioLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -168,11 +192,11 @@ export default function AdminLogin() {
               <div className="space-y-2">
                 <Label>Security Check</Label>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-muted rounded-lg overflow-hidden border">
+                  <div className="flex-1 bg-white rounded-lg overflow-hidden border">
                     <img
                       src={`/api/auth/captcha?t=${captchaKey}`}
-                      alt="CAPTCHA"
-                      className="h-12 w-full object-contain"
+                      alt="CAPTCHA image. Use the audio button if you cannot read it."
+                      className="h-14 w-full object-contain"
                       data-testid="img-admin-captcha"
                     />
                   </div>
@@ -180,18 +204,37 @@ export default function AdminLogin() {
                     type="button"
                     variant="ghost"
                     size="icon"
+                    onClick={playAudioCaptcha}
+                    disabled={audioLoading}
+                    className="shrink-0"
+                    title="Play audio CAPTCHA"
+                    aria-label="Play audio CAPTCHA"
+                    data-testid="button-audio-admin-captcha"
+                  >
+                    <Volume2 className={`w-4 h-4 ${audioLoading ? "animate-pulse" : ""}`} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={refreshCaptcha}
                     className="shrink-0"
+                    title="Get a new CAPTCHA"
+                    aria-label="Get a new CAPTCHA"
                     data-testid="button-refresh-admin-captcha"
                   >
                     <RefreshCw className="w-4 h-4" />
                   </Button>
                 </div>
+                {audioError && (
+                  <p className="text-xs text-destructive" data-testid="text-admin-audio-captcha-error">{audioError}</p>
+                )}
                 <Input
-                  placeholder="Enter text from image"
+                  placeholder="Enter text you see or hear"
                   value={captchaAnswer}
                   onChange={(e) => setCaptchaAnswer(e.target.value)}
                   required
+                  aria-label="CAPTCHA answer"
                   data-testid="input-admin-captcha"
                 />
               </div>

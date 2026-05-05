@@ -79,18 +79,45 @@ export async function setupAuth(app: Express) {
   app.get("/api/auth/captcha", (req, res) => {
     const captcha = svgCaptcha.create({
       size: 5,
-      noise: 3,
-      color: true,
-      background: "#f0f0f0",
+      noise: 1,
+      color: false,
+      background: "#ffffff",
       width: 200,
-      height: 60,
-      fontSize: 50,
-      charPreset: "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789",
+      height: 70,
+      fontSize: 56,
+      charPreset: "ABCDEFGHJKLMNPQRTUVWXY346789",
     });
     req.session.captchaText = captcha.text;
+    res.set("Cache-Control", "no-store");
     req.session.save(() => {
       res.type("svg").send(captcha.data);
     });
+  });
+
+  app.get("/api/auth/captcha/audio", async (req, res) => {
+    try {
+      const text = req.session.captchaText;
+      if (!text) {
+        return res.status(409).json({ message: "Please load the CAPTCHA image first, then play the audio." });
+      }
+
+      const spelled = text.split("").join(", ");
+      const { getAllAudioBase64 } = await import("google-tts-api");
+      const results = await getAllAudioBase64(spelled, {
+        lang: "en",
+        slow: true,
+        splitPunct: ",",
+      });
+
+      const buffers = results.map((r) => Buffer.from(r.base64, "base64"));
+      const combined = Buffer.concat(buffers);
+
+      res.set("Cache-Control", "no-store");
+      res.type("audio/mpeg").send(combined);
+    } catch (err) {
+      console.error("[captcha-audio] Failed to generate audio captcha:", err);
+      res.status(503).json({ message: "Audio CAPTCHA is temporarily unavailable. Please use the image CAPTCHA." });
+    }
   });
 
   app.post("/api/auth/register", async (req, res) => {

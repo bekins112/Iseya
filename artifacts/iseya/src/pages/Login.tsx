@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, RefreshCw, ShieldCheck } from "lucide-react";
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff, RefreshCw, ShieldCheck, Volume2 } from "lucide-react";
 import { motion } from "framer-motion";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { usePageTitle } from "@/hooks/use-page-title";
@@ -21,6 +21,29 @@ export default function Login() {
   const [error, setError] = useState("");
   const [captchaAnswer, setCaptchaAnswer] = useState("");
   const [captchaKey, setCaptchaKey] = useState(Date.now());
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState("");
+
+  const playAudioCaptcha = useCallback(async () => {
+    setAudioError("");
+    setAudioLoading(true);
+    try {
+      const res = await fetch(`/api/auth/captcha/audio?t=${Date.now()}`, { credentials: "include" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Could not load audio CAPTCHA.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } catch (err: any) {
+      setAudioError(err.message || "Could not play audio CAPTCHA.");
+    } finally {
+      setAudioLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -31,6 +54,7 @@ export default function Login() {
 
   const refreshCaptcha = useCallback(() => {
     setCaptchaAnswer("");
+    setAudioError("");
     setCaptchaKey(Date.now());
   }, []);
 
@@ -160,12 +184,12 @@ export default function Login() {
                     <ShieldCheck className="w-4 h-4 text-primary" />
                     Verify you're human
                   </Label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-muted rounded-lg flex items-center justify-center overflow-hidden select-none" style={{ minHeight: 60 }}>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-white border rounded-lg flex items-center justify-center overflow-hidden select-none" style={{ minHeight: 70 }}>
                       <img
                         src={`/api/auth/captcha?t=${captchaKey}`}
-                        alt="CAPTCHA"
-                        className="h-[60px] w-auto"
+                        alt="CAPTCHA image. Use the audio button if you cannot read it."
+                        className="h-[70px] w-auto"
                         data-testid="captcha-image"
                         draggable={false}
                       />
@@ -174,19 +198,37 @@ export default function Login() {
                       type="button"
                       size="icon"
                       variant="ghost"
+                      onClick={playAudioCaptcha}
+                      disabled={audioLoading}
+                      title="Play audio CAPTCHA"
+                      aria-label="Play audio CAPTCHA"
+                      data-testid="button-audio-captcha"
+                    >
+                      <Volume2 className={`w-4 h-4 ${audioLoading ? "animate-pulse" : ""}`} />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
                       onClick={refreshCaptcha}
+                      title="Get a new CAPTCHA"
+                      aria-label="Get a new CAPTCHA"
                       data-testid="button-refresh-captcha"
                     >
                       <RefreshCw className="w-4 h-4" />
                     </Button>
                   </div>
+                  {audioError && (
+                    <p className="text-xs text-destructive" data-testid="text-audio-captcha-error">{audioError}</p>
+                  )}
                   <Input
                     type="text"
-                    placeholder="Type the characters you see above"
+                    placeholder="Type the characters you see or hear"
                     value={captchaAnswer}
                     onChange={(e) => setCaptchaAnswer(e.target.value)}
                     required
                     autoComplete="off"
+                    aria-label="CAPTCHA answer"
                     data-testid="input-captcha-answer"
                   />
                 </div>
