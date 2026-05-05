@@ -146,6 +146,10 @@ const loginSchema = z.object({
   captcha: z.string().min(1, "Please enter the CAPTCHA text"),
 });
 
+const FAILED_LOGIN_THRESHOLD = 10;
+const FAILED_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const ACCOUNT_LOCK_DURATION_MS = 15 * 60 * 1000;
+
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
@@ -278,10 +282,20 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
+      const now = new Date();
+      if (user.lockedUntil && new Date(user.lockedUntil) > now) {
+        const minutesLeft = Math.max(
+          1,
+          Math.ceil((new Date(user.lockedUntil).getTime() - now.getTime()) / 60000),
+        );
+        return res.status(423).json({
+          message: `This account is temporarily locked due to too many failed login attempts. Please try again in ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"} or reset your password.`,
+        });
+      }
+
       let valid = await bcrypt.compare(input.password, user.password);
 
       if (!valid && user.tempPassword && user.tempPasswordExpiry) {
-        const now = new Date();
         if (now < new Date(user.tempPasswordExpiry)) {
           valid = await bcrypt.compare(input.password, user.tempPassword);
           if (valid) {
@@ -294,11 +308,61 @@ export async function setupAuth(app: Express) {
 
       if (!valid) {
         console.log("[login] Password mismatch for:", input.email);
+
+        const lastFailedAt = user.lastFailedLoginAt
+          ? new Date(user.lastFailedLoginAt)
+          : null;
+        const withinWindow =
+          lastFailedAt &&
+          now.getTime() - lastFailedAt.getTime() < FAILED_LOGIN_WINDOW_MS;
+        const newCount = (withinWindow ? user.failedLoginAttempts ?? 0 : 0) + 1;
+
+        const shouldLock = newCount >= FAILED_LOGIN_THRESHOLD;
+        const lockedUntil = shouldLock
+          ? new Date(now.getTime() + ACCOUNT_LOCK_DURATION_MS)
+          : null;
+
+        await db
+          .update(users)
+          .set({
+            failedLoginAttempts: newCount,
+            lastFailedLoginAt: now,
+            lockedUntil,
+          })
+          .where(eq(users.id, user.id));
+
+        if (shouldLock) {
+          logActivity({
+            req,
+            userId: user.id,
+            userEmail: user.email || undefined,
+            userRole: user.role || undefined,
+            action: "account_locked",
+            category: "auth",
+            description: `Account temporarily locked after ${newCount} failed login attempts: ${user.email}`,
+          });
+          const minutes = Math.ceil(ACCOUNT_LOCK_DURATION_MS / 60000);
+          return res.status(423).json({
+            message: `Too many failed login attempts. This account has been temporarily locked for ${minutes} minutes. You can also reset your password to regain access sooner.`,
+          });
+        }
+
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       if (user.isSuspended) {
         return res.status(403).json({ message: "Your account has been suspended. Please contact support for assistance." });
+      }
+
+      if (user.failedLoginAttempts || user.lastFailedLoginAt || user.lockedUntil) {
+        await db
+          .update(users)
+          .set({
+            failedLoginAttempts: 0,
+            lastFailedLoginAt: null,
+            lockedUntil: null,
+          })
+          .where(eq(users.id, user.id));
       }
 
       req.session.userId = user.id;
@@ -388,7 +452,14 @@ export async function setupAuth(app: Express) {
       const hashedPassword = await bcrypt.hash(password, 10);
       await db
         .update(users)
-        .set({ password: hashedPassword, resetToken: null, resetTokenExpiry: null })
+        .set({
+          password: hashedPassword,
+          resetToken: null,
+          resetTokenExpiry: null,
+          failedLoginAttempts: 0,
+          lastFailedLoginAt: null,
+          lockedUntil: null,
+        })
         .where(eq(users.id, user.id));
 
       const { sendPasswordChangedEmail } = await import("./email");

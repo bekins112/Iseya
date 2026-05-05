@@ -62,6 +62,9 @@ export const users = pgTable("users", {
   agentPostCredits: integer("agent_post_credits").default(0),
   tempPassword: varchar("temp_password"),
   tempPasswordExpiry: timestamp("temp_password_expiry"),
+  failedLoginAttempts: integer("failed_login_attempts").default(0),
+  lastFailedLoginAt: timestamp("last_failed_login_at"),
+  lockedUntil: timestamp("locked_until"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
