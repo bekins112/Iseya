@@ -462,6 +462,181 @@ function buildHealthCheckAlertSignature(result: EmailHealthCheckResult): string 
   return `${result.status}::${result.recipient}::${normalizedMessage}`;
 }
 
+async function sendSmsAlert(to: string, body: string): Promise<void> {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM_NUMBER || process.env.TWILIO_FROM;
+  if (!accountSid || !authToken || !from) {
+    throw new Error("Twilio not configured (set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER).");
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+  const params = new URLSearchParams({ To: to, From: from, Body: body.slice(0, 1500) });
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Authorization": "Basic " + Buffer.from(`${accountSid}:${authToken}`).toString("base64"),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: params.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`Twilio send failed (${resp.status}): ${text.slice(0, 300)}`);
+  }
+}
+
+async function sendBackupEmailAlert(to: string, subject: string, body: string): Promise<void> {
+  const html = `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap; font-size: 13px;">${body
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>`;
+
+  const postmarkKey = process.env.POSTMARK_API_KEY;
+  const postmarkFrom = process.env.POSTMARK_FROM_EMAIL || process.env.BACKUP_EMAIL_FROM;
+  if (postmarkKey && postmarkFrom) {
+    const resp = await fetch("https://api.postmarkapp.com/email", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-Postmark-Server-Token": postmarkKey,
+      },
+      body: JSON.stringify({ From: postmarkFrom, To: to, Subject: subject, HtmlBody: html, TextBody: body, MessageStream: "outbound" }),
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(`Postmark send failed (${resp.status}): ${text.slice(0, 300)}`);
+    }
+    return;
+  }
+
+  const sendgridKey = process.env.SENDGRID_API_KEY;
+  const sendgridFrom = process.env.SENDGRID_FROM_EMAIL || process.env.BACKUP_EMAIL_FROM;
+  if (sendgridKey && sendgridFrom) {
+    const resp = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${sendgridKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: to }], subject }],
+        from: { email: sendgridFrom },
+        content: [
+          { type: "text/plain", value: body },
+          { type: "text/html", value: html },
+        ],
+      }),
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(`SendGrid send failed (${resp.status}): ${text.slice(0, 300)}`);
+    }
+    return;
+  }
+
+  throw new Error("Backup email channel enabled but no out-of-band provider configured. Set POSTMARK_API_KEY+POSTMARK_FROM_EMAIL or SENDGRID_API_KEY+SENDGRID_FROM_EMAIL.");
+}
+
+function isPrivateOrLocalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (h === "localhost" || h === "ip6-localhost" || h === "ip6-loopback") return true;
+  if (h.endsWith(".localhost") || h.endsWith(".local") || h.endsWith(".internal")) return true;
+  // IPv4 literal checks
+  const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 0) return true;
+    if (a === 169 && b === 254) return true; // link-local
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+    if (a >= 224) return true; // multicast/reserved
+  }
+  // IPv6 loopback / link-local / unique-local
+  if (h === "::1" || h === "[::1]") return true;
+  if (h.startsWith("fe80:") || h.startsWith("fc") || h.startsWith("fd")) return true;
+  // Cloud metadata endpoints
+  if (h === "169.254.169.254" || h === "metadata.google.internal") return true;
+  return false;
+}
+
+function validateWebhookUrl(raw: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error("Webhook URL is not a valid URL.");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error("Webhook URL must use https://.");
+  }
+  if (!parsed.hostname || isPrivateOrLocalHost(parsed.hostname)) {
+    throw new Error("Webhook URL host is not allowed (private, loopback, or metadata address).");
+  }
+  return parsed;
+}
+
+async function sendWebhookAlert(url: string, result: EmailHealthCheckResult, summary: string): Promise<void> {
+  const parsed = validateWebhookUrl(url);
+  const resp = await fetch(parsed.toString(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "email_health_check_failed",
+      checkedAt: result.checkedAt,
+      status: result.status,
+      message: result.message,
+      recipient: result.recipient,
+      emailId: result.emailId,
+      summary,
+    }),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    throw new Error(`Webhook POST failed (${resp.status}): ${text.slice(0, 300)}`);
+  }
+}
+
+async function dispatchOutOfBandHealthCheckAlerts(result: EmailHealthCheckResult, summary: string): Promise<void> {
+  const subject = "[Iṣéyá] Email delivery health check FAILED";
+
+  const smsEnabled = (await storage.getSetting("alert_channel_sms_enabled")) === "true";
+  const smsTo = (await storage.getSetting("alert_channel_sms_recipient"))?.trim();
+  if (smsEnabled && smsTo) {
+    try {
+      await sendSmsAlert(smsTo, summary);
+      console.log(`[scheduler] SMS health-check alert sent to ${smsTo}.`);
+    } catch (err: any) {
+      console.error("[scheduler] SMS alert failed:", err?.message || err);
+    }
+  }
+
+  const backupEmailEnabled = (await storage.getSetting("alert_channel_backup_email_enabled")) === "true";
+  const backupEmailTo = (await storage.getSetting("alert_channel_backup_email_recipient"))?.trim();
+  if (backupEmailEnabled && backupEmailTo) {
+    try {
+      await sendBackupEmailAlert(backupEmailTo, subject, summary);
+      console.log(`[scheduler] Backup-email health-check alert sent to ${backupEmailTo}.`);
+    } catch (err: any) {
+      console.error("[scheduler] Backup email alert failed:", err?.message || err);
+    }
+  }
+
+  const webhookEnabled = (await storage.getSetting("alert_channel_webhook_enabled")) === "true";
+  const webhookUrl = (await storage.getSetting("alert_channel_webhook_url"))?.trim();
+  if (webhookEnabled && webhookUrl) {
+    try {
+      await sendWebhookAlert(webhookUrl, result, summary);
+      let host = "<unknown>";
+      try { host = new URL(webhookUrl).host; } catch { /* ignore */ }
+      console.log(`[scheduler] Webhook health-check alert POSTed to ${host}.`);
+    } catch (err: any) {
+      console.error("[scheduler] Webhook alert failed:", err?.message || err);
+    }
+  }
+}
+
 async function notifyAdminsOfHealthCheckFailure(result: EmailHealthCheckResult): Promise<void> {
   if (result.status !== "failed") {
     const previousSignature = await storage.getSetting("last_email_health_check_alert_signature");
@@ -506,14 +681,17 @@ async function notifyAdminsOfHealthCheckFailure(result: EmailHealthCheckResult):
       `Test recipient: ${result.recipient}`,
       "Check Resend status, DNS records, sender-domain verification, and confirm the Resend API key is still valid.",
     ];
+    const summary = messageLines.join("\n");
 
     await storage.createNotification({
       title: "Email delivery health check FAILED",
-      message: messageLines.join("\n"),
+      message: summary,
       type: "role",
       targetRole: "admin",
       createdBy: adminUser.id,
     });
+
+    await dispatchOutOfBandHealthCheckAlerts(result, summary);
 
     await storage.upsertSetting("last_email_health_check_alert_signature", signature, adminUser.id);
     await storage.upsertSetting("last_email_health_check_alert_at", new Date().toISOString(), adminUser.id);

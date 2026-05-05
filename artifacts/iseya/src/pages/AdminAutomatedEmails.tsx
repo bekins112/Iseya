@@ -222,6 +222,12 @@ export default function AdminAutomatedEmails() {
   const healthCheckDays = settings?.email_health_check_schedule_days || "1";
   const healthCheckTime = settings?.email_health_check_schedule_time || "07:00";
   const healthCheckRecipient = settings?.email_health_check_recipient || "";
+  const smsAlertEnabled = settings?.alert_channel_sms_enabled === "true";
+  const smsAlertRecipient = settings?.alert_channel_sms_recipient || "";
+  const backupEmailAlertEnabled = settings?.alert_channel_backup_email_enabled === "true";
+  const backupEmailAlertRecipient = settings?.alert_channel_backup_email_recipient || "";
+  const webhookAlertEnabled = settings?.alert_channel_webhook_enabled === "true";
+  const webhookAlertUrl = settings?.alert_channel_webhook_url || "";
 
   const lastStatus = healthCheckStatus?.status || "";
   const lastStatusOk = lastStatus === "delivered" || lastStatus === "sent";
@@ -558,6 +564,105 @@ export default function AdminAutomatedEmails() {
                 <Clock className="h-4 w-4" />
                 <span>Schedule: {getDayLabels(healthCheckDays)} at {healthCheckTime}</span>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-3 bg-muted/10 space-y-3" data-testid="card-alert-channels">
+            <div>
+              <p className="text-sm font-semibold">Out-of-band failure alerts</p>
+              <p className="text-xs text-muted-foreground">
+                When a health check fails, also notify these channels (in addition to the in-app admin notification). Useful when the email pipeline itself is the failing component. Sends are deduplicated per failure signature.
+              </p>
+            </div>
+
+            <div className="space-y-2 rounded-md border bg-background p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="toggle-alert-sms" className="text-sm">SMS (Twilio)</Label>
+                <Switch
+                  id="toggle-alert-sms"
+                  data-testid="toggle-alert-channel-sms"
+                  checked={smsAlertEnabled}
+                  disabled={settingsLoading}
+                  onCheckedChange={(checked) => {
+                    updateSettings.mutate({ alert_channel_sms_enabled: checked ? "true" : "false" });
+                  }}
+                />
+              </div>
+              <Input
+                data-testid="input-alert-channel-sms-recipient"
+                placeholder="Recipient phone, e.g. +2348012345678"
+                defaultValue={smsAlertRecipient}
+                key={`sms-${smsAlertRecipient}`}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (next !== smsAlertRecipient) {
+                    updateSettings.mutate({ alert_channel_sms_recipient: next });
+                  }
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Requires server env vars: <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code>, <code>TWILIO_FROM_NUMBER</code>.
+              </p>
+            </div>
+
+            <div className="space-y-2 rounded-md border bg-background p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="toggle-alert-backup-email" className="text-sm">Backup email (Postmark / SendGrid)</Label>
+                <Switch
+                  id="toggle-alert-backup-email"
+                  data-testid="toggle-alert-channel-backup-email"
+                  checked={backupEmailAlertEnabled}
+                  disabled={settingsLoading}
+                  onCheckedChange={(checked) => {
+                    updateSettings.mutate({ alert_channel_backup_email_enabled: checked ? "true" : "false" });
+                  }}
+                />
+              </div>
+              <Input
+                data-testid="input-alert-channel-backup-email-recipient"
+                placeholder="Backup recipient, e.g. ops-backup@example.com"
+                defaultValue={backupEmailAlertRecipient}
+                key={`backup-${backupEmailAlertRecipient}`}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (next !== backupEmailAlertRecipient) {
+                    updateSettings.mutate({ alert_channel_backup_email_recipient: next });
+                  }
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Sent via a non-Resend provider so a Resend outage still reaches you. Requires <code>POSTMARK_API_KEY</code> + <code>POSTMARK_FROM_EMAIL</code> or <code>SENDGRID_API_KEY</code> + <code>SENDGRID_FROM_EMAIL</code>.
+              </p>
+            </div>
+
+            <div className="space-y-2 rounded-md border bg-background p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="toggle-alert-webhook" className="text-sm">Webhook</Label>
+                <Switch
+                  id="toggle-alert-webhook"
+                  data-testid="toggle-alert-channel-webhook"
+                  checked={webhookAlertEnabled}
+                  disabled={settingsLoading}
+                  onCheckedChange={(checked) => {
+                    updateSettings.mutate({ alert_channel_webhook_enabled: checked ? "true" : "false" });
+                  }}
+                />
+              </div>
+              <Input
+                data-testid="input-alert-channel-webhook-url"
+                placeholder="https://hooks.example.com/iseya-email-health"
+                defaultValue={webhookAlertUrl}
+                key={`webhook-${webhookAlertUrl}`}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (next !== webhookAlertUrl) {
+                    updateSettings.mutate({ alert_channel_webhook_url: next });
+                  }
+                }}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                POSTs a JSON payload (type, status, message, recipient, emailId, summary) to your endpoint.
+              </p>
             </div>
           </div>
 

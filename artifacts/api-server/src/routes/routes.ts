@@ -4298,6 +4298,12 @@ export async function registerRoutes(
     "email_health_check_schedule_days": "1",
     "email_health_check_schedule_time": "07:00",
     "email_health_check_recipient": "",
+    "alert_channel_sms_enabled": "false",
+    "alert_channel_sms_recipient": "",
+    "alert_channel_backup_email_enabled": "false",
+    "alert_channel_backup_email_recipient": "",
+    "alert_channel_webhook_enabled": "false",
+    "alert_channel_webhook_url": "",
   };
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
@@ -4307,6 +4313,9 @@ export async function registerRoutes(
     "auto_application_reminders",
     "auto_profile_reminders",
     "auto_email_health_check",
+    "alert_channel_sms_enabled",
+    "alert_channel_backup_email_enabled",
+    "alert_channel_webhook_enabled",
   ]);
 
   const TEXT_SETTINGS_KEYS = new Set([
@@ -4315,6 +4324,7 @@ export async function registerRoutes(
     "app_reminders_schedule_days", "app_reminders_schedule_time",
     "profile_reminders_schedule_days", "profile_reminders_schedule_time",
     "email_health_check_schedule_days", "email_health_check_schedule_time", "email_health_check_recipient",
+    "alert_channel_sms_recipient", "alert_channel_backup_email_recipient", "alert_channel_webhook_url",
     "app_facebook", "app_twitter", "app_instagram", "app_linkedin", "app_tiktok", "app_whatsapp",
     "paystack_public_key", "paystack_secret_key",
     "flutterwave_public_key", "flutterwave_secret_key",
