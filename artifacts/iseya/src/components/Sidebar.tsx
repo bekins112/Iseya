@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import type { AdminPermissions } from "@/lib/types";
+import { RoleColorDot } from "@/lib/roleColor";
 
 export function Sidebar() {
   const { user, logout } = useAuth();
@@ -273,8 +274,19 @@ export function Sidebar() {
             {user?.firstName?.[0] || "U"}
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
+            <p className="text-sm font-medium truncate flex items-center gap-1.5">
+              {isAdmin && (
+                <RoleColorDot
+                  color={user?.assignedRole?.color}
+                  title={user?.assignedRole?.name || "Admin"}
+                  data-testid="header-role-color"
+                />
+              )}
+              <span className="truncate">{user?.firstName} {user?.lastName}</span>
+            </p>
+            <p className="text-xs text-muted-foreground capitalize flex items-center gap-1.5">
+              {isAdmin && user?.assignedRole?.name ? user.assignedRole.name : user?.role}
+            </p>
           </div>
         </div>
         <Button 

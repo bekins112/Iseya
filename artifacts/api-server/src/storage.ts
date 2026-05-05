@@ -172,7 +172,7 @@ export interface IStorage {
     monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; total: number }[];
   }>;
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
-  getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLog[]; total: number }>;
+  getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLogWithRoleColor[]; total: number }>;
   clearActivityLogs(before?: Date): Promise<number>;
 }
 
@@ -197,6 +197,8 @@ const PERMISSION_KEYS = [
   "canManageGoogleSettings",
   "canManageChats",
 ] as const;
+
+export type ActivityLogWithRoleColor = ActivityLog & { userRoleColor: string | null };
 
 function mergePermissionsWithRole(perms: AdminPermissions, role: AdminRole): AdminPermissions {
   const merged: any = { ...perms };
@@ -1281,7 +1283,7 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLog[]; total: number }> {
+  async getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLogWithRoleColor[]; total: number }> {
     const conditions: any[] = [];
     if (filters?.category) conditions.push(eq(activityLogs.category, filters.category));
     if (filters?.userId) conditions.push(eq(activityLogs.userId, filters.userId));
@@ -1294,7 +1296,31 @@ export class DatabaseStorage implements IStorage {
     const [totalResult] = await db.select({ count: count() }).from(activityLogs).where(where);
     const logs = await db.select().from(activityLogs).where(where).orderBy(desc(activityLogs.createdAt)).limit(limit).offset(offset);
 
-    return { logs, total: totalResult?.count || 0 };
+    // Enrich admin log entries with their currently assigned role color
+    const adminUserIds = Array.from(
+      new Set(
+        logs
+          .filter((l) => l.userRole === "admin" && l.userId)
+          .map((l) => l.userId as string)
+      )
+    );
+    const colorByUserId = new Map<string, string | null>();
+    if (adminUserIds.length > 0) {
+      const rows = await db
+        .select({ userId: adminPermissions.userId, color: adminRoles.color })
+        .from(adminPermissions)
+        .leftJoin(adminRoles, eq(adminPermissions.roleId, adminRoles.id))
+        .where(inArray(adminPermissions.userId, adminUserIds));
+      for (const r of rows) {
+        colorByUserId.set(r.userId, r.color ?? null);
+      }
+    }
+    const enriched: ActivityLogWithRoleColor[] = logs.map((l) => ({
+      ...l,
+      userRoleColor: l.userId ? colorByUserId.get(l.userId) ?? null : null,
+    }));
+
+    return { logs: enriched, total: totalResult?.count || 0 };
   }
 
   async clearActivityLogs(before?: Date): Promise<number> {

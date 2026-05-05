@@ -44,6 +44,7 @@ export interface User {
   isAgent?: boolean | null;
   agentCode?: string | null;
   agentCredits?: number | null;
+  assignedRole?: AdminRole | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
 }
@@ -238,10 +239,18 @@ export interface GoogleAdPlacement {
 export interface ActivityLog {
   id: number;
   userId?: string | null;
+  userEmail?: string | null;
+  userRole?: string | null;
+  userRoleColor?: string | null;
   action: string;
+  category: string;
+  description: string;
+  targetType?: string | null;
+  targetId?: string | null;
+  metadata?: string | null;
   details?: Record<string, unknown> | null;
   ipAddress?: string | null;
-  createdAt?: Date | null;
+  createdAt?: Date | string | null;
 }
 
 export interface HiringCompany {

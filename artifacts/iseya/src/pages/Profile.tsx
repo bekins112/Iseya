@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { nigerianStates } from "@/lib/nigerian-locations";
 import { jobSectors, allJobCategories, businessCategories } from "@/lib/job-categories";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { RoleColorDot } from "@/lib/roleColor";
 
 const JOB_TYPE_OPTIONS = [
   "Full-time",
@@ -277,8 +278,13 @@ export default function Profile() {
               </div>
               <h3 className="text-2xl font-display font-bold">{user?.firstName} {user?.lastName}</h3>
               <p className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-xs mb-6 flex items-center justify-center gap-2">
+                <RoleColorDot
+                  color={user?.role === 'admin' ? user?.assignedRole?.color : null}
+                  title={user?.role === 'admin' ? (user?.assignedRole?.name || 'Admin') : (user?.role || undefined)}
+                  data-testid="profile-role-color"
+                />
                 {user?.role === 'agent' && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/10 text-teal-700 border border-teal-500/30 dark:text-teal-400">Agent</span>}
-                {user?.role !== 'agent' && user?.role}
+                {user?.role === 'admin' && user?.assignedRole?.name ? user.assignedRole.name : (user?.role !== 'agent' ? user?.role : null)}
                 {user?.role === 'agent' && (user as any)?.agencyName && <span className="text-muted-foreground/60">• {(user as any).agencyName}</span>}
               </p>
               <div className="flex justify-center gap-4 py-4 border-t border-border/40">

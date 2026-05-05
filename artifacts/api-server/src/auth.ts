@@ -7,12 +7,21 @@ import { z } from "zod";
 import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
 import { logActivity } from "./activity-logger";
+import type { AdminRole, User } from "@workspace/db";
 import { users } from "./shared/models/auth";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { validateEmail } from "./email-validation";
+
+async function getAssignedRoleForUser(user: Pick<User, "id" | "role">): Promise<AdminRole | null> {
+  if (user.role !== "admin") return null;
+  const perms = await storage.getAdminPermissions(user.id);
+  if (!perms?.roleId) return null;
+  const role = await storage.getRole(perms.roleId);
+  return role ?? null;
+}
 
 declare module "express-session" {
   interface SessionData {
@@ -135,8 +144,9 @@ export async function setupAuth(app: Express) {
 
       req.session.userId = user.id;
       const { password: _, ...safeUser } = { ...user, emailVerified: false };
+      const assignedRole = await getAssignedRoleForUser(user);
       logActivity({ req, userId: user.id, userEmail: input.email, userRole: input.role || "applicant", action: "register", category: "auth", description: `New ${input.role || "applicant"} registered: ${input.email}` });
-      res.status(201).json(safeUser);
+      res.status(201).json({ ...safeUser, assignedRole });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
@@ -192,8 +202,9 @@ export async function setupAuth(app: Express) {
 
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
+      const assignedRole = await getAssignedRoleForUser(user);
       logActivity({ req, userId: user.id, userEmail: user.email || undefined, userRole: user.role || undefined, action: "login", category: "auth", description: `User logged in: ${user.email}` });
-      res.json(safeUser);
+      res.json({ ...safeUser, assignedRole });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
@@ -299,7 +310,8 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: "Unauthorized" });
       }
       const { password: _, ...safeUser } = user;
-      res.json(safeUser);
+      const assignedRole = await getAssignedRoleForUser(user);
+      res.json({ ...safeUser, assignedRole });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });

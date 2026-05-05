@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { usePageTitle } from "@/hooks/use-page-title";
 import type { ActivityLog } from "@/lib/types";
+import { RoleColorDot } from "@/lib/roleColor";
 
 const CATEGORIES = [
   { value: "all", label: "All Categories" },
@@ -139,7 +140,7 @@ export default function AdminActivityLogs() {
       )
     : logs;
 
-  const getRoleBadge = (role: string | null) => {
+  const getRoleBadge = (role: string | null, roleColor?: string | null) => {
     if (!role) return null;
     const colors: Record<string, string> = {
       admin: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
@@ -148,7 +149,8 @@ export default function AdminActivityLogs() {
       agent: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
     };
     return (
-      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${colors[role] || "bg-gray-100 text-gray-700"}`}>
+      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${colors[role] || "bg-gray-100 text-gray-700"}`}>
+        <RoleColorDot color={role === "admin" ? roleColor : null} title={role} />
         {role}
       </span>
     );
@@ -284,7 +286,7 @@ export default function AdminActivityLogs() {
                             {log.userEmail}
                           </span>
                         )}
-                        {getRoleBadge(log.userRole)}
+                        {getRoleBadge(log.userRole ?? null, log.userRoleColor)}
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                           {ACTION_LABELS[log.action] || log.action}
                         </Badge>
