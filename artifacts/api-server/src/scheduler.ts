@@ -525,17 +525,15 @@ async function notifyAdminsOfHealthCheckFailure(result: EmailHealthCheckResult):
 
 async function persistHealthCheckResult(result: EmailHealthCheckResult): Promise<void> {
   try {
-    const adminUser = await pickAdminUser();
-    if (!adminUser) return;
-    await Promise.all([
-      storage.upsertSetting("last_email_health_check_at", result.checkedAt, adminUser.id),
-      storage.upsertSetting("last_email_health_check_status", result.status, adminUser.id),
-      storage.upsertSetting("last_email_health_check_message", result.message, adminUser.id),
-      storage.upsertSetting("last_email_health_check_recipient", result.recipient, adminUser.id),
-      storage.upsertSetting("last_email_health_check_id", result.emailId ?? "", adminUser.id),
-    ]);
+    await storage.recordEmailHealthCheck({
+      checkedAt: new Date(result.checkedAt),
+      status: result.status,
+      recipient: result.recipient,
+      message: result.message,
+      emailId: result.emailId ?? null,
+    });
   } catch (err) {
-    console.error("[scheduler] Failed to persist health check result:", err);
+    console.error("[scheduler] Failed to record email health check history:", err);
   }
   await notifyAdminsOfHealthCheckFailure(result);
 }

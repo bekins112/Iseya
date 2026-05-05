@@ -4298,11 +4298,6 @@ export async function registerRoutes(
     "email_health_check_schedule_days": "1",
     "email_health_check_schedule_time": "07:00",
     "email_health_check_recipient": "",
-    "last_email_health_check_at": "",
-    "last_email_health_check_status": "",
-    "last_email_health_check_message": "",
-    "last_email_health_check_recipient": "",
-    "last_email_health_check_id": "",
   };
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
@@ -4923,19 +4918,23 @@ export async function registerRoutes(
       return res.status(403).json({ message: "You do not have permission to view automated emails" });
     }
     try {
-      const [at, status, message, recipient, emailId] = await Promise.all([
-        storage.getSetting("last_email_health_check_at"),
-        storage.getSetting("last_email_health_check_status"),
-        storage.getSetting("last_email_health_check_message"),
-        storage.getSetting("last_email_health_check_recipient"),
-        storage.getSetting("last_email_health_check_id"),
-      ]);
+      const history = await storage.getRecentEmailHealthChecks(20);
+      const latest = history[0];
+      const checkedAtIso = latest?.checkedAt ? new Date(latest.checkedAt).toISOString() : null;
       res.json({
-        checkedAt: at || null,
-        status: status || null,
-        message: message || null,
-        recipient: recipient || null,
-        emailId: emailId || null,
+        checkedAt: checkedAtIso,
+        status: latest?.status ?? null,
+        message: latest?.message ?? null,
+        recipient: latest?.recipient ?? null,
+        emailId: latest?.emailId ?? null,
+        history: history.map((h) => ({
+          id: h.id,
+          checkedAt: h.checkedAt ? new Date(h.checkedAt).toISOString() : null,
+          status: h.status,
+          message: h.message,
+          recipient: h.recipient,
+          emailId: h.emailId,
+        })),
       });
     } catch (err: any) {
       console.error("Email health check status error:", err);

@@ -162,6 +162,14 @@ export default function AdminAutomatedEmails() {
     message: string | null;
     recipient: string | null;
     emailId: string | null;
+    history?: Array<{
+      id: number;
+      checkedAt: string | null;
+      status: string;
+      message: string;
+      recipient: string;
+      emailId: string | null;
+    }>;
   }>({
     queryKey: ["/api/admin/automated-emails/health-check/status"],
   });
@@ -551,6 +559,52 @@ export default function AdminAutomatedEmails() {
                 <span>Schedule: {getDayLabels(healthCheckDays)} at {healthCheckTime}</span>
               </div>
             </div>
+          </div>
+
+          <div className="rounded-lg border bg-muted/10" data-testid="card-health-check-history">
+            <div className="flex items-center justify-between p-3 border-b">
+              <span className="text-sm font-semibold">Recent checks</span>
+              <span className="text-xs text-muted-foreground">Last {Math.min(20, healthCheckStatus?.history?.length ?? 0)} of 20</span>
+            </div>
+            {healthCheckStatusLoading ? (
+              <p className="text-xs text-muted-foreground p-3">Loading history...</p>
+            ) : !healthCheckStatus?.history || healthCheckStatus.history.length === 0 ? (
+              <p className="text-xs text-muted-foreground p-3" data-testid="text-health-check-history-empty">No checks have run yet.</p>
+            ) : (
+              <ul className="divide-y">
+                {healthCheckStatus.history.map((h) => {
+                  const ok = h.status === "delivered" || h.status === "sent";
+                  const failed = h.status === "failed";
+                  const badge = ok
+                    ? "bg-green-100 text-green-800 border-green-200"
+                    : failed
+                      ? "bg-red-100 text-red-800 border-red-200"
+                      : "bg-muted text-muted-foreground border-border";
+                  const ts = h.checkedAt ? new Date(h.checkedAt).toLocaleString() : "—";
+                  return (
+                    <li key={h.id} className="p-3 text-xs flex items-start gap-2" data-testid={`row-health-check-${h.id}`}>
+                      {ok ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                      ) : failed ? (
+                        <XCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">{ts}</span>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${badge}`}>
+                            {h.status}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground mt-0.5 break-words">{h.message}</p>
+                        <p className="text-muted-foreground/80 mt-0.5">To: {h.recipient}</p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           <Button

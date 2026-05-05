@@ -307,6 +307,20 @@ export const platformSettings = pgTable("platform_settings", {
 export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
 
+export const emailHealthChecks = pgTable("email_health_checks", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  checkedAt: timestamp("checked_at").notNull().defaultNow(),
+  status: varchar("status").notNull(),
+  recipient: varchar("recipient").notNull(),
+  message: text("message").notNull(),
+  emailId: varchar("email_id"),
+}, (t) => ({
+  checkedAtIdx: index("email_health_checks_checked_at_idx").on(t.checkedAt),
+}));
+
+export type EmailHealthCheck = typeof emailHealthChecks.$inferSelect;
+export type InsertEmailHealthCheck = typeof emailHealthChecks.$inferInsert;
+
 export const transactions = pgTable("transactions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: varchar("user_id").notNull().references(() => users.id),

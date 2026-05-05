@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, adminRoles, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type AdminRole, type InsertAdminRole, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany } from "@workspace/db";
+import { users, jobs, applications, adminPermissions, adminRoles, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, emailHealthChecks, type EmailHealthCheck, type InsertEmailHealthCheck, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type AdminRole, type InsertAdminRole, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany } from "@workspace/db";
 import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -127,6 +127,10 @@ export interface IStorage {
   getSetting(key: string): Promise<string | null>;
   getAllSettings(): Promise<PlatformSetting[]>;
   upsertSetting(key: string, value: string, updatedBy: string): Promise<PlatformSetting>;
+
+  // Email health checks
+  recordEmailHealthCheck(check: InsertEmailHealthCheck): Promise<EmailHealthCheck>;
+  getRecentEmailHealthChecks(limit?: number): Promise<EmailHealthCheck[]>;
 
   // Newsletter
   addNewsletterSubscriber(email: string): Promise<void>;
@@ -1117,6 +1121,20 @@ export class DatabaseStorage implements IStorage {
     }
     const [created] = await db.insert(platformSettings).values({ key, value, updatedBy }).returning();
     return created;
+  }
+
+  // Email health check methods
+  async recordEmailHealthCheck(check: InsertEmailHealthCheck): Promise<EmailHealthCheck> {
+    const [created] = await db.insert(emailHealthChecks).values(check).returning();
+    return created;
+  }
+
+  async getRecentEmailHealthChecks(limit = 20): Promise<EmailHealthCheck[]> {
+    return await db
+      .select()
+      .from(emailHealthChecks)
+      .orderBy(desc(emailHealthChecks.checkedAt))
+      .limit(limit);
   }
 
   // Transaction methods
