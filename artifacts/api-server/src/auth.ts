@@ -3,6 +3,8 @@ import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import svgCaptcha from "svg-captcha";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { z } from "zod";
 import type { Express, RequestHandler } from "express";
 import { storage } from "./storage";
@@ -39,6 +41,53 @@ const loginRateLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many login attempts. Please wait a moment and try again." },
 });
+
+// Audio CAPTCHA samples are bundled with the build (see build.mjs `copyAssets`).
+// They live in `<dist>/captcha-audio/<char>.mp3` in production and in
+// `src/captcha-audio/<char>.mp3` during development.
+const captchaAudioDir = (() => {
+  const candidates = [
+    path.resolve(__dirname, "captcha-audio"),
+    path.resolve(__dirname, "../src/captcha-audio"),
+  ];
+  for (const dir of candidates) {
+    try {
+      if (fs.statSync(dir).isDirectory()) return dir;
+    } catch {}
+  }
+  return candidates[0];
+})();
+
+const captchaSampleCache = new Map<string, Buffer>();
+
+// Fail-fast log if the bundled samples are missing in this deployment so that
+// misconfigured builds are obvious in the startup logs instead of only failing
+// on the first audio CAPTCHA request.
+try {
+  const entries = fs.readdirSync(captchaAudioDir).filter((f) => f.endsWith(".mp3"));
+  if (entries.length === 0) {
+    console.error(
+      `[captcha-audio] No MP3 samples found in ${captchaAudioDir}. The audio CAPTCHA endpoint will return 503.`,
+    );
+  }
+} catch (err) {
+  console.error(
+    `[captcha-audio] Could not read samples directory ${captchaAudioDir}:`,
+    err instanceof Error ? err.message : err,
+  );
+}
+
+function loadCaptchaSample(ch: string): Buffer | null {
+  const cached = captchaSampleCache.get(ch);
+  if (cached) return cached;
+  try {
+    const buf = fs.readFileSync(path.join(captchaAudioDir, `${ch}.mp3`));
+    captchaSampleCache.set(ch, buf);
+    return buf;
+  } catch {
+    return null;
+  }
+}
 
 async function getAssignedRoleForUser(user: Pick<User, "id" | "role">): Promise<AdminRole | null> {
   if (user.role !== "admin") return null;
@@ -119,24 +168,24 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/auth/captcha/audio", audioCaptchaRateLimiter, async (req, res) => {
+  app.get("/api/auth/captcha/audio", audioCaptchaRateLimiter, (req, res) => {
     try {
       const text = req.session.captchaText;
       if (!text) {
         return res.status(409).json({ message: "Please load the CAPTCHA image first, then play the audio." });
       }
 
-      const spelled = text.split("").join(", ");
-      const { getAllAudioBase64 } = await import("google-tts-api");
-      const results = await getAllAudioBase64(spelled, {
-        lang: "en",
-        slow: true,
-        splitPunct: ",",
-      });
+      const buffers: Buffer[] = [];
+      for (const ch of text.toUpperCase()) {
+        const sample = loadCaptchaSample(ch);
+        if (!sample) {
+          console.error(`[captcha-audio] Missing audio sample for character '${ch}'`);
+          return res.status(503).json({ message: "Audio CAPTCHA is temporarily unavailable. Please use the image CAPTCHA." });
+        }
+        buffers.push(sample);
+      }
 
-      const buffers = results.map((r) => Buffer.from(r.base64, "base64"));
       const combined = Buffer.concat(buffers);
-
       res.set("Cache-Control", "no-store");
       res.type("audio/mpeg").send(combined);
     } catch (err) {
