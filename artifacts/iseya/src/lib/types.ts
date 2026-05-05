@@ -168,6 +168,7 @@ export interface ChatMessage {
   conversationId: number;
   sender: "user" | "bot" | "admin" | "system";
   senderUserId?: string | null;
+  senderRoleColor?: string | null;
   content: string;
   createdAt?: string | null;
 }
@@ -186,8 +187,12 @@ export interface TicketMessage {
   id: number;
   ticketId: number;
   senderId: string;
+  senderRole?: string | null;
+  senderRoleColor?: string | null;
   message: string;
   isAdmin?: boolean | null;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
   createdAt?: Date | null;
 }
 

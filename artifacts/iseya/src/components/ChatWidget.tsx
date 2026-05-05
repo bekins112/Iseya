@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import type { ChatConversation, ChatMessage } from "@/lib/types";
 import { playNotificationSound } from "@/lib/notificationSound";
+import { RoleColorDot } from "@/lib/roleColor";
 
 const STORAGE_KEY = "iseya_chat_credentials_v1";
 const POLL_INTERVAL_MS = 4000;
@@ -379,8 +380,9 @@ function MessageBubble({ m }: { m: ChatMessage }) {
         }`}
       >
         {!mine && (
-          <div className="text-[10px] uppercase tracking-wide opacity-70 mb-0.5">
-            {isAdmin ? "Iṣéyá Team" : "Assistant"}
+          <div className="text-[10px] uppercase tracking-wide opacity-70 mb-0.5 flex items-center gap-1">
+            {isAdmin && <RoleColorDot color={m.senderRoleColor} title="Admin role color" />}
+            <span>{isAdmin ? "Iṣéyá Team" : "Assistant"}</span>
           </div>
         )}
         {m.content}

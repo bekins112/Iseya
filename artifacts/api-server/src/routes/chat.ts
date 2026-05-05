@@ -5,6 +5,21 @@ import { db, chatConversations, chatMessages } from "@workspace/db";
 import { eq, desc, gt, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
 import { isAuthenticated } from "../auth";
+import { getAdminRoleColor, getAdminRoleColors } from "../admin-role-color";
+
+async function attachAdminRoleColors<T extends { sender: string; senderUserId?: string | null }>(
+  messages: T[],
+): Promise<(T & { senderRoleColor: string | null })[]> {
+  const adminIds = messages
+    .filter((m) => m.sender === "admin" && m.senderUserId)
+    .map((m) => m.senderUserId as string);
+  const map = await getAdminRoleColors(adminIds);
+  return messages.map((m) => ({
+    ...m,
+    senderRoleColor:
+      m.sender === "admin" && m.senderUserId ? map.get(m.senderUserId) ?? null : null,
+  }));
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY!,
@@ -203,11 +218,12 @@ export function registerChatRoutes(app: Express) {
         }
       }
 
-      const messages = await db
+      const rawMessages = await db
         .select()
         .from(chatMessages)
         .where(eq(chatMessages.conversationId, conv.id))
         .orderBy(chatMessages.id);
+      const messages = await attachAdminRoleColors(rawMessages);
 
       // Strip token from stored conv before responding
       const { accessToken: _t, ...convSafe } = conv as any;
@@ -278,7 +294,7 @@ export function registerChatRoutes(app: Express) {
       if (!conv) return res.status(401).json({ message: "Conversation not found or unauthorized" });
 
       const since = parseInt((req.query.since as string) || "0", 10) || 0;
-      const messages = await db
+      const rawMessages = await db
         .select()
         .from(chatMessages)
         .where(
@@ -288,6 +304,7 @@ export function registerChatRoutes(app: Express) {
           ),
         )
         .orderBy(chatMessages.id);
+      const messages = await attachAdminRoleColors(rawMessages);
 
       // Atomic decrement for messages we just delivered to the user
       const inboundDelivered = messages.filter(
@@ -396,11 +413,12 @@ export function registerChatRoutes(app: Express) {
         )[0];
         if (!conv) return res.status(404).json({ message: "Not found" });
 
-        const messages = await db
+        const rawMessages = await db
           .select()
           .from(chatMessages)
           .where(eq(chatMessages.conversationId, id))
           .orderBy(chatMessages.id);
+        const messages = await attachAdminRoleColors(rawMessages);
 
         // Atomic decrement based on visitor messages we just showed admin
         const inbound = messages.filter((m) => m.sender === "user").length;
@@ -492,7 +510,8 @@ export function registerChatRoutes(app: Express) {
             unreadForUser: sql`${chatConversations.unreadForUser} + 1`,
           })
           .where(eq(chatConversations.id, id));
-        res.json(msg);
+        const senderRoleColor = await getAdminRoleColor(adminId);
+        res.json({ ...msg, senderRoleColor });
       } catch (err: any) {
         console.error("[admin/chat/message]", err);
         res.status(500).json({ message: "Failed to send message" });

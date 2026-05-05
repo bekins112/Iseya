@@ -13,6 +13,7 @@ import type { ChatConversation, ChatMessage } from "@/lib/types";
 import { MessageCircle, Send, X, Bot, UserRound, RefreshCw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { playNotificationSound } from "@/lib/notificationSound";
+import { RoleColorDot } from "@/lib/roleColor";
 
 export default function AdminChats() {
   usePageTitle("Admin Chats");
@@ -381,11 +382,14 @@ function AdminMessageBubble({ m }: { m: ChatMessage }) {
               : "bg-emerald-100 text-emerald-950 border border-emerald-200 rounded-br-sm"
         }`}
       >
-        <div className="text-[10px] uppercase tracking-wide opacity-70 mb-0.5">
-          {isVisitor ? "Visitor" : isAdmin ? "You / Team" : "Assistant"}
-          {m.createdAt
-            ? ` · ${format(new Date(m.createdAt), "HH:mm")}`
-            : ""}
+        <div className="text-[10px] uppercase tracking-wide opacity-70 mb-0.5 flex items-center gap-1">
+          {isAdmin && <RoleColorDot color={m.senderRoleColor} title="Admin role color" />}
+          <span>
+            {isVisitor ? "Visitor" : isAdmin ? "You / Team" : "Assistant"}
+            {m.createdAt
+              ? ` · ${format(new Date(m.createdAt), "HH:mm")}`
+              : ""}
+          </span>
         </div>
         {m.content}
       </div>

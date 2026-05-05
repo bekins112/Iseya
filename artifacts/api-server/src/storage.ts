@@ -67,8 +67,8 @@ export interface IStorage {
   updateTicket(id: number, updates: Partial<Ticket>): Promise<Ticket>;
   
   // Ticket message methods
-  createTicketMessage(msg: InsertTicketMessage): Promise<TicketMessage>;
-  getTicketMessages(ticketId: number): Promise<TicketMessage[]>;
+  createTicketMessage(msg: InsertTicketMessage): Promise<TicketMessage & { senderRoleColor: string | null }>;
+  getTicketMessages(ticketId: number): Promise<(TicketMessage & { senderRoleColor: string | null })[]>;
   getUnreadMessageCount(ticketId: number, role: string): Promise<number>;
   markTicketMessagesRead(ticketId: number, readerRole: string): Promise<void>;
   getTicketsWithUnreadCounts(userId: string, role: string): Promise<Record<number, number>>;
@@ -677,17 +677,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Ticket message methods
-  async createTicketMessage(msg: InsertTicketMessage): Promise<TicketMessage> {
+  async createTicketMessage(msg: InsertTicketMessage): Promise<TicketMessage & { senderRoleColor: string | null }> {
     const [created] = await db.insert(ticketMessages).values(msg).returning();
-    return created;
+    let senderRoleColor: string | null = null;
+    if (created.senderRole === "admin" && created.senderId) {
+      const [row] = await db
+        .select({ color: adminRoles.color })
+        .from(adminPermissions)
+        .leftJoin(adminRoles, eq(adminPermissions.roleId, adminRoles.id))
+        .where(eq(adminPermissions.userId, created.senderId))
+        .limit(1);
+      senderRoleColor = row?.color ?? null;
+    }
+    return { ...created, senderRoleColor };
   }
 
-  async getTicketMessages(ticketId: number): Promise<TicketMessage[]> {
-    return await db
+  async getTicketMessages(ticketId: number): Promise<(TicketMessage & { senderRoleColor: string | null })[]> {
+    const rows = await db
       .select()
       .from(ticketMessages)
       .where(eq(ticketMessages.ticketId, ticketId))
       .orderBy(ticketMessages.createdAt);
+    const adminIds = Array.from(
+      new Set(
+        rows
+          .filter((r) => r.senderRole === "admin" && r.senderId)
+          .map((r) => r.senderId as string),
+      ),
+    );
+    const colorByUserId = new Map<string, string | null>();
+    if (adminIds.length > 0) {
+      const colorRows = await db
+        .select({ userId: adminPermissions.userId, color: adminRoles.color })
+        .from(adminPermissions)
+        .leftJoin(adminRoles, eq(adminPermissions.roleId, adminRoles.id))
+        .where(inArray(adminPermissions.userId, adminIds));
+      for (const c of colorRows) colorByUserId.set(c.userId, c.color ?? null);
+    }
+    return rows.map((r) => ({
+      ...r,
+      senderRoleColor:
+        r.senderRole === "admin" && r.senderId
+          ? colorByUserId.get(r.senderId) ?? null
+          : null,
+    }));
   }
 
   async getUnreadMessageCount(ticketId: number, role: string): Promise<number> {

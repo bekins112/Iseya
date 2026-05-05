@@ -37,6 +37,7 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import type { Ticket, TicketMessage } from "@/lib/types";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { RoleColorDot } from "@/lib/roleColor";
 
 const ticketSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters"),
@@ -562,6 +563,7 @@ export default function Support() {
                           {!isUser && (
                             <div className="flex items-center gap-1.5 mb-1">
                               <Shield className="w-3 h-3 text-primary" />
+                              <RoleColorDot color={msg.senderRoleColor} title="Admin role color" />
                               <span className="text-[10px] font-semibold text-primary">Support Team</span>
                             </div>
                           )}
