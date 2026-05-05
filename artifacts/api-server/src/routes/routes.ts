@@ -4288,12 +4288,21 @@ export async function registerRoutes(
     "auto_weekly_job_alerts": "true",
     "auto_application_reminders": "true",
     "auto_profile_reminders": "true",
+    "auto_email_health_check": "true",
     "job_alerts_schedule_days": "1",
     "job_alerts_schedule_time": "08:00",
     "app_reminders_schedule_days": "3,5",
     "app_reminders_schedule_time": "08:00",
     "profile_reminders_schedule_days": "2,4",
     "profile_reminders_schedule_time": "10:00",
+    "email_health_check_schedule_days": "1",
+    "email_health_check_schedule_time": "07:00",
+    "email_health_check_recipient": "",
+    "last_email_health_check_at": "",
+    "last_email_health_check_status": "",
+    "last_email_health_check_message": "",
+    "last_email_health_check_recipient": "",
+    "last_email_health_check_id": "",
   };
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
@@ -4302,6 +4311,7 @@ export async function registerRoutes(
     "auto_weekly_job_alerts",
     "auto_application_reminders",
     "auto_profile_reminders",
+    "auto_email_health_check",
   ]);
 
   const TEXT_SETTINGS_KEYS = new Set([
@@ -4309,6 +4319,7 @@ export async function registerRoutes(
     "job_alerts_schedule_days", "job_alerts_schedule_time",
     "app_reminders_schedule_days", "app_reminders_schedule_time",
     "profile_reminders_schedule_days", "profile_reminders_schedule_time",
+    "email_health_check_schedule_days", "email_health_check_schedule_time", "email_health_check_recipient",
     "app_facebook", "app_twitter", "app_instagram", "app_linkedin", "app_tiktok", "app_whatsapp",
     "paystack_public_key", "paystack_secret_key",
     "flutterwave_public_key", "flutterwave_secret_key",
@@ -4890,6 +4901,45 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("Manual profile reminder trigger error:", err);
       res.status(500).json({ message: "Failed to send profile reminders" });
+    }
+  });
+
+  app.post("/api/admin/automated-emails/health-check", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAutomatedEmails) {
+      return res.status(403).json({ message: "You do not have permission to manage automated emails" });
+    }
+    try {
+      const result = await scheduler.runEmailHealthCheck();
+      const httpStatus = result.status === "failed" ? 502 : 200;
+      res.status(httpStatus).json({ ...result });
+    } catch (err: any) {
+      console.error("Manual email health check error:", err);
+      res.status(500).json({ message: "Failed to run email health check", error: err?.message });
+    }
+  });
+
+  app.get("/api/admin/automated-emails/health-check/status", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageAutomatedEmails) {
+      return res.status(403).json({ message: "You do not have permission to view automated emails" });
+    }
+    try {
+      const [at, status, message, recipient, emailId] = await Promise.all([
+        storage.getSetting("last_email_health_check_at"),
+        storage.getSetting("last_email_health_check_status"),
+        storage.getSetting("last_email_health_check_message"),
+        storage.getSetting("last_email_health_check_recipient"),
+        storage.getSetting("last_email_health_check_id"),
+      ]);
+      res.json({
+        checkedAt: at || null,
+        status: status || null,
+        message: message || null,
+        recipient: recipient || null,
+        emailId: emailId || null,
+      });
+    } catch (err: any) {
+      console.error("Email health check status error:", err);
+      res.status(500).json({ message: "Failed to load health check status" });
     }
   });
 

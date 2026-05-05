@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { PageHeader } from "@/components/ui-extension";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { Mail, Send, Calendar, Clock, AlertCircle, Loader2, ImageIcon, UserCheck } from "lucide-react";
+import { Mail, Send, Calendar, Clock, AlertCircle, Loader2, ImageIcon, UserCheck, HeartPulse, CheckCircle2, XCircle } from "lucide-react";
 
 const DAY_OPTIONS = [
   { value: "0", label: "Sunday" },
@@ -156,6 +156,38 @@ export default function AdminAutomatedEmails() {
     },
   });
 
+  const { data: healthCheckStatus, isLoading: healthCheckStatusLoading } = useQuery<{
+    checkedAt: string | null;
+    status: string | null;
+    message: string | null;
+    recipient: string | null;
+    emailId: string | null;
+  }>({
+    queryKey: ["/api/admin/automated-emails/health-check/status"],
+  });
+
+  const triggerHealthCheck = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/automated-emails/health-check", {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      return { ok: res.ok, body };
+    },
+    onSuccess: ({ ok, body }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/automated-emails/health-check/status"] });
+      if (ok && body?.status && body.status !== "failed") {
+        toast({ title: `Health check ${body.status}`, description: body.message });
+      } else {
+        toast({ title: "Health check failed", description: body?.message || "Unknown error", variant: "destructive" });
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Health check failed", description: err?.message || "Could not run health check", variant: "destructive" });
+    },
+  });
+
   const triggerProfileReminders = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/admin/automated-emails/profile-reminders");
@@ -172,12 +204,28 @@ export default function AdminAutomatedEmails() {
   const jobAlertsEnabled = settings?.auto_weekly_job_alerts === "true";
   const remindersEnabled = settings?.auto_application_reminders === "true";
   const profileRemindersEnabled = settings?.auto_profile_reminders === "true";
+  const healthCheckEnabled = settings?.auto_email_health_check === "true";
   const alertDays = settings?.job_alerts_schedule_days || "1";
   const alertTime = settings?.job_alerts_schedule_time || "08:00";
   const reminderDays = settings?.app_reminders_schedule_days || "3,5";
   const reminderTime = settings?.app_reminders_schedule_time || "08:00";
   const profileDays = settings?.profile_reminders_schedule_days || "2,4";
   const profileTime = settings?.profile_reminders_schedule_time || "10:00";
+  const healthCheckDays = settings?.email_health_check_schedule_days || "1";
+  const healthCheckTime = settings?.email_health_check_schedule_time || "07:00";
+  const healthCheckRecipient = settings?.email_health_check_recipient || "";
+
+  const lastStatus = healthCheckStatus?.status || "";
+  const lastStatusOk = lastStatus === "delivered" || lastStatus === "sent";
+  const lastStatusFailed = lastStatus === "failed";
+  const lastStatusBadge = lastStatusOk
+    ? "bg-green-100 text-green-800 border-green-200"
+    : lastStatusFailed
+      ? "bg-red-100 text-red-800 border-red-200"
+      : "bg-muted text-muted-foreground border-border";
+  const lastCheckedAtLabel = healthCheckStatus?.checkedAt
+    ? new Date(healthCheckStatus.checkedAt).toLocaleString()
+    : "Never";
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -396,6 +444,130 @@ export default function AdminAutomatedEmails() {
           </CardContent>
         </Card>
       </div>
+
+      <Card data-testid="card-email-health-check">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <HeartPulse className="h-5 w-5 text-rose-600" />
+            <CardTitle className="text-lg">Email Delivery Health Check</CardTitle>
+          </div>
+          <CardDescription>
+            Sends a tiny test email through Resend on a schedule, then polls the events API to confirm delivery. Catches DNS, key, or sender-domain regressions before users do.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-lg border p-3 bg-muted/10">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2">
+                {lastStatusOk ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                ) : lastStatusFailed ? (
+                  <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                )}
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold">Last check</span>
+                    <span
+                      data-testid="badge-health-check-status"
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${lastStatusBadge}`}
+                    >
+                      {healthCheckStatusLoading ? "Loading..." : (lastStatus || "Never run")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1" data-testid="text-health-check-time">
+                    {lastCheckedAtLabel}
+                  </p>
+                  {healthCheckStatus?.recipient && (
+                    <p className="text-xs text-muted-foreground mt-0.5">Recipient: {healthCheckStatus.recipient}</p>
+                  )}
+                  {healthCheckStatus?.message && (
+                    <p className="text-xs mt-1 text-muted-foreground" data-testid="text-health-check-message">
+                      {healthCheckStatus.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="toggle-health-check">Auto-run enabled</Label>
+                <Switch
+                  id="toggle-health-check"
+                  data-testid="toggle-health-check"
+                  checked={healthCheckEnabled}
+                  disabled={settingsLoading}
+                  onCheckedChange={(checked) => {
+                    updateSettings.mutate({ auto_email_health_check: checked ? "true" : "false" });
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="health-check-recipient" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recipient (optional)</Label>
+                <Input
+                  id="health-check-recipient"
+                  data-testid="input-health-check-recipient"
+                  placeholder="e.g. ops@iseya.ng (defaults to admin email)"
+                  defaultValue={healthCheckRecipient}
+                  onBlur={(e) => {
+                    const next = e.target.value.trim();
+                    if (next !== healthCheckRecipient) {
+                      updateSettings.mutate({ email_health_check_recipient: next });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 rounded-lg border p-3 bg-muted/10">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Run on days</Label>
+              <DayPicker
+                selectedDays={healthCheckDays}
+                testIdPrefix="health-check"
+                onChange={(val) => updateSettings.mutate({ email_health_check_schedule_days: val })}
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Time</Label>
+                <Select
+                  value={healthCheckTime}
+                  onValueChange={(val) => updateSettings.mutate({ email_health_check_schedule_time: val })}
+                >
+                  <SelectTrigger className="h-8 text-sm w-28" data-testid="select-health-check-time">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-48">
+                    {TIME_OPTIONS.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Schedule: {getDayLabels(healthCheckDays)} at {healthCheckTime}</span>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            data-testid="button-trigger-health-check"
+            variant="outline"
+            className="w-full"
+            onClick={() => triggerHealthCheck.mutate()}
+            disabled={triggerHealthCheck.isPending}
+          >
+            {triggerHealthCheck.isPending ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running check (may take ~15s)...</>
+            ) : (
+              <><Send className="h-4 w-4 mr-2" /> Run Health Check Now</>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card data-testid="card-news-push">
         <CardHeader>

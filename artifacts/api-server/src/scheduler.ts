@@ -425,10 +425,157 @@ export async function runNewsPush(title: string, content: string, targetRole?: s
   return { sent, total: allUsers.length };
 }
 
+export interface EmailHealthCheckResult {
+  status: "delivered" | "sent" | "failed";
+  message: string;
+  emailId: string | null;
+  recipient: string;
+  checkedAt: string;
+}
+
+async function pickAdminUser(): Promise<User | null> {
+  const admins = await db
+    .select()
+    .from(users)
+    .where(eq(users.role, "admin"))
+    .orderBy(users.createdAt);
+  return admins[0] ?? null;
+}
+
+async function getHealthCheckRecipient(): Promise<string> {
+  const configured = await storage.getSetting("email_health_check_recipient");
+  if (configured && configured.trim()) return configured.trim();
+  const envRecipient = process.env.HEALTH_CHECK_RECIPIENT?.trim();
+  if (envRecipient) return envRecipient;
+  const admin = await pickAdminUser();
+  if (admin?.email) return admin.email;
+  const fallback = process.env.RESEND_FROM_EMAIL?.trim();
+  if (fallback) return fallback;
+  return "support@iseya.ng";
+}
+
+async function persistHealthCheckResult(result: EmailHealthCheckResult): Promise<void> {
+  try {
+    const adminUser = await pickAdminUser();
+    if (!adminUser) return;
+    await Promise.all([
+      storage.upsertSetting("last_email_health_check_at", result.checkedAt, adminUser.id),
+      storage.upsertSetting("last_email_health_check_status", result.status, adminUser.id),
+      storage.upsertSetting("last_email_health_check_message", result.message, adminUser.id),
+      storage.upsertSetting("last_email_health_check_recipient", result.recipient, adminUser.id),
+      storage.upsertSetting("last_email_health_check_id", result.emailId ?? "", adminUser.id),
+    ]);
+  } catch (err) {
+    console.error("[scheduler] Failed to persist health check result:", err);
+  }
+}
+
+export async function runEmailHealthCheck(): Promise<EmailHealthCheckResult> {
+  console.log("[scheduler] Running email delivery health check...");
+  const checkedAt = new Date().toISOString();
+  const recipient = await getHealthCheckRecipient();
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    const result: EmailHealthCheckResult = {
+      status: "failed",
+      message: "RESEND_API_KEY is not configured.",
+      emailId: null,
+      recipient,
+      checkedAt,
+    };
+    console.error(`[scheduler] Email health check FAILED: ${result.message}`);
+    await persistHealthCheckResult(result);
+    return result;
+  }
+
+  const { Resend } = await import("resend");
+  const client = new Resend(apiKey);
+  const fromField = "Iseya <support@iseya.ng>";
+  const subject = `Iṣéyá email delivery health check (${checkedAt})`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 16px; color: #333;">
+      <h2 style="margin: 0 0 8px;">Email Delivery Health Check</h2>
+      <p style="margin: 0 0 8px;">This is an automated test message from the Iṣéyá API server confirming the Resend integration is working.</p>
+      <p style="margin: 0; color: #666; font-size: 12px;">Sent at: ${checkedAt}</p>
+      <p style="margin: 4px 0 0; color: #666; font-size: 12px;">No action is required. You can safely delete this email.</p>
+    </div>
+  `;
+
+  let emailId: string | null = null;
+  try {
+    const { data, error } = await client.emails.send({
+      from: fromField,
+      to: [recipient],
+      subject,
+      html,
+    });
+    if (error || !data?.id) {
+      const msg = error ? (error.message || JSON.stringify(error)) : "Resend returned no email id.";
+      const result: EmailHealthCheckResult = {
+        status: "failed",
+        message: `Resend send error: ${msg}`,
+        emailId: null,
+        recipient,
+        checkedAt,
+      };
+      console.error(`[scheduler] Email health check FAILED: ${result.message}`);
+      await persistHealthCheckResult(result);
+      return result;
+    }
+    emailId = data.id;
+  } catch (err: any) {
+    const result: EmailHealthCheckResult = {
+      status: "failed",
+      message: `Resend send threw: ${err?.message || String(err)}`,
+      emailId: null,
+      recipient,
+      checkedAt,
+    };
+    console.error(`[scheduler] Email health check FAILED: ${result.message}`);
+    await persistHealthCheckResult(result);
+    return result;
+  }
+
+  let lastEvent: string = "sent";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await new Promise(r => setTimeout(r, 5000));
+    try {
+      const got = await client.emails.get(emailId);
+      const ev = got.data?.last_event;
+      if (ev) lastEvent = ev;
+      if (lastEvent === "delivered" || lastEvent === "bounced" || lastEvent === "complained") break;
+    } catch (err: any) {
+      console.warn(`[scheduler] Health check poll attempt ${attempt + 1} failed:`, err?.message || err);
+    }
+  }
+
+  let status: EmailHealthCheckResult["status"] = "sent";
+  let message = `Email accepted by Resend (id: ${emailId}). Last event: ${lastEvent}.`;
+
+  if (lastEvent === "delivered") {
+    status = "delivered";
+    message = `Email delivered successfully (id: ${emailId}).`;
+  } else if (lastEvent === "bounced" || lastEvent === "complained" || lastEvent === "failed") {
+    status = "failed";
+    message = `Email reached terminal failure state "${lastEvent}" (id: ${emailId}).`;
+  }
+
+  const result: EmailHealthCheckResult = { status, message, emailId, recipient, checkedAt };
+  if (status === "failed") {
+    console.error(`[scheduler] Email health check FAILED: ${message}`);
+  } else {
+    console.log(`[scheduler] Email health check ${status.toUpperCase()}: ${message}`);
+  }
+  await persistHealthCheckResult(result);
+  return result;
+}
+
 let schedulerInterval: NodeJS.Timeout | null = null;
 let lastSentJobAlerts = "";
 let lastSentReminders = "";
 let lastSentProfileReminders = "";
+let lastSentHealthCheck = "";
 
 function parseScheduleDays(val: string): number[] {
   return val.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 6);
@@ -488,6 +635,21 @@ export function startScheduler() {
           await runApplicationReminders();
         }
       }
+      const healthCheckEnabled = await getSettingValue("auto_email_health_check");
+      if (healthCheckEnabled === "true") {
+        const hcDaysStr = (await getSettingValue("email_health_check_schedule_days")) || "1";
+        const hcTimeStr = (await getSettingValue("email_health_check_schedule_time")) || "07:00";
+        const hcDays = parseScheduleDays(hcDaysStr);
+        const hcTime = parseScheduleTime(hcTimeStr);
+
+        const hcSentKey = `health-check-${dateKey}`;
+        if (hcDays.includes(day) && hour === hcTime.hour && minute >= hcTime.minute && minute <= hcTime.minute + 4 && lastSentHealthCheck !== hcSentKey) {
+          lastSentHealthCheck = hcSentKey;
+          console.log(`[scheduler] Triggering email health check (WAT day=${day}, time=${hour}:${String(minute).padStart(2, "0")})`);
+          await runEmailHealthCheck();
+        }
+      }
+
       const profileRemindersEnabled = await getSettingValue("auto_profile_reminders");
       if (profileRemindersEnabled === "true") {
         const profileDaysStr = (await getSettingValue("profile_reminders_schedule_days")) || "2,4";
