@@ -454,6 +454,75 @@ async function getHealthCheckRecipient(): Promise<string> {
   return "support@iseya.ng";
 }
 
+function buildHealthCheckAlertSignature(result: EmailHealthCheckResult): string {
+  const normalizedMessage = (result.message || "")
+    .replace(/\(id:\s*[^)]+\)/gi, "(id: <redacted>)")
+    .replace(/\b[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\b/gi, "<uuid>")
+    .trim();
+  return `${result.status}::${result.recipient}::${normalizedMessage}`;
+}
+
+async function notifyAdminsOfHealthCheckFailure(result: EmailHealthCheckResult): Promise<void> {
+  if (result.status !== "failed") {
+    const previousSignature = await storage.getSetting("last_email_health_check_alert_signature");
+    if (previousSignature) {
+      const adminUser = await pickAdminUser();
+      if (adminUser) {
+        try {
+          await storage.upsertSetting("last_email_health_check_alert_signature", "", adminUser.id);
+        } catch (err) {
+          console.error("[scheduler] Failed to clear health check alert signature:", err);
+        }
+      }
+    }
+    return;
+  }
+
+  try {
+    const adminUser = await pickAdminUser();
+    if (!adminUser) {
+      console.warn("[scheduler] No admin user available to notify of health check failure.");
+      return;
+    }
+
+    const signature = buildHealthCheckAlertSignature(result);
+    const previousSignature = await storage.getSetting("last_email_health_check_alert_signature");
+    if (previousSignature && previousSignature === signature) {
+      console.log("[scheduler] Suppressing duplicate health check failure alert (signature unchanged).");
+      return;
+    }
+
+    const checkedAtLabel = (() => {
+      try {
+        return new Date(result.checkedAt).toLocaleString();
+      } catch {
+        return result.checkedAt;
+      }
+    })();
+
+    const messageLines = [
+      `The automated email delivery health check failed at ${checkedAtLabel}.`,
+      `Reason: ${result.message}`,
+      `Test recipient: ${result.recipient}`,
+      "Check Resend status, DNS records, sender-domain verification, and confirm the Resend API key is still valid.",
+    ];
+
+    await storage.createNotification({
+      title: "Email delivery health check FAILED",
+      message: messageLines.join("\n"),
+      type: "role",
+      targetRole: "admin",
+      createdBy: adminUser.id,
+    });
+
+    await storage.upsertSetting("last_email_health_check_alert_signature", signature, adminUser.id);
+    await storage.upsertSetting("last_email_health_check_alert_at", new Date().toISOString(), adminUser.id);
+    console.log("[scheduler] Admin notification dispatched for failed email health check.");
+  } catch (err) {
+    console.error("[scheduler] Failed to dispatch admin alert for health check failure:", err);
+  }
+}
+
 async function persistHealthCheckResult(result: EmailHealthCheckResult): Promise<void> {
   try {
     const adminUser = await pickAdminUser();
@@ -468,6 +537,7 @@ async function persistHealthCheckResult(result: EmailHealthCheckResult): Promise
   } catch (err) {
     console.error("[scheduler] Failed to persist health check result:", err);
   }
+  await notifyAdminsOfHealthCheckFailure(result);
 }
 
 export async function runEmailHealthCheck(): Promise<EmailHealthCheckResult> {
