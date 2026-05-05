@@ -14,6 +14,31 @@ import { eq } from "drizzle-orm";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { validateEmail } from "./email-validation";
+import rateLimit from "express-rate-limit";
+
+const captchaRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many CAPTCHA requests. Please wait a moment and try again." },
+});
+
+const audioCaptchaRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many audio CAPTCHA requests. Please wait a moment and try again." },
+});
+
+const loginRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many login attempts. Please wait a moment and try again." },
+});
 
 async function getAssignedRoleForUser(user: Pick<User, "id" | "role">): Promise<AdminRole | null> {
   if (user.role !== "admin") return null;
@@ -76,7 +101,7 @@ export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
 
-  app.get("/api/auth/captcha", (req, res) => {
+  app.get("/api/auth/captcha", captchaRateLimiter, (req, res) => {
     const captcha = svgCaptcha.create({
       size: 5,
       noise: 1,
@@ -94,7 +119,7 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/auth/captcha/audio", async (req, res) => {
+  app.get("/api/auth/captcha/audio", audioCaptchaRateLimiter, async (req, res) => {
     try {
       const text = req.session.captchaText;
       if (!text) {
@@ -183,7 +208,7 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", loginRateLimiter, async (req, res) => {
     try {
       const input = loginSchema.parse(req.body);
 
