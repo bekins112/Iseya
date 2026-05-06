@@ -24,7 +24,7 @@ export function useUpdateUser() {
         if (res.status === 404) throw new Error("User not found");
         throw new Error("Failed to update profile");
       }
-      return api.users.update.responses[200].parse(await res.json());
+      return await res.json();
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/user"], data);
@@ -49,7 +49,7 @@ export function useJobs(filters?: { category?: string; location?: string }) {
         
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch jobs");
-      return api.jobs.list.responses[200].parse(await res.json());
+      return await res.json();
     },
   });
 }
@@ -62,7 +62,7 @@ export function useJob(id: number) {
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch job");
-      return api.jobs.get.responses[200].parse(await res.json());
+      return await res.json();
     },
     enabled: !!id,
   });
@@ -137,7 +137,7 @@ export function useCreateApplication() {
 
   return useMutation({
     mutationFn: async (data: InsertApplication) => {
-      const validated = api.applications.create.input.parse(data);
+      const validated = data;
       const res = await fetch(api.applications.create.path, {
         method: api.applications.create.method,
         headers: { "Content-Type": "application/json" },
@@ -146,7 +146,7 @@ export function useCreateApplication() {
       });
 
       if (!res.ok) throw new Error("Failed to submit application");
-      return api.applications.create.responses[201].parse(await res.json());
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/my-applications"] });
@@ -181,7 +181,7 @@ export function useJobApplications(jobId: number) {
         (err as any).code = data.code;
         throw err;
       }
-      return api.applications.listForJob.responses[200].parse(await res.json());
+      return await res.json();
     },
     enabled: !!jobId,
     retry: (failureCount, error: any) => {
@@ -198,7 +198,7 @@ export function useEmployerJobs() {
     queryFn: async () => {
       const res = await fetch(api.jobs.listByEmployer.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch your jobs");
-      return api.jobs.listByEmployer.responses[200].parse(await res.json());
+      return await res.json();
     },
   });
 }
@@ -218,7 +218,7 @@ export function useUpdateJob() {
       });
       
       if (!res.ok) throw new Error("Failed to update job");
-      return api.jobs.update.responses[200].parse(await res.json());
+      return await res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.jobs.list.path] });
@@ -246,7 +246,7 @@ export function useUpdateApplicationStatus() {
       });
       
       if (!res.ok) throw new Error("Failed to update application");
-      return api.applications.updateStatus.responses[200].parse(await res.json());
+      return await res.json();
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [api.applications.listForJob.path] });
