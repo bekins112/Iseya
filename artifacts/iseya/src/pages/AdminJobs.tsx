@@ -318,6 +318,10 @@ export default function AdminJobs() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
+  const [jobTypeFilter, setJobTypeFilter] = useState<string>("all");
   const [deletingJob, setDeletingJob] = useState<Job | null>(null);
   const [editingJob, setEditingJob] = useState<AdminJob | null>(null);
   const [page, setPage] = useState(0);
@@ -359,12 +363,34 @@ export default function AdminJobs() {
   }
 
   const filteredJobs = jobs.filter((job) => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       job.title.toLowerCase().includes(search.toLowerCase()) ||
       job.location.toLowerCase().includes(search.toLowerCase()) ||
       job.category.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && job.isActive) ||
+      (statusFilter === "inactive" && !job.isActive) ||
+      (statusFilter !== "active" && statusFilter !== "inactive" && job.status === statusFilter);
+    const matchesCategory = categoryFilter === "all" || job.category === categoryFilter;
+    const matchesState = stateFilter === "all" || job.state === stateFilter;
+    const matchesJobType = jobTypeFilter === "all" || job.jobType === jobTypeFilter;
+    return matchesSearch && matchesStatus && matchesCategory && matchesState && matchesJobType;
   });
+
+  const activeFilterCount =
+    (statusFilter !== "all" ? 1 : 0) +
+    (categoryFilter !== "all" ? 1 : 0) +
+    (stateFilter !== "all" ? 1 : 0) +
+    (jobTypeFilter !== "all" ? 1 : 0);
+
+  const resetFilters = () => {
+    setStatusFilter("all");
+    setCategoryFilter("all");
+    setStateFilter("all");
+    setJobTypeFilter("all");
+    setPage(0);
+  };
 
   const paginatedJobs = usePagination(filteredJobs, pageSize, page);
 
@@ -381,7 +407,7 @@ export default function AdminJobs() {
       />
 
       <Card className="overflow-hidden">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-4 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -392,6 +418,65 @@ export default function AdminJobs() {
               data-testid="input-search-jobs"
             />
           </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+              <SelectTrigger data-testid="select-filter-status">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="filled">Filled</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(0); }}>
+              <SelectTrigger data-testid="select-filter-category">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="all">All categories</SelectItem>
+                {allCategories.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={stateFilter} onValueChange={(v) => { setStateFilter(v); setPage(0); }}>
+              <SelectTrigger data-testid="select-filter-state">
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="all">All states</SelectItem>
+                {nigerianStates.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={jobTypeFilter} onValueChange={(v) => { setJobTypeFilter(v); setPage(0); }}>
+              <SelectTrigger data-testid="select-filter-job-type">
+                <SelectValue placeholder="Job type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All job types</SelectItem>
+                {JOB_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {activeFilterCount > 0 && (
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span data-testid="text-filter-count">
+                Showing {filteredJobs.length} of {jobs.length} jobs
+                {activeFilterCount > 0 && ` · ${activeFilterCount} filter${activeFilterCount === 1 ? "" : "s"} applied`}
+              </span>
+              <Button variant="ghost" size="sm" onClick={resetFilters} data-testid="button-reset-filters">
+                Clear filters
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {isLoading ? (
