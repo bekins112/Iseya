@@ -4952,7 +4952,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/automated-emails/news-push", isAuthenticated, isAdmin, uploadEmailPromo.single("image"), async (req: any, res) => {
+  app.post("/api/admin/automated-emails/news-push", isAuthenticated, isAdmin, uploadEmailPromo.array("images", 10), async (req: any, res) => {
     if (req.adminPermissions && !req.adminPermissions.canManageAutomatedEmails) {
       return res.status(403).json({ message: "You do not have permission to send news push" });
     }
@@ -4965,7 +4965,12 @@ export async function registerRoutes(
       if (!title || !title.trim()) return res.status(400).json({ message: "Title is required" });
       if (!content || !content.trim()) return res.status(400).json({ message: "Content is required" });
 
-      const imagePath = req.file ? req.file.path : undefined;
+      const uploadedFiles: Express.Multer.File[] = Array.isArray(req.files)
+        ? req.files
+        : req.file
+          ? [req.file]
+          : [];
+      const imagePaths = uploadedFiles.map((f) => f.path);
 
       // scheduler imported statically
       const roles = targetRole && targetRole !== "all" ? targetRole.split(",").map((r: string) => r.trim()).filter(Boolean) : [];
@@ -4974,7 +4979,7 @@ export async function registerRoutes(
 
       if (roles.length > 0) {
         for (const role of roles) {
-          const result = await scheduler.runNewsPush(title, content, role, imagePath);
+          const result = await scheduler.runNewsPush(title, content, role, imagePaths);
           totalSent += result.sent;
           totalUsers += result.total;
         }
@@ -4990,7 +4995,7 @@ export async function registerRoutes(
           }
         }
       } else {
-        const result = await scheduler.runNewsPush(title, content, "all", imagePath);
+        const result = await scheduler.runNewsPush(title, content, "all", imagePaths);
         totalSent = result.sent;
         totalUsers = result.total;
         if (sendNotification) {

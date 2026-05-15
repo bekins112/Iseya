@@ -140,12 +140,17 @@ function applicationReminderEmailHtml(name: string, pendingApps: { jobTitle: str
   `;
 }
 
-function newsPushEmailHtml(title: string, content: string, imageCid?: string): string {
+function newsPushEmailHtml(title: string, content: string, imageCids: string[] = []): string {
   const logoUrl = `${BASE_URL}/email-logo.png`;
   const brandColor = "#d4a017";
 
-  const imageBlock = imageCid
-    ? `<div style="text-align: center; margin: 0 0 20px;"><img src="cid:${imageCid}" alt="Promotion" style="max-width: 100%; height: auto; border-radius: 8px;" /></div>`
+  const imageBlock = imageCids.length > 0
+    ? imageCids
+        .map(
+          (cid) =>
+            `<div style="text-align: center; margin: 0 0 16px;"><img src="cid:${cid}" alt="Promotion" style="max-width: 100%; height: auto; border-radius: 8px;" /></div>`
+        )
+        .join("")
     : "";
 
   return `
@@ -373,8 +378,13 @@ export async function runProfileReminders(): Promise<{ sent: number; total: numb
   return { sent, total };
 }
 
-export async function runNewsPush(title: string, content: string, targetRole?: string, imagePath?: string): Promise<{ sent: number; total: number }> {
-  console.log(`[scheduler] Running news push: "${title}" to ${targetRole || "all"}${imagePath ? " with image" : ""}...`);
+export async function runNewsPush(title: string, content: string, targetRole?: string, imagePaths?: string | string[]): Promise<{ sent: number; total: number }> {
+  const paths = Array.isArray(imagePaths)
+    ? imagePaths
+    : imagePaths
+      ? [imagePaths]
+      : [];
+  console.log(`[scheduler] Running news push: "${title}" to ${targetRole || "all"}${paths.length ? ` with ${paths.length} image(s)` : ""}...`);
 
   let allUsers: User[];
   if (targetRole && targetRole !== "all") {
@@ -383,34 +393,37 @@ export async function runNewsPush(title: string, content: string, targetRole?: s
     allUsers = await db.select().from(users);
   }
 
-  let attachments: EmailAttachment[] | undefined;
-  let imageCid: string | undefined;
+  const attachments: EmailAttachment[] = [];
+  const imageCids: string[] = [];
 
-  if (imagePath) {
-    try {
-      const fs = await import("fs");
-      const pathMod = await import("path");
-      if (fs.existsSync(imagePath)) {
-        const imageBuffer = fs.readFileSync(imagePath);
-        const ext = pathMod.extname(imagePath).toLowerCase();
-        const mimeMap: Record<string, string> = {
-          ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-          ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif",
-        };
-        const filename = pathMod.basename(imagePath);
-        imageCid = `promo-image-${Date.now()}`;
-        attachments = [{
+  if (paths.length > 0) {
+    const fs = await import("fs");
+    const pathMod = await import("path");
+    const mimeMap: Record<string, string> = {
+      ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+      ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif",
+    };
+    for (let i = 0; i < paths.length; i++) {
+      const p = paths[i];
+      try {
+        if (!fs.existsSync(p)) continue;
+        const imageBuffer = fs.readFileSync(p);
+        const ext = pathMod.extname(p).toLowerCase();
+        const filename = pathMod.basename(p);
+        const cid = `promo-image-${Date.now()}-${i}`;
+        imageCids.push(cid);
+        attachments.push({
           filename,
           content: imageBuffer,
           content_type: mimeMap[ext] || "image/png",
-        }];
+        });
+      } catch (err) {
+        console.error(`[scheduler] Failed to read promo image ${p}:`, err);
       }
-    } catch (err) {
-      console.error("[scheduler] Failed to read promo image:", err);
     }
   }
 
-  const html = newsPushEmailHtml(title, content, imageCid);
+  const html = newsPushEmailHtml(title, content, imageCids);
   let sent = 0;
 
   for (const user of allUsers) {

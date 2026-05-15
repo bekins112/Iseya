@@ -78,8 +78,9 @@ export default function AdminAutomatedEmails() {
   const [newsContent, setNewsContent] = useState("");
   const [newsTargets, setNewsTargets] = useState<string[]>(["all"]);
   const [sendNotification, setSendNotification] = useState(true);
-  const [promoImage, setPromoImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [promoImages, setPromoImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const MAX_PROMO_IMAGES = 10;
 
   const { data: settings, isLoading: settingsLoading } = useQuery<Record<string, string>>({
     queryKey: ["/api/admin/settings"],
@@ -129,8 +130,8 @@ export default function AdminAutomatedEmails() {
       formData.append("content", newsContent);
       formData.append("targetRole", newsTargets.includes("all") ? "all" : newsTargets.join(","));
       formData.append("sendNotification", sendNotification ? "true" : "false");
-      if (promoImage) {
-        formData.append("image", promoImage);
+      for (const img of promoImages) {
+        formData.append("images", img);
       }
       const res = await fetch("/api/admin/automated-emails/news-push", {
         method: "POST",
@@ -148,8 +149,9 @@ export default function AdminAutomatedEmails() {
       setNewsTitle("");
       setNewsContent("");
       setNewsTargets(["all"]);
-      setPromoImage(null);
-      setImagePreview(null);
+      imagePreviews.forEach((url) => URL.revokeObjectURL(url));
+      setPromoImages([]);
+      setImagePreviews([]);
     },
     onError: (err: any) => {
       toast({ title: "Failed", description: err.message || "Could not send news push", variant: "destructive" });
@@ -763,42 +765,70 @@ export default function AdminAutomatedEmails() {
           </div>
 
           <div>
-            <Label>Attach Image (optional)</Label>
-            <div className="mt-1">
-              {imagePreview ? (
-                <div className="relative inline-block">
-                  <img src={imagePreview} alt="Preview" className="max-h-40 rounded-lg border" />
-                  <button
-                    type="button"
-                    data-testid="button-remove-promo-image"
-                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow"
-                    onClick={() => { setPromoImage(null); setImagePreview(null); }}
-                  >
-                    ×
-                  </button>
+            <Label>Attach Images (optional)</Label>
+            <div className="mt-1 space-y-3">
+              {imagePreviews.length > 0 && (
+                <div className="flex flex-wrap gap-3" data-testid="promo-image-previews">
+                  {imagePreviews.map((url, idx) => (
+                    <div key={url} className="relative inline-block">
+                      <img src={url} alt={`Preview ${idx + 1}`} className="max-h-40 rounded-lg border" />
+                      <button
+                        type="button"
+                        data-testid={`button-remove-promo-image-${idx}`}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow"
+                        onClick={() => {
+                          URL.revokeObjectURL(url);
+                          setPromoImages(promoImages.filter((_, i) => i !== idx));
+                          setImagePreviews(imagePreviews.filter((_, i) => i !== idx));
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ) : (
+              )}
+              {promoImages.length < MAX_PROMO_IMAGES && (
                 <label
                   className="flex items-center justify-center gap-2 border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-muted/30 transition-colors text-sm text-muted-foreground"
                   data-testid="label-upload-promo-image"
                 >
                   <ImageIcon className="h-5 w-5" />
-                  <span>Click to upload an image (JPG, PNG, WEBP, GIF — max 5MB)</span>
+                  <span>
+                    {promoImages.length === 0
+                      ? `Click to upload images (JPG, PNG, WEBP, GIF — max 5MB each, up to ${MAX_PROMO_IMAGES})`
+                      : `Add more images (${promoImages.length}/${MAX_PROMO_IMAGES})`}
+                  </span>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/gif"
+                    multiple
                     className="hidden"
                     data-testid="input-promo-image"
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length === 0) return;
+                      const remaining = MAX_PROMO_IMAGES - promoImages.length;
+                      const accepted: File[] = [];
+                      let oversized = 0;
+                      for (const file of files.slice(0, remaining)) {
                         if (file.size > 5 * 1024 * 1024) {
-                          toast({ title: "File too large", description: "Max 5MB allowed", variant: "destructive" });
-                          return;
+                          oversized++;
+                          continue;
                         }
-                        setPromoImage(file);
-                        setImagePreview(URL.createObjectURL(file));
+                        accepted.push(file);
                       }
+                      if (oversized > 0) {
+                        toast({ title: "Some files too large", description: `${oversized} file(s) exceeded 5MB and were skipped`, variant: "destructive" });
+                      }
+                      if (files.length > remaining) {
+                        toast({ title: "Image limit reached", description: `Only ${remaining} more image(s) could be added (max ${MAX_PROMO_IMAGES}).`, variant: "destructive" });
+                      }
+                      if (accepted.length > 0) {
+                        setPromoImages([...promoImages, ...accepted]);
+                        setImagePreviews([...imagePreviews, ...accepted.map((f) => URL.createObjectURL(f))]);
+                      }
+                      e.target.value = "";
                     }}
                   />
                 </label>
