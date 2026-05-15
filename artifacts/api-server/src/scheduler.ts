@@ -179,27 +179,43 @@ interface EmailAttachment {
   filename: string;
   content: Buffer;
   content_type?: string;
+  content_id?: string;
 }
 
 async function sendBulkEmail(to: string, name: string, subject: string, html: string, attachments?: EmailAttachment[]): Promise<boolean> {
   const { Resend } = await import("resend");
+  const { inlineLocalImages } = await import("./email-images");
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return false;
 
   try {
     const client = new Resend(apiKey);
+    const { html: inlinedHtml, attachments: inlineAttachments } = inlineLocalImages(html);
+    const allAttachments = [
+      ...inlineAttachments.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        content_type: a.content_type,
+        content_id: a.content_id,
+        content_disposition: a.content_disposition,
+      })),
+      ...((attachments || []).map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        content_type: a.content_type,
+        ...(a.content_id
+          ? { content_id: a.content_id, content_disposition: "inline" as const }
+          : {}),
+      }))),
+    ];
     const emailPayload: any = {
       from: "Iseya <support@iseya.ng>",
       to: [to],
       subject,
-      html,
+      html: inlinedHtml,
     };
-    if (attachments && attachments.length > 0) {
-      emailPayload.attachments = attachments.map(a => ({
-        filename: a.filename,
-        content: a.content,
-        content_type: a.content_type,
-      }));
+    if (allAttachments.length > 0) {
+      emailPayload.attachments = allAttachments;
     }
     const { error } = await client.emails.send(emailPayload);
     if (error) {
@@ -416,6 +432,7 @@ export async function runNewsPush(title: string, content: string, targetRole?: s
           filename,
           content: imageBuffer,
           content_type: mimeMap[ext] || "image/png",
+          content_id: cid,
         });
       } catch (err) {
         console.error(`[scheduler] Failed to read promo image ${p}:`, err);

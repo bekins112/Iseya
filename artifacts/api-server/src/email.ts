@@ -1,7 +1,22 @@
 import { Resend } from "resend";
+import { inlineLocalImages } from "./email-images";
 
 const senderName = "Iseya";
 const brandColor = "#d4a017";
+
+function withInlineImages(html: string) {
+  const { html: inlinedHtml, attachments } = inlineLocalImages(html);
+  return {
+    html: inlinedHtml,
+    attachments: attachments.map((a) => ({
+      filename: a.filename,
+      content: a.content,
+      content_type: a.content_type,
+      content_id: a.content_id,
+      content_disposition: a.content_disposition,
+    })),
+  };
+}
 
 function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
@@ -61,12 +76,14 @@ async function sendEmail(to: string, toName: string, subject: string, htmlBody: 
   console.log("Resend from field:", JSON.stringify(fromField));
 
   try {
+    const { html: inlinedHtml, attachments } = withInlineImages(emailWrapper(htmlBody));
     const { data, error } = await client.emails.send({
       from: fromField,
       to: [to],
       subject,
-      html: emailWrapper(htmlBody),
-    });
+      html: inlinedHtml,
+      ...(attachments.length > 0 ? { attachments } : {}),
+    } as any);
 
     if (error) {
       console.error("Resend send error:", error);
@@ -190,12 +207,14 @@ async function sendApplicantWelcomeEmail(to: string, name: string): Promise<bool
   `;
 
   try {
+    const { html: inlinedHtml, attachments } = withInlineImages(html);
     const { data, error } = await client.emails.send({
       from: fromField,
       to: [to],
       subject: `Welcome to Iṣéyá, ${name}!`,
-      html,
-    });
+      html: inlinedHtml,
+      ...(attachments.length > 0 ? { attachments } : {}),
+    } as any);
 
     if (error) {
       console.error("Resend send error:", error);
@@ -304,12 +323,14 @@ async function sendEmployerWelcomeEmail(to: string, name: string): Promise<boole
   `;
 
   try {
+    const { html: inlinedHtml, attachments } = withInlineImages(html);
     const { data, error } = await client.emails.send({
       from: fromField,
       to: [to],
       subject: `Welcome to Iṣéyá, ${name}!`,
-      html,
-    });
+      html: inlinedHtml,
+      ...(attachments.length > 0 ? { attachments } : {}),
+    } as any);
 
     if (error) {
       console.error("Resend send error:", error);
@@ -413,12 +434,14 @@ async function sendAgentWelcomeEmail(to: string, name: string): Promise<boolean>
   `;
 
   try {
+    const { html: inlinedHtml, attachments } = withInlineImages(html);
     const { data, error } = await client.emails.send({
       from: fromField,
       to: [to],
       subject: `Welcome to Iṣéyá, ${name}!`,
-      html,
-    });
+      html: inlinedHtml,
+      ...(attachments.length > 0 ? { attachments } : {}),
+    } as any);
 
     if (error) {
       console.error("Resend send error:", error);
