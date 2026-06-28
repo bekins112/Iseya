@@ -37,7 +37,7 @@ import {
 } from "../email";
 import { storeFileInDb, getFileFromDb, migrateExistingUploads, restoreFilesFromDb } from "../file-storage";
 
-for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets", "uploads/ads", "uploads/email-promo"]) {
+for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets", "uploads/ads", "uploads/email-promo", "uploads/banners"]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -165,6 +165,25 @@ const emailPromoStorage = multer.diskStorage({
 
 const uploadEmailPromo = multer({
   storage: emailPromoStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only image files (JPG, PNG, WEBP, GIF) are allowed"));
+  },
+});
+
+const bannerStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, "uploads/banners"),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `banner_${Date.now()}_${Math.round(Math.random() * 1e6)}${ext}`);
+  },
+});
+
+const uploadBanner = multer({
+  storage: bannerStorage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
@@ -4304,6 +4323,8 @@ export async function registerRoutes(
     "alert_channel_backup_email_recipient": "",
     "alert_channel_webhook_enabled": "false",
     "alert_channel_webhook_url": "",
+    "landing_banners_enabled": "false",
+    "landing_banners": "[]",
   };
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
@@ -4316,6 +4337,7 @@ export async function registerRoutes(
     "alert_channel_sms_enabled",
     "alert_channel_backup_email_enabled",
     "alert_channel_webhook_enabled",
+    "landing_banners_enabled",
   ]);
 
   const TEXT_SETTINGS_KEYS = new Set([
@@ -4864,6 +4886,91 @@ export async function registerRoutes(
     logActivity({ req, action: "update_settings", category: "settings", description: `Admin updated platform settings: ${Object.keys(updates).join(", ")}`, metadata: updates });
     res.json(result);
   });
+
+  // === LANDING PAGE BANNERS ===
+
+  const MAX_BANNERS = 5;
+
+  function parseBanners(raw: string | null | undefined): Array<{ image: string; title: string; subtitle: string }> {
+    if (!raw) return [];
+    try {
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr
+        .filter((b: any) => b && typeof b.image === "string" && b.image.trim())
+        .map((b: any) => ({
+          image: String(b.image),
+          title: typeof b.title === "string" ? b.title : "",
+          subtitle: typeof b.subtitle === "string" ? b.subtitle : "",
+        }))
+        .slice(0, MAX_BANNERS);
+    } catch {
+      return [];
+    }
+  }
+
+  app.get("/api/admin/banners", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage landing banners" });
+    }
+    const enabled = (await getSettingValue("landing_banners_enabled")) === "true";
+    const banners = parseBanners(await getSettingValue("landing_banners"));
+    res.json({ enabled, banners });
+  });
+
+  app.post(
+    "/api/admin/banners",
+    isAuthenticated,
+    isAdmin,
+    uploadBanner.array("images", MAX_BANNERS),
+    async (req: any, res) => {
+      if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+        return res.status(403).json({ message: "You do not have permission to manage landing banners" });
+      }
+      try {
+        const userId = req.session.userId!;
+        const enabled = req.body.enabled === "true" || req.body.enabled === true;
+
+        let meta: Array<{ image: string; title: string; subtitle: string }> = [];
+        try {
+          const parsed = JSON.parse(req.body.banners || "[]");
+          if (Array.isArray(parsed)) meta = parsed;
+        } catch {
+          return res.status(400).json({ message: "Invalid banners payload" });
+        }
+
+        const files: Express.Multer.File[] = Array.isArray(req.files) ? req.files : [];
+        let fileIdx = 0;
+        const finalBanners: Array<{ image: string; title: string; subtitle: string }> = [];
+
+        for (const item of meta.slice(0, MAX_BANNERS)) {
+          const title = typeof item?.title === "string" ? item.title.trim() : "";
+          const subtitle = typeof item?.subtitle === "string" ? item.subtitle.trim() : "";
+          let image = "";
+          if (item?.image === "__new__") {
+            const file = files[fileIdx++];
+            if (!file) continue;
+            image = `/uploads/banners/${file.filename}`;
+            storeFileInDb(image, file.path).catch(() => {});
+          } else if (typeof item?.image === "string" && item.image.startsWith("/uploads/banners/")) {
+            image = item.image;
+          } else {
+            continue;
+          }
+          finalBanners.push({ image, title, subtitle });
+        }
+
+        await storage.upsertSetting("landing_banners", JSON.stringify(finalBanners), userId);
+        await storage.upsertSetting("landing_banners_enabled", enabled ? "true" : "false", userId);
+
+        logActivity({ req, action: "update_banners", category: "settings", description: `Admin updated landing banners (${finalBanners.length} image(s), ${enabled ? "enabled" : "disabled"})` });
+        res.json({ enabled, banners: finalBanners });
+      } catch (err: any) {
+        console.error("Banner update error:", err);
+        res.status(500).json({ message: "Failed to update banners" });
+      }
+    }
+  );
 
   // === AUTOMATED EMAILS ===
 

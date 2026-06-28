@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -195,20 +195,49 @@ export default function Landing() {
     queryKey: ["/api/settings/public"],
   });
 
+  const slides = useMemo(() => {
+    if (appSettings?.landing_banners_enabled === "true") {
+      try {
+        const custom = JSON.parse(appSettings.landing_banners || "[]");
+        if (Array.isArray(custom)) {
+          const mapped = custom
+            .filter((b: any) => b && typeof b.image === "string" && b.image.trim())
+            .map((b: any, i: number) => ({
+              id: i,
+              title: typeof b.title === "string" ? b.title : "",
+              subtitle: typeof b.subtitle === "string" ? b.subtitle : "",
+              image: b.image as string,
+            }));
+          if (mapped.length > 0) return mapped;
+        }
+      } catch {
+        // fall through to defaults
+      }
+    }
+    return bannerSlides;
+  }, [appSettings?.landing_banners_enabled, appSettings?.landing_banners]);
+
+  const slideCount = slides.length;
+
   useEffect(() => {
+    if (currentSlide > slideCount - 1) setCurrentSlide(0);
+  }, [slideCount, currentSlide]);
+
+  useEffect(() => {
+    if (slideCount <= 1) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
+      setCurrentSlide((prev) => (prev + 1) % slideCount);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [slideCount]);
 
   const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % bannerSlides.length);
-  }, []);
+    setCurrentSlide((prev) => (prev + 1) % slideCount);
+  }, [slideCount]);
 
   const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
-  }, []);
+    setCurrentSlide((prev) => (prev - 1 + slideCount) % slideCount);
+  }, [slideCount]);
 
   
 
@@ -245,8 +274,8 @@ export default function Landing() {
               className="absolute inset-0"
             >
               <img
-                src={bannerSlides[currentSlide].image}
-                alt={bannerSlides[currentSlide].title}
+                src={slides[currentSlide].image}
+                alt={slides[currentSlide].title}
                 className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/30" />
@@ -257,7 +286,7 @@ export default function Landing() {
                   transition={{ delay: 0.2 }}
                   className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-4 drop-shadow-lg"
                 >
-                  {bannerSlides[currentSlide].title}
+                  {slides[currentSlide].title}
                 </motion.h2>
                 <motion.p
                   initial={{ y: 20, opacity: 0 }}
@@ -265,7 +294,7 @@ export default function Landing() {
                   transition={{ delay: 0.3 }}
                   className="text-lg sm:text-xl md:text-2xl text-white/90 max-w-2xl drop-shadow"
                 >
-                  {bannerSlides[currentSlide].subtitle}
+                  {slides[currentSlide].subtitle}
                 </motion.p>
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
@@ -302,7 +331,7 @@ export default function Landing() {
           </button>
 
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {bannerSlides.map((_, index) => (
+            {slides.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentSlide(index)}
