@@ -37,6 +37,7 @@ import AdminVerifications from "@/pages/AdminVerifications";
 import AdminNotifications from "@/pages/AdminNotifications";
 import AdminSettings from "@/pages/AdminSettings";
 import AdminBanners from "@/pages/AdminBanners";
+import AdminPageSettings from "@/pages/AdminPageSettings";
 import AdminTransactions from "@/pages/AdminTransactions";
 import AdminAds from "@/pages/AdminAds";
 import AdminHiringCompanies from "@/pages/AdminHiringCompanies";
@@ -290,7 +291,13 @@ function Router() {
 
       <Route path="/admin/banners">
         <AuthenticatedLayout>
-          <AdminBanners />
+          <AdminPageSettings />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/page-settings">
+        <AuthenticatedLayout>
+          <AdminPageSettings />
         </AuthenticatedLayout>
       </Route>
 

@@ -1,0 +1,1 @@
+- [Page content framework (iseya)](page-content-framework.md) — admin-editable public-page body content via per-page JSON settings keys + usePageContent defaults fallback.

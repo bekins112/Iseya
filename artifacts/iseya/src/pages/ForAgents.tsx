@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { usePageContent } from "@/lib/page-content/use-page-content";
+import { forAgentsDefaults } from "@/lib/page-content/for-agents";
 
 const features = [
   {
@@ -66,6 +68,7 @@ const benefits = [
 
 export default function ForAgents() {
   usePageTitle("For Agents");
+  const c = usePageContent("page_for_agents", forAgentsDefaults);
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -75,25 +78,25 @@ export default function ForAgents() {
         <div className="max-w-5xl mx-auto px-4 text-center relative">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <Badge className="mb-6 px-4 py-1.5 text-sm bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-400" data-testid="badge-agent-hero">
-              <Briefcase className="w-3.5 h-3.5 mr-1.5" /> For Recruitment Agents
+              <Briefcase className="w-3.5 h-3.5 mr-1.5" /> {c.hero.badge}
             </Badge>
             <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 leading-tight">
-              Grow Your Recruitment <br className="hidden md:block" />
-              <span className="text-primary">Business with Iṣéyá</span>
+              {c.hero.title} <br className="hidden md:block" />
+              <span className="text-primary">{c.hero.titleHighlight}</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              Post jobs on behalf of your employer clients, access verified talent, and scale your agency — all on one platform.
+              {c.hero.subtitle}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/register">
                 <Button size="lg" className="font-bold px-8 gap-2 group" data-testid="button-agent-start">
-                  Register as Agent
+                  {c.hero.ctaPrimary}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link href="/browse-jobs">
                 <Button size="lg" variant="outline" className="font-medium gap-2" data-testid="button-agent-browse">
-                  See Current Jobs
+                  {c.hero.ctaSecondary}
                 </Button>
               </Link>
             </div>
@@ -105,10 +108,10 @@ export default function ForAgents() {
         <div className="max-w-4xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
             <Badge className="mb-4 px-3 py-1 text-xs bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-400">
-              <Play className="w-3 h-3 mr-1" /> Watch Video
+              <Play className="w-3 h-3 mr-1" /> {c.video.badge}
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">See How Iṣéyá Works for Agents</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">Watch this short video to learn how you can earn money as a recruitment agent.</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.video.heading}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{c.video.subtitle}</p>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="relative rounded-2xl overflow-hidden shadow-2xl border bg-black aspect-video" data-testid="video-agent">
             <iframe
@@ -125,8 +128,8 @@ export default function ForAgents() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Built for Recruitment Agencies</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Tools designed to help you manage job postings across multiple clients.</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.features.heading}</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">{c.features.subtitle}</p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f, i) => (
@@ -149,8 +152,8 @@ export default function ForAgents() {
       <section className="py-20 bg-muted/30">
         <div className="max-w-5xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">How It Works</h2>
-            <p className="text-muted-foreground">Get started in 4 steps</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.howItWorks.heading}</h2>
+            <p className="text-muted-foreground">{c.howItWorks.subtitle}</p>
           </motion.div>
           <div className="grid md:grid-cols-4 gap-6">
             {howItWorks.map((s, i) => (
@@ -167,7 +170,7 @@ export default function ForAgents() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Agent Benefits</h2>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.benefits.heading}</h2>
           </motion.div>
           <div className="grid sm:grid-cols-2 gap-4">
             {benefits.map((b, i) => (
@@ -183,11 +186,11 @@ export default function ForAgents() {
       <section className="py-20 bg-gradient-to-r from-teal-600 to-teal-700 text-white">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Ready to Become an Agent?</h2>
-            <p className="text-teal-100 mb-8 text-lg">Join Iṣéyá as a recruitment agent and start posting jobs for your clients today.</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.bottomCta.heading}</h2>
+            <p className="text-teal-100 mb-8 text-lg">{c.bottomCta.subtitle}</p>
             <Link href="/register">
               <Button size="lg" variant="secondary" className="font-bold px-10 gap-2 group text-teal-700" data-testid="button-agent-bottom-cta">
-                Register Now <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                {c.bottomCta.button} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </motion.div>

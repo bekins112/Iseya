@@ -7,9 +7,12 @@ import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { usePageContent } from "@/lib/page-content/use-page-content";
+import { cookiesDefaults } from "@/lib/page-content/cookies";
 
 export default function CookiePolicy() {
   usePageTitle("Cookie Policy");
+  const c = usePageContent("page_cookies", cookiesDefaults);
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -23,47 +26,15 @@ export default function CookiePolicy() {
     show: { y: 0, opacity: 1 }
   };
 
-  const sections = [
-    {
-      icon: <Cookie className="w-6 h-6" />,
-      title: "What Are Cookies",
-      content: "Cookies are small text files that are stored on your device (computer, tablet, or mobile phone) when you visit a website. They are widely used to make websites work more efficiently, provide a better browsing experience, and give website owners useful information. Cookies help us remember your preferences, understand how you use our Platform, and improve your overall experience on Iṣéyá."
-    },
-    {
-      icon: <Settings className="w-6 h-6" />,
-      title: "How We Use Cookies",
-      content: "Iṣéyá uses cookies to enhance your experience on the Platform. We use cookies to keep you signed in to your account, remember your preferences and settings, understand how you interact with the Platform, improve our services based on usage patterns, and ensure the security of your account. We are committed to using cookies responsibly and transparently."
-    },
-    {
-      icon: <Layers className="w-6 h-6" />,
-      title: "Types of Cookies",
-      content: "We use the following types of cookies on the Platform:\n\nEssential Cookies: These cookies are strictly necessary for the Platform to function. They enable core features such as authentication, session management, and security. Without these cookies, the Platform cannot operate properly. These cookies cannot be disabled.\n\nAnalytics Cookies: These cookies help us understand how users interact with the Platform by collecting anonymous usage data. They allow us to measure traffic, identify popular features, and detect issues. This information helps us continuously improve the Platform.\n\nPreference Cookies: These cookies remember your choices and settings, such as your preferred language, theme (light or dark mode), and other display preferences. They provide a more personalised experience when you return to the Platform."
-    },
-    {
-      icon: <Globe className="w-6 h-6" />,
-      title: "Third-Party Cookies",
-      content: "Some cookies on the Platform are set by third-party services that we integrate with, including payment processors (Paystack and Flutterwave) and analytics tools. These third-party cookies are governed by the respective privacy policies of those services. We do not control these cookies and recommend reviewing the privacy policies of these third-party providers. Third-party cookies may be used for fraud prevention, payment processing, and service analytics."
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6" />,
-      title: "Managing Cookies",
-      content: "You can control and manage cookies in your browser settings. Most browsers allow you to view, delete, and block cookies from websites. Please note that disabling essential cookies may affect the functionality of the Platform and prevent you from using certain features. You can typically find cookie settings in your browser's \"Settings\", \"Privacy\", or \"Security\" section. You can also use the cookie preferences on our Platform to manage which non-essential cookies you accept."
-    },
-    {
-      icon: <Clock className="w-6 h-6" />,
-      title: "Cookie Duration",
-      content: "Cookies used on the Platform have varying lifespans:\n\nSession Cookies: These are temporary cookies that are deleted when you close your browser. They are used to maintain your session while you browse the Platform.\n\nPersistent Cookies: These cookies remain on your device for a set period or until you manually delete them. They are used to remember your preferences and recognise you when you return to the Platform. The duration of persistent cookies varies depending on their purpose, ranging from a few days to up to one year."
-    },
-    {
-      icon: <RefreshCw className="w-6 h-6" />,
-      title: "Updates to This Policy",
-      content: "Iṣéyá reserves the right to update this Cookie Policy at any time to reflect changes in our practices, technology, or legal requirements. Any significant changes will be communicated through the Platform. The \"Last updated\" date at the top of this page indicates when this policy was last revised. We encourage you to review this policy periodically to stay informed about how we use cookies."
-    },
-    {
-      icon: <Mail className="w-6 h-6" />,
-      title: "Contact Us",
-      content: "If you have any questions or concerns about our use of cookies, please do not hesitate to reach out to us. You can contact us through our Contact page, or email us at support@iseya.com. We are committed to addressing your concerns and ensuring your privacy is protected while using the Iṣéyá platform."
-    }
+  const sectionIcons = [
+    <Cookie className="w-6 h-6" />,
+    <Settings className="w-6 h-6" />,
+    <Layers className="w-6 h-6" />,
+    <Globe className="w-6 h-6" />,
+    <BarChart3 className="w-6 h-6" />,
+    <Clock className="w-6 h-6" />,
+    <RefreshCw className="w-6 h-6" />,
+    <Mail className="w-6 h-6" />,
   ];
 
   return (
@@ -84,12 +55,12 @@ export default function CookiePolicy() {
             <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
               <Shield className="w-8 h-8" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4" data-testid="text-cookie-policy-title">Cookie Policy</h1>
+            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4" data-testid="text-cookie-policy-title">{c.header.title}</h1>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Learn how Iṣéyá uses cookies to improve your experience on the Platform.
+              {c.header.intro}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              Last updated: February 2026
+              {c.header.lastUpdated}
             </p>
           </div>
         </motion.div>
@@ -100,13 +71,13 @@ export default function CookiePolicy() {
           animate="show"
           className="space-y-6"
         >
-          {sections.map((section, i) => (
+          {c.sections.items.map((section, i) => (
             <motion.div key={i} variants={item}>
               <Card className="hover-elevate" data-testid={`card-cookie-policy-section-${i}`}>
                 <CardContent className="p-6 md:p-8">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 shrink-0 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                      {section.icon}
+                      {sectionIcons[i % sectionIcons.length]}
                     </div>
                     <div>
                       <h2 className="text-lg font-bold mb-2">{section.title}</h2>
@@ -128,8 +99,7 @@ export default function CookiePolicy() {
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-6">
               <p className="text-sm text-muted-foreground">
-                By continuing to use Iṣéyá, you acknowledge that you have read and understood this Cookie Policy.
-                If you have any questions, please <Link href="/contact" className="text-primary hover:underline">contact us</Link>.
+                {c.footer.note} <Link href="/contact" className="text-primary hover:underline">{c.footer.linkLabel}</Link>.
               </p>
             </CardContent>
           </Card>

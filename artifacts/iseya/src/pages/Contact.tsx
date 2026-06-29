@@ -14,9 +14,12 @@ import { SiInstagram, SiX, SiFacebook, SiTiktok } from "react-icons/si";
 import { useToast } from "@/hooks/use-toast";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { usePageContent } from "@/lib/page-content/use-page-content";
+import { contactDefaults } from "@/lib/page-content/contact";
 
 export default function Contact() {
   usePageTitle("Contact Us");
+  const c = usePageContent("page_contact", contactDefaults);
   const { toast } = useToast();
   const { data: appSettings } = useQuery<Record<string, string>>({
     queryKey: ["/api/settings/public"],
@@ -102,9 +105,9 @@ export default function Contact() {
           <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <MessageSquare className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">Contact Us</h1>
+          <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">{c.hero.title}</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Have questions or feedback? We'd love to hear from you.
+            {c.hero.subtitle}
           </p>
         </motion.div>
 
@@ -116,9 +119,9 @@ export default function Contact() {
           >
             <Card className="shadow-xl">
               <CardHeader>
-                <CardTitle className="text-2xl font-display">Send us a message</CardTitle>
+                <CardTitle className="text-2xl font-display">{c.form.title}</CardTitle>
                 <CardDescription>
-                  Fill out the form below and we'll get back to you within 24 hours.
+                  {c.form.description}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -127,15 +130,15 @@ export default function Contact() {
                     <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
                       <CheckCircle2 className="w-8 h-8 text-green-600" />
                     </div>
-                    <h3 className="text-xl font-bold mb-2">Message Sent!</h3>
+                    <h3 className="text-xl font-bold mb-2">{c.form.successHeading}</h3>
                     <p className="text-muted-foreground mb-6">
-                      Thank you for reaching out. We'll respond to your message soon.
+                      {c.form.successBody}
                     </p>
                     <Button onClick={() => {
                       setIsSubmitted(false);
                       setFormData({ name: "", email: "", subject: "", message: "" });
                     }}>
-                      Send Another Message
+                      {c.form.successButton}
                     </Button>
                   </div>
                 ) : (
@@ -202,7 +205,7 @@ export default function Contact() {
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
-                          Send Message
+                          {c.form.submitLabel}
                         </>
                       )}
                     </Button>
@@ -220,9 +223,9 @@ export default function Contact() {
           >
             <Card className="shadow-xl">
               <CardHeader>
-                <CardTitle className="text-2xl font-display">Get in Touch</CardTitle>
+                <CardTitle className="text-2xl font-display">{c.getInTouch.title}</CardTitle>
                 <CardDescription>
-                  Reach out to us through any of these channels.
+                  {c.getInTouch.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -251,13 +254,13 @@ export default function Contact() {
 
             <Card className="border-2 border-primary/20 bg-primary/5">
               <CardContent className="p-6">
-                <h3 className="font-bold mb-2">Looking for quick answers?</h3>
+                <h3 className="font-bold mb-2">{c.faqCta.heading}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Check out our FAQ section for answers to common questions.
+                  {c.faqCta.body}
                 </p>
                 <Link href="/faqs">
                   <Button variant="outline" className="w-full" data-testid="button-view-faqs">
-                    View FAQs
+                    {c.faqCta.button}
                   </Button>
                 </Link>
               </CardContent>

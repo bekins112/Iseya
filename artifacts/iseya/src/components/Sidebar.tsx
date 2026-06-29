@@ -85,7 +85,7 @@ export function Sidebar() {
     { href: "/admin/activity-logs", label: "Activity Logs", icon: Activity, perm: "canManageActivityLogs" },
     { href: "/admin/sub-admins", label: "Sub-Admins", icon: Settings, perm: "canManageAdmins" },
     { href: "/admin/roles", label: "Roles & Permissions", icon: ShieldCheck, perm: "canManageAdmins" },
-    { href: "/admin/banners", label: "Landing Banners", icon: Images, perm: "canManageSettings" },
+    { href: "/admin/page-settings", label: "Page Settings", icon: Images, perm: "canManageSettings" },
     { href: "/admin/settings", label: "Platform Settings", icon: SlidersHorizontal, perm: "canManageSettings" },
   ];
 

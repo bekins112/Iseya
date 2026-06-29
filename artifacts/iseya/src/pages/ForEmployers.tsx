@@ -13,6 +13,8 @@ import {
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useQuery } from "@tanstack/react-query";
+import { usePageContent } from "@/lib/page-content/use-page-content";
+import { forEmployersDefaults } from "@/lib/page-content/for-employers";
 
 const features = [
   {
@@ -163,6 +165,7 @@ export default function ForEmployers() {
   const { data: platformSettings } = useQuery<Record<string, string>>({
     queryKey: ["/api/settings/public"],
   });
+  const c = usePageContent("page_for_employers", forEmployersDefaults);
   const plans = buildPlans(platformSettings);
 
   return (
@@ -174,25 +177,25 @@ export default function ForEmployers() {
         <div className="max-w-5xl mx-auto px-4 text-center relative">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <Badge className="mb-6 px-4 py-1.5 text-sm bg-primary/10 text-primary border-primary/20" data-testid="badge-employer-hero">
-              <Building2 className="w-3.5 h-3.5 mr-1.5" /> For Employers
+              <Building2 className="w-3.5 h-3.5 mr-1.5" /> {c.hero.badge}
             </Badge>
             <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 leading-tight">
-              Hire Reliable Workers <br className="hidden md:block" />
-              <span className="text-primary">Fast & Easy</span>
+              {c.hero.title} <br className="hidden md:block" />
+              <span className="text-primary">{c.hero.highlight}</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              Post jobs, review verified applicants, and build your team in minutes. Iṣéyá connects you with Nigeria's largest pool of casual workers.
+              {c.hero.subtitle}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/register">
                 <Button size="lg" className="font-bold px-8 gap-2 group" data-testid="button-employer-start">
-                  Create Employer Account
+                  {c.hero.ctaPrimary}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
               <Link href="/browse-jobs">
                 <Button size="lg" variant="outline" className="font-medium gap-2" data-testid="button-employer-browse">
-                  <Search className="w-4 h-4" /> Browse Jobs
+                  <Search className="w-4 h-4" /> {c.hero.ctaBrowse}
                 </Button>
               </Link>
             </div>
@@ -204,10 +207,10 @@ export default function ForEmployers() {
         <div className="max-w-4xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
             <Badge className="mb-4 px-3 py-1 text-xs bg-primary/10 text-primary border-primary/20">
-              <Play className="w-3 h-3 mr-1" /> Watch Video
+              <Play className="w-3 h-3 mr-1" /> {c.video.badge}
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">See How Iṣéyá Works for Employers</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">Watch this short video to learn how you can post jobs, find workers, and grow your business.</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.video.heading}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{c.video.subtitle}</p>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} className="relative rounded-2xl overflow-hidden shadow-2xl border bg-black aspect-video" data-testid="video-employer">
             <iframe
@@ -224,8 +227,8 @@ export default function ForEmployers() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Everything You Need to Hire</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Powerful tools to find, vet, and manage your casual workforce — all in one platform.</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.features.heading}</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">{c.features.subtitle}</p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f, i) => (
@@ -248,8 +251,8 @@ export default function ForEmployers() {
       <section className="py-20 bg-muted/30">
         <div className="max-w-5xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">How It Works</h2>
-            <p className="text-muted-foreground">Start hiring in 4 simple steps</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.steps.heading}</h2>
+            <p className="text-muted-foreground">{c.steps.subtitle}</p>
           </motion.div>
           <div className="grid md:grid-cols-4 gap-6">
             {steps.map((s, i) => (
@@ -266,8 +269,8 @@ export default function ForEmployers() {
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Choose Your Plan</h2>
-            <p className="text-muted-foreground">Flexible pricing to match your hiring needs</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.plans.heading}</h2>
+            <p className="text-muted-foreground">{c.plans.subtitle}</p>
           </motion.div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {plans.map((p, i) => (
@@ -299,7 +302,7 @@ export default function ForEmployers() {
                       ))}
                     </ul>
                     <Link href="/register">
-                      <Button className="w-full" variant={p.highlight ? "default" : "outline"}>Get Started</Button>
+                      <Button className="w-full" variant={p.highlight ? "default" : "outline"}>{c.plans.ctaLabel}</Button>
                     </Link>
                   </CardContent>
                 </Card>
@@ -312,11 +315,11 @@ export default function ForEmployers() {
       <section className="py-20 bg-primary/5">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Ready to Start Hiring?</h2>
-            <p className="text-muted-foreground mb-8 text-lg">Join thousands of Nigerian businesses finding reliable workers on Iṣéyá.</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.bottomCta.heading}</h2>
+            <p className="text-muted-foreground mb-8 text-lg">{c.bottomCta.subtitle}</p>
             <Link href="/register">
               <Button size="lg" className="font-bold px-10 gap-2 group" data-testid="button-employer-bottom-cta">
-                Create Free Account <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                {c.bottomCta.button} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </motion.div>

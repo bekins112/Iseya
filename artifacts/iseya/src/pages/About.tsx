@@ -8,9 +8,12 @@ import { ArrowLeft, Users, Target, Heart, Shield, Briefcase, CheckCircle2 , Link
 import { SiInstagram, SiX, SiFacebook } from "react-icons/si";
 import iseyaLogo from "@assets/Iseya_(3)_1770122415773.png";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { usePageContent } from "@/lib/page-content/use-page-content";
+import { aboutDefaults } from "@/lib/page-content/about";
 
 export default function About() {
   usePageTitle("About Us");
+  const c = usePageContent("page_about", aboutDefaults);
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -57,9 +60,9 @@ export default function About() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">About Iṣéyá</h1>
+          <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">{c.hero.title}</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Connecting Nigerian workers with opportunities, one job at a time.
+            {c.hero.subtitle}
           </p>
         </motion.div>
 
@@ -73,20 +76,15 @@ export default function About() {
             <CardContent className="p-8 md:p-12">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
-                  <h2 className="text-3xl font-display font-bold mb-4">Our Mission</h2>
+                  <h2 className="text-3xl font-display font-bold mb-4">{c.mission.heading}</h2>
                   <p className="text-muted-foreground mb-4">
-                    Iṣéyá (meaning "work" in Yoruba) is a product of <strong>Renowned Technology Limited</strong>, 
-                    founded with a simple mission: to bridge the gap between casual workers seeking opportunities 
-                    and employers looking for reliable help.
+                    {c.mission.paragraph1Start}<strong>{c.mission.companyName}</strong>{c.mission.paragraph1End}
                   </p>
                   <p className="text-muted-foreground mb-4">
-                    In Nigeria, millions of hardworking individuals are ready and willing to work, but often lack 
-                    access to opportunities. We're changing that by creating a platform where talent meets 
-                    opportunity, regardless of formal qualifications.
+                    {c.mission.paragraph2}
                   </p>
                   <p className="text-muted-foreground">
-                    Whether you're looking for your next casual job or searching for workers to help with 
-                    your business, Iṣéyá is here to make the connection seamless and trustworthy.
+                    {c.mission.paragraph3}
                   </p>
                 </div>
                 <div className="flex justify-center">
@@ -105,7 +103,7 @@ export default function About() {
           animate="show"
           className="mb-16"
         >
-          <h2 className="text-3xl font-display font-bold text-center mb-8">Our Values</h2>
+          <h2 className="text-3xl font-display font-bold text-center mb-8">{c.values.heading}</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {values.map((value, i) => (
               <motion.div key={i} variants={item}>
@@ -131,21 +129,21 @@ export default function About() {
         >
           <Card className="border-2 border-primary/20 bg-primary/5">
             <CardContent className="p-8">
-              <h2 className="text-2xl font-display font-bold mb-4">Ready to Get Started?</h2>
+              <h2 className="text-2xl font-display font-bold mb-4">{c.cta.heading}</h2>
               <p className="text-muted-foreground mb-6">
-                Join thousands of Nigerians who have found work or hired through Iṣéyá.
+                {c.cta.subtitle}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/">
                   <Button size="lg" className="gap-2" data-testid="button-find-work">
                     <CheckCircle2 className="w-5 h-5" />
-                    Find Work
+                    {c.cta.buttonFindWork}
                   </Button>
                 </Link>
                 <Link href="/employer">
                   <Button size="lg" variant="outline" className="gap-2" data-testid="button-hire-workers">
                     <Users className="w-5 h-5" />
-                    Hire Workers
+                    {c.cta.buttonHireWorkers}
                   </Button>
                 </Link>
               </div>

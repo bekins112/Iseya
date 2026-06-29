@@ -4325,7 +4325,25 @@ export async function registerRoutes(
     "alert_channel_webhook_url": "",
     "landing_banners_enabled": "false",
     "landing_banners": "[]",
+    "page_landing": "{}",
+    "page_about": "{}",
+    "page_for_applicants": "{}",
+    "page_for_employers": "{}",
+    "page_for_agents": "{}",
+    "page_contact": "{}",
+    "page_faqs": "{}",
+    "page_terms": "{}",
+    "page_privacy": "{}",
+    "page_cookies": "{}",
+    "page_copyright": "{}",
+    "page_disclaimer": "{}",
   };
+
+  const PAGE_CONTENT_KEYS = new Set([
+    "page_landing", "page_about", "page_for_applicants", "page_for_employers",
+    "page_for_agents", "page_contact", "page_faqs", "page_terms",
+    "page_privacy", "page_cookies", "page_copyright", "page_disclaimer",
+  ]);
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
     "hide_unverified_details",
@@ -4971,6 +4989,41 @@ export async function registerRoutes(
       }
     }
   );
+
+  // === PAGE CONTENT ===
+
+  app.post("/api/admin/page-content", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageSettings) {
+      return res.status(403).json({ message: "You do not have permission to manage page content" });
+    }
+    try {
+      const userId = req.session.userId!;
+      const { key, value } = req.body as { key?: string; value?: unknown };
+      if (!key || !PAGE_CONTENT_KEYS.has(key)) {
+        return res.status(400).json({ message: "Invalid page content key" });
+      }
+      let parsed: unknown;
+      if (typeof value === "string") {
+        try {
+          parsed = JSON.parse(value);
+        } catch {
+          return res.status(400).json({ message: "Invalid page content JSON" });
+        }
+      } else {
+        parsed = value;
+      }
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return res.status(400).json({ message: "Page content must be a JSON object" });
+      }
+      const serialized = JSON.stringify(parsed);
+      await storage.upsertSetting(key, serialized, userId);
+      logActivity({ req, action: "update_page_content", category: "settings", description: `Admin updated page content: ${key}` });
+      res.json({ key, value: serialized });
+    } catch (err: any) {
+      console.error("Page content update error:", err);
+      res.status(500).json({ message: "Failed to update page content" });
+    }
+  });
 
   // === AUTOMATED EMAILS ===
 

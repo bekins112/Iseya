@@ -18,6 +18,8 @@ import PageAds from "@/components/PageAds";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { usePageContent } from "@/lib/page-content/use-page-content";
+import { landingDefaults } from "@/lib/page-content/landing";
 
 const bannerSlides = [
   {
@@ -80,7 +82,7 @@ const testimonials = [
 ];
 
 
-function TestimonialsCarousel({ testimonialIndex, setTestimonialIndex }: { testimonialIndex: number; setTestimonialIndex: (v: number | ((p: number) => number)) => void }) {
+function TestimonialsCarousel({ testimonialIndex, setTestimonialIndex, heading, subtitle }: { testimonialIndex: number; setTestimonialIndex: (v: number | ((p: number) => number)) => void; heading: string; subtitle: string }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setTestimonialIndex((prev: number) => (prev + 1) % testimonials.length);
@@ -97,8 +99,8 @@ function TestimonialsCarousel({ testimonialIndex, setTestimonialIndex }: { testi
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">What Our Members Say</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Real stories from workers and employers who found success on Iseya.</p>
+          <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">{heading}</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{subtitle}</p>
         </motion.div>
 
         <div className="relative">
@@ -194,6 +196,8 @@ export default function Landing() {
   const { data: appSettings } = useQuery<Record<string, string>>({
     queryKey: ["/api/settings/public"],
   });
+
+  const c = usePageContent("page_landing", landingDefaults);
 
   const slides = useMemo(() => {
     if (appSettings?.landing_banners_enabled === "true") {
@@ -304,7 +308,7 @@ export default function Landing() {
                 >
                   <Link href="/browse-jobs">
                     <Button size="lg" variant="secondary" className="font-semibold shadow-lg" data-testid="button-banner-browse">
-                      Browse Jobs
+                      {c.banner.ctaLabel}
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>
                   </Link>
@@ -374,13 +378,13 @@ export default function Landing() {
             variants={itemVariants}
             className="text-5xl md:text-7xl font-display font-extrabold text-foreground tracking-tight mb-6 text-balance leading-[1.1]"
           >
-            Start Finding <span className="text-primary italic">Jobs</span> Today
+            {c.hero.title} <span className="text-primary italic">{c.hero.highlight}</span> {c.hero.titleAfter}
           </motion.h1>
           <motion.p
             variants={itemVariants}
             className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-10 text-balance leading-relaxed"
           >
-            Discover flexible work opportunities near you. No CV required, just your skills and availability.
+            {c.hero.subtitle}
           </motion.p>
 
           <motion.div
@@ -397,7 +401,7 @@ export default function Landing() {
             ) : (
               <Link href="/register">
                 <Button size="lg" className="text-lg font-bold px-8 shadow-lg shadow-primary/20 group" data-testid="button-hero-register">
-                  Get Started
+                  {c.hero.ctaPrimary}
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -405,7 +409,7 @@ export default function Landing() {
             <Link href="/browse-jobs">
               <Button size="lg" variant="outline" className="text-lg font-bold px-8" data-testid="button-hero-browse">
                 <Search className="mr-2 w-5 h-5" />
-                Browse Jobs
+                {c.hero.ctaBrowse}
               </Button>
             </Link>
           </motion.div>
@@ -457,8 +461,8 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-8"
           >
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-3" data-testid="text-search-heading">Find Jobs That Match You</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">Search and discover flexible work opportunities near you.</p>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-3" data-testid="text-search-heading">{c.search.heading}</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">{c.search.subtitle}</p>
           </motion.div>
 
           <motion.form
@@ -497,7 +501,7 @@ export default function Landing() {
             transition={{ delay: 0.1 }}
             className="text-center"
           >
-            <p className="text-sm text-muted-foreground mb-3 font-medium">Popular Searches</p>
+            <p className="text-sm text-muted-foreground mb-3 font-medium">{c.search.popularLabel}</p>
             <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
               {[
                 "Software Developer",
@@ -546,8 +550,8 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">Built for Modern Work</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Everything you need to find or list casual work in minutes.</p>
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">{c.features.heading}</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">{c.features.subtitle}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -595,9 +599,9 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">Simple & Fast</span>
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">How It Works</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Get started in just a few simple steps — whether you're looking for work or hiring.</p>
+            <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">{c.howItWorks.badge}</span>
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">{c.howItWorks.heading}</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{c.howItWorks.subtitle}</p>
           </motion.div>
 
           <div className="flex items-center justify-center mb-14">
@@ -770,7 +774,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <TestimonialsCarousel testimonialIndex={testimonialIndex} setTestimonialIndex={setTestimonialIndex} />
+      <TestimonialsCarousel testimonialIndex={testimonialIndex} setTestimonialIndex={setTestimonialIndex} heading={c.testimonials.heading} subtitle={c.testimonials.subtitle} />
 
       <section className="py-20 bg-primary/5">
         <div className="max-w-4xl mx-auto px-4 text-center">
@@ -782,9 +786,9 @@ export default function Landing() {
             <div className="w-16 h-16 mx-auto bg-accent/10 rounded-2xl flex items-center justify-center mb-6">
               <Building2 className="w-8 h-8 text-accent" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Looking to Hire?</h2>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.employerCta.heading}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-              Post jobs and find reliable workers fast. Create an employer account and start hiring within minutes.
+              {c.employerCta.subtitle}
             </p>
             <Link href={isAuthenticated ? "/dashboard" : "/register"}>
               <Button size="lg" className="font-bold px-8 group" data-testid="button-employer-cta">
@@ -805,11 +809,11 @@ export default function Landing() {
               viewport={{ once: true }}
             >
               <Badge className="mb-4 px-3 py-1 text-sm bg-teal-500/10 text-teal-700 border-teal-500/20 dark:text-teal-400" data-testid="badge-become-agent">
-                <Briefcase className="w-3 h-3 mr-1.5" /> Earn Money on Iṣéyá
+                <Briefcase className="w-3 h-3 mr-1.5" /> {c.agent.badge}
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Earn Money as a Recruitment Agent</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.agent.heading}</h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Turn your network into income. Join Iṣéyá as an agent, connect employers with verified workers, and earn commission on every successful placement. No office needed — work from anywhere in Nigeria.
+                {c.agent.body}
               </p>
               <ul className="space-y-3 mb-8">
                 {[
@@ -827,12 +831,12 @@ export default function Landing() {
               <div className="flex flex-wrap gap-3">
                 <Link href="/for-agents">
                   <Button size="lg" className="font-bold gap-2 group bg-teal-600 hover:bg-teal-700 text-white" data-testid="button-become-agent">
-                    Start Earning Today <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    {c.agent.buttonPrimary} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link href="/register">
                   <Button size="lg" variant="outline" className="font-medium gap-2" data-testid="button-register-agent">
-                    Register as Agent
+                    {c.agent.buttonSecondary}
                   </Button>
                 </Link>
               </div>
@@ -868,7 +872,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-4xl md:text-5xl font-display font-bold mb-8">Ready to jump in?</h2>
+              <h2 className="text-4xl md:text-5xl font-display font-bold mb-8">{c.readyToJoin.heading}</h2>
               <div className="space-y-6">
                 {[
                   "No resumes required",
@@ -897,7 +901,7 @@ export default function Landing() {
               <div className="mt-10">
                 <Link href={isAuthenticated ? "/dashboard" : "/register"}>
                   <Button size="lg" className="font-bold group" data-testid="button-bottom-register">
-                    {isAuthenticated ? "Go to Dashboard" : "Create Free Account"}
+                    {isAuthenticated ? "Go to Dashboard" : c.readyToJoin.button}
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
@@ -934,6 +938,7 @@ export default function Landing() {
 }
 
 function HiringCompaniesSection() {
+  const c = usePageContent("page_landing", landingDefaults);
   const { data: companies } = useQuery<Array<{ id: number; name: string; logoUrl: string; websiteUrl: string | null }>>({
     queryKey: ["/api/hiring-companies"],
   });
@@ -952,13 +957,13 @@ function HiringCompaniesSection() {
         >
           <Badge className="bg-primary/10 text-primary border-primary/20 mb-3">
             <Building2 className="w-3 h-3 mr-1" />
-            Trusted by Leading Brands
+            {c.hiringCompanies.badge}
           </Badge>
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-            Companies Currently Hiring in Nigeria
+            {c.hiringCompanies.heading}
           </h2>
           <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Join thousands of professionals working with these top employers on Iṣéyá.
+            {c.hiringCompanies.subtitle}
           </p>
         </motion.div>
 
