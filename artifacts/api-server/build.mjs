@@ -30,6 +30,8 @@ async function buildAll() {
     external: [
       "*.node",
       "zod",
+      "pdf-parse",
+      "mammoth",
       "sharp",
       "better-sqlite3",
       "sqlite3",

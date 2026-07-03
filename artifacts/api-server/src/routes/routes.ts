@@ -14,6 +14,7 @@ import * as scheduler from "../scheduler";
 import { adminUpdateUserSchema, updateAdminPermissionsSchema, insertAdminPermissionsSchema, adminUpdateJobSchema, createSubAdminSchema, createNewAdminSchema, insertTicketSchema, insertReportSchema, adminUpdateTicketSchema, adminUpdateReportSchema, adminUpdateSubscriptionSchema, insertJobHistorySchema, insertAdminRoleSchema, updateAdminRoleSchema } from "@workspace/db";
 import { logActivity } from "../activity-logger";
 import { registerChatRoutes } from "./chat";
+import Anthropic from "@anthropic-ai/sdk";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -65,6 +66,19 @@ const uploadCV = multer({
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(ext)) cb(null, true);
     else cb(new Error("Only PDF and DOC files are allowed"));
+  },
+});
+
+// In-memory upload for the AI CV refiner: we only need the file contents to
+// extract text and send to the AI, so we never persist it to disk.
+const uploadCvRefine = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".pdf", ".doc", ".docx", ".txt"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Only PDF, DOC, DOCX and TXT files are allowed"));
   },
 });
 
@@ -3408,6 +3422,137 @@ export async function registerRoutes(
       jobAidEndDate: user.jobAidEndDate,
     });
   });
+
+  // Applicant: AI-powered CV refiner (Job-Aid "cv_refining" benefit).
+  // Uploads a CV, extracts its text, and asks the AI to return an improved
+  // version plus concrete suggestions. Nothing is persisted to disk.
+  app.post(
+    "/api/jobaid/cv-refine",
+    isAuthenticated,
+    (req, res, next) => {
+      uploadCvRefine.single("cv")(req, res, (err: any) => {
+        if (err) return res.status(400).json({ message: err.message || "Upload failed" });
+        next();
+      });
+    },
+    async (req, res) => {
+      const user = await storage.getUser(req.session.userId!);
+      if (!user || user.role !== "applicant") {
+        return res.status(403).json({ message: "Only applicants can use the CV refiner" });
+      }
+      const active =
+        user.jobAidStatus === "active" &&
+        (!user.jobAidEndDate || new Date(user.jobAidEndDate) > new Date());
+      if (!active || !user.jobAidPlan) {
+        return res.status(403).json({ message: "You need an active Job-Aid plan to use the CV refiner" });
+      }
+      const plans = await getJobAidPlans();
+      const plan = plans[user.jobAidPlan];
+      const benefit = plan?.benefits.find((b) => b.key === "cv_refining");
+      if (!benefit || !benefit.included) {
+        return res.status(403).json({ message: "CV refining is not included in your plan" });
+      }
+
+      const file = (req as any).file as { buffer: Buffer; originalname: string } | undefined;
+      if (!file) return res.status(400).json({ message: "No file uploaded" });
+
+      // Extract plain text from the uploaded CV.
+      let cvText = "";
+      try {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (ext === ".pdf") {
+          const { PDFParse } = await import("pdf-parse");
+          const parser = new PDFParse({ data: new Uint8Array(file.buffer) });
+          try {
+            const parsed = await parser.getText();
+            cvText = parsed.text || "";
+          } finally {
+            await parser.destroy();
+          }
+        } else if (ext === ".docx" || ext === ".doc") {
+          const mammoth = await import("mammoth");
+          const result = await mammoth.extractRawText({ buffer: file.buffer });
+          cvText = result.value || "";
+        } else {
+          cvText = file.buffer.toString("utf8");
+        }
+      } catch (err: any) {
+        req.log?.error({ err }, "cv-refine: failed to extract text");
+        return res.status(400).json({
+          message: "We couldn't read that file. Please upload a text-based PDF, DOCX or TXT CV.",
+        });
+      }
+
+      cvText = cvText.replace(/\s+\n/g, "\n").trim();
+      if (cvText.length < 50) {
+        return res.status(400).json({
+          message: "We couldn't find enough text in that file. It may be a scanned image — please upload a text-based CV.",
+        });
+      }
+      // Keep the prompt within a sane size.
+      if (cvText.length > 15000) cvText = cvText.slice(0, 15000);
+
+      if (!process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY) {
+        return res.status(503).json({ message: "The CV refiner is temporarily unavailable. Please try again later." });
+      }
+
+      try {
+        const anthropic = new Anthropic({
+          apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY!,
+          baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+        });
+        const prompt = `You are an expert career coach and professional CV writer for the Nigerian job market. Improve the CV below.
+
+Return ONLY valid JSON (no markdown, no code fences) with exactly this shape:
+{
+  "improvedCv": "the full rewritten CV as clean plain text, using clear section headings and bullet points",
+  "suggestions": ["short, specific, actionable improvement tips", "..."]
+}
+
+Guidelines:
+- Keep all real facts from the original (names, employers, dates, education). Do NOT invent experience, employers, or qualifications.
+- Strengthen wording with strong action verbs and, where the original implies them, measurable achievements.
+- Fix grammar, spelling, structure and formatting; make it ATS-friendly.
+- Provide between 4 and 8 suggestions.
+
+Original CV:
+"""
+${cvText}
+"""`;
+
+        const response = await anthropic.messages.create({
+          model: "claude-sonnet-4-6",
+          max_tokens: 4096,
+          messages: [{ role: "user", content: prompt }],
+        });
+
+        const raw =
+          response.content?.[0]?.type === "text" ? response.content[0].text : "";
+        let improvedCv = "";
+        let suggestions: string[] = [];
+        try {
+          const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+          const parsed = JSON.parse(jsonStr);
+          improvedCv = typeof parsed.improvedCv === "string" ? parsed.improvedCv : "";
+          suggestions = Array.isArray(parsed.suggestions)
+            ? parsed.suggestions.filter((s: unknown) => typeof s === "string")
+            : [];
+        } catch {
+          // If the model didn't return clean JSON, fall back to the raw text.
+          improvedCv = raw;
+        }
+
+        if (!improvedCv) {
+          return res.status(502).json({ message: "The CV refiner returned an unexpected response. Please try again." });
+        }
+
+        return res.json({ improvedCv, suggestions });
+      } catch (err: any) {
+        req.log?.error({ err: err?.message || err }, "cv-refine: anthropic error");
+        return res.status(502).json({ message: "The CV refiner is busy right now. Please try again in a moment." });
+      }
+    },
+  );
 
   // Applicant: list own Job-Aid feature requests
   app.get("/api/jobaid/requests", isAuthenticated, async (req, res) => {

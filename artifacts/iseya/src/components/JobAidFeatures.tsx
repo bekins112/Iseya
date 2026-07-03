@@ -12,10 +12,22 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
-import { Lock, Sparkles, Check, Loader2, Clock, CheckCircle2, XCircle, Hourglass } from "lucide-react";
+import {
+  Lock,
+  Sparkles,
+  Check,
+  Loader2,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Hourglass,
+  Info,
+  ArrowRight,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { jobSectors } from "@/lib/job-categories";
 import type { JobAidRequest } from "@/lib/types";
 
 type JobAidBenefit = { key: string; label: string; included: boolean; limit: number | null };
@@ -45,10 +57,54 @@ const statusMeta: Record<
   rejected: { label: "Not approved", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300", icon: XCircle },
 };
 
+type BenefitAction = { label: string; href: string; variant?: "default" | "outline" };
+type BenefitBehavior =
+  | { kind: "recommend"; hint: string }
+  | { kind: "actions"; hint: string; actions: BenefitAction[] }
+  | { kind: "info"; hint: string };
+
+// How each Job-Aid benefit behaves for the applicant.
+const benefitBehavior: Record<string, BenefitBehavior> = {
+  recommendations: {
+    kind: "recommend",
+    hint: "Pick the job categories you're interested in and we'll tailor recommendations to you.",
+  },
+  referrals: {
+    kind: "info",
+    hint: "No request needed — our team refers you directly to matching employers.",
+  },
+  cv_refining: {
+    kind: "actions",
+    hint: "Polish your CV instantly with our AI refiner, or reach out to our team.",
+    actions: [
+      { label: "Refine my CV", href: "/cv-refine" },
+      { label: "Contact support", href: "/support", variant: "outline" },
+    ],
+  },
+  interview_booking: {
+    kind: "info",
+    hint: "No request needed — our team schedules the interviews your plan covers.",
+  },
+  verification: {
+    kind: "actions",
+    hint: "Get the verified badge by uploading your ID and a quick selfie.",
+    actions: [{ label: "Get verified", href: "/verification" }],
+  },
+  priority_support: {
+    kind: "actions",
+    hint: "You're first in line — reach our support team any time.",
+    actions: [{ label: "Contact support", href: "/support", variant: "outline" }],
+  },
+};
+
+const behaviorFor = (key: string): BenefitBehavior =>
+  benefitBehavior[key] || { kind: "info", hint: "Included in your plan." };
+
 export function JobAidFeatures() {
   const { toast } = useToast();
-  const [activeBenefit, setActiveBenefit] = useState<JobAidBenefit | null>(null);
-  const [note, setNote] = useState("");
+  // Only the "recommendations" benefit uses the request dialog now.
+  const [recommendOpen, setRecommendOpen] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const { data: status, isLoading: statusLoading } = useQuery<JobAidStatus>({
     queryKey: ["/api/jobaid/status"],
@@ -72,9 +128,9 @@ export function JobAidFeatures() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/jobaid/requests"] });
-      setActiveBenefit(null);
-      setNote("");
-      toast({ title: "Request submitted", description: "Our team will process it shortly." });
+      setRecommendOpen(false);
+      setSelectedCategories([]);
+      toast({ title: "Request submitted", description: "Our team will send you tailored recommendations shortly." });
     },
     onError: (e: any) => {
       const msg = (e?.message || "").replace(/^\d+:\s*/, "");
@@ -88,6 +144,12 @@ export function JobAidFeatures() {
       toast({ title: "Could not submit request", description, variant: "destructive" });
     },
   });
+
+  const toggleCategory = (name: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name],
+    );
+  };
 
   if (statusLoading) {
     return (
@@ -123,8 +185,8 @@ export function JobAidFeatures() {
               <div className="max-w-md">
                 <p className="font-semibold text-base">Unlock hands-on help landing your next job</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Get personalized recommendations, direct referrals, professional CV refining,
-                  interview booking, and priority support. Subscribe to a Job-Aid plan to request these.
+                  Get personalized recommendations, direct referrals, an AI CV refiner,
+                  interview booking, and priority support. Subscribe to a Job-Aid plan to use these.
                 </p>
               </div>
               <Link href="/job-aid">
@@ -143,8 +205,7 @@ export function JobAidFeatures() {
   const includedBenefits = (currentPlan?.benefits || []).filter((b) => b.included);
 
   const openStatuses: JobAidRequest["status"][] = ["pending", "in_progress"];
-  const requestsForBenefit = (key: string) =>
-    requests.filter((r) => r.benefitKey === key);
+  const requestsForBenefit = (key: string) => requests.filter((r) => r.benefitKey === key);
   const openRequestForBenefit = (key: string) =>
     requestsForBenefit(key).find((r) => openStatuses.includes(r.status));
   const usedForBenefit = (key: string) =>
@@ -179,69 +240,106 @@ export function JobAidFeatures() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Request any feature included in your plan. Our team fulfills each request manually and
-            you'll be notified when the status changes.
+            Use the benefits included in your plan below. Some are handled automatically by our team,
+            while others you can start yourself right here.
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
           {includedBenefits.length === 0 ? (
             <div className="text-center py-6 text-sm text-muted-foreground">
-              Your plan has no requestable features configured yet.
+              Your plan has no features configured yet.
             </div>
           ) : (
             includedBenefits.map((benefit) => {
-              const open = openRequestForBenefit(benefit.key);
-              const used = usedForBenefit(benefit.key);
-              const hasLimit = benefit.limit != null;
+              const behavior = behaviorFor(benefit.key);
+              const isRecommend = behavior.kind === "recommend";
+
+              const open = isRecommend ? openRequestForBenefit(benefit.key) : undefined;
+              const used = isRecommend ? usedForBenefit(benefit.key) : 0;
+              const hasLimit = isRecommend && benefit.limit != null;
               const quotaReached = hasLimit && used >= (benefit.limit || 0);
-              const latest = requestsForBenefit(benefit.key)[0];
+              const latest = isRecommend ? requestsForBenefit(benefit.key)[0] : undefined;
+
               return (
                 <div
                   key={benefit.key}
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/30 border border-border/30"
+                  className="flex items-start justify-between gap-3 p-3 rounded-xl bg-muted/30 border border-border/30"
                   data-testid={`row-jobaid-benefit-${benefit.key}`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-start gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Check className="w-4 h-4 text-primary" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold truncate">{benefit.label}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
-                        {hasLimit && (
-                          <span data-testid={`text-jobaid-quota-${benefit.key}`}>
-                            {used}/{benefit.limit} used
-                          </span>
-                        )}
-                        {latest && (
-                          <Badge className={`text-[10px] gap-1 border-none ${statusMeta[latest.status].className}`}>
-                            {(() => {
-                              const Icon = statusMeta[latest.status].icon;
-                              return <Icon className="w-3 h-3" />;
-                            })()}
-                            {statusMeta[latest.status].label}
-                          </Badge>
-                        )}
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{behavior.hint}</p>
+                      {isRecommend && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
+                          {hasLimit && (
+                            <span data-testid={`text-jobaid-quota-${benefit.key}`}>
+                              {used}/{benefit.limit} used
+                            </span>
+                          )}
+                          {latest && (
+                            <Badge className={`text-[10px] gap-1 border-none ${statusMeta[latest.status].className}`}>
+                              {(() => {
+                                const Icon = statusMeta[latest.status].icon;
+                                return <Icon className="w-3 h-3" />;
+                              })()}
+                              {statusMeta[latest.status].label}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex-shrink-0">
-                    {open ? (
-                      <Button size="sm" variant="outline" disabled data-testid={`button-jobaid-requested-${benefit.key}`}>
-                        Requested
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setActiveBenefit(benefit);
-                          setNote("");
-                        }}
-                        disabled={quotaReached}
-                        data-testid={`button-jobaid-request-${benefit.key}`}
+
+                  <div className="flex-shrink-0 flex flex-col items-end gap-2">
+                    {behavior.kind === "recommend" && (
+                      open ? (
+                        <Button size="sm" variant="outline" disabled data-testid={`button-jobaid-requested-${benefit.key}`}>
+                          Requested
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCategories([]);
+                            setRecommendOpen(true);
+                          }}
+                          disabled={quotaReached}
+                          data-testid={`button-jobaid-request-${benefit.key}`}
+                        >
+                          {quotaReached ? "Limit reached" : "Set preferences"}
+                        </Button>
+                      )
+                    )}
+
+                    {behavior.kind === "actions" &&
+                      behavior.actions.map((action) => (
+                        <Link key={action.href} href={action.href}>
+                          <Button
+                            size="sm"
+                            variant={action.variant || "default"}
+                            className="gap-1.5 whitespace-nowrap"
+                            data-testid={`button-jobaid-action-${benefit.key}-${action.href.replace(/\//g, "")}`}
+                          >
+                            {action.label}
+                            {(!action.variant || action.variant === "default") && (
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                        </Link>
+                      ))}
+
+                    {behavior.kind === "info" && (
+                      <Badge
+                        variant="outline"
+                        className="gap-1 text-[10px] text-muted-foreground"
+                        data-testid={`badge-jobaid-info-${benefit.key}`}
                       >
-                        {quotaReached ? "Limit reached" : "Request"}
-                      </Button>
+                        <Info className="w-3 h-3" /> Automatic
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -251,33 +349,63 @@ export function JobAidFeatures() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!activeBenefit} onOpenChange={(o) => !o && setActiveBenefit(null)}>
-        <DialogContent>
+      <Dialog open={recommendOpen} onOpenChange={(o) => !o && setRecommendOpen(false)}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Request: {activeBenefit?.label}</DialogTitle>
+            <DialogTitle>Choose your job categories</DialogTitle>
             <DialogDescription>
-              Add any details that will help our team fulfill your request (optional).
+              Select the categories you're interested in. Our team will use these to send you tailored
+              job recommendations. You can pick as many as you like.
             </DialogDescription>
           </DialogHeader>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={4}
-            maxLength={1000}
-            placeholder="e.g. I'm targeting remote data-entry roles in Lagos…"
-            data-testid="input-jobaid-note"
-            className="w-full resize-none rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-          />
+
+          <div className="max-h-72 overflow-y-auto -mx-1 px-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {jobSectors.map((sector) => {
+                const checked = selectedCategories.includes(sector.name);
+                return (
+                  <button
+                    type="button"
+                    key={sector.name}
+                    onClick={() => toggleCategory(sector.name)}
+                    aria-pressed={checked}
+                    data-testid={`category-option-${sector.name.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase()}`}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                      checked
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border/40 hover:bg-muted/50 text-muted-foreground"
+                    }`}
+                  >
+                    <span
+                      className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${
+                        checked ? "bg-primary border-primary text-primary-foreground" : "border-border"
+                      }`}
+                    >
+                      {checked && <Check className="w-3 h-3" />}
+                    </span>
+                    <span className="truncate">{sector.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground" data-testid="text-selected-count">
+            {selectedCategories.length} selected
+          </p>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setActiveBenefit(null)} data-testid="button-jobaid-cancel">
+            <Button variant="outline" onClick={() => setRecommendOpen(false)} data-testid="button-jobaid-cancel">
               Cancel
             </Button>
             <Button
               onClick={() =>
-                activeBenefit &&
-                submitMutation.mutate({ benefitKey: activeBenefit.key, note: note.trim() || undefined })
+                submitMutation.mutate({
+                  benefitKey: "recommendations",
+                  note: `Preferred job categories: ${selectedCategories.join(", ")}`,
+                })
               }
-              disabled={submitMutation.isPending}
+              disabled={submitMutation.isPending || selectedCategories.length === 0}
               data-testid="button-jobaid-submit"
             >
               {submitMutation.isPending ? (
@@ -285,7 +413,7 @@ export function JobAidFeatures() {
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…
                 </>
               ) : (
-                "Submit request"
+                "Submit preferences"
               )}
             </Button>
           </DialogFooter>

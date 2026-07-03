@@ -50,6 +50,7 @@ import AdminChats from "@/pages/AdminChats";
 import AdminJobAid from "@/pages/AdminJobAid";
 import ChatWidget from "@/components/ChatWidget";
 import Verification from "@/pages/Verification";
+import CvRefine from "@/pages/CvRefine";
 import About from "@/pages/About";
 import FAQs from "@/pages/FAQs";
 import Contact from "@/pages/Contact";
@@ -184,6 +185,12 @@ function Router() {
       <Route path="/my-job-aid">
         <AuthenticatedLayout>
           <JobAidCenter />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/cv-refine">
+        <AuthenticatedLayout>
+          <CvRefine />
         </AuthenticatedLayout>
       </Route>
 
