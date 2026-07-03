@@ -538,73 +538,6 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-20 border-y bg-gradient-to-b from-background via-primary/[0.03] to-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
-              <Star className="w-3.5 h-3.5" /> {c.jobAid.badge}
-            </span>
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4" data-testid="text-jobaid-heading">{c.jobAid.heading}</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{c.jobAid.subtitle}</p>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {[
-              {
-                icon: <Star className="w-7 h-7 text-primary" />,
-                title: "Personalized Recommendations",
-                desc: "Get job matches hand-picked for your skills, experience and goals.",
-              },
-              {
-                icon: <Send className="w-7 h-7 text-primary" />,
-                title: "Direct Referrals",
-                desc: "Get referred straight to employers who are actively hiring.",
-              },
-              {
-                icon: <FileSearch className="w-7 h-7 text-primary" />,
-                title: "CV Refining",
-                desc: "Have your CV polished by our team so you stand out from the crowd.",
-              },
-              {
-                icon: <UserCheck className="w-7 h-7 text-primary" />,
-                title: "Interview Support",
-                desc: "Prepare with expert guidance and book interview slots faster.",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-card p-6 rounded-2xl border shadow-sm text-center"
-                data-testid={`card-jobaid-benefit-${i}`}
-              >
-                <div className="w-14 h-14 mx-auto bg-primary/10 rounded-xl flex items-center justify-center mb-4">
-                  {item.icon}
-                </div>
-                <h3 className="font-bold mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link href="/job-aid">
-              <Button size="lg" className="font-bold px-8 group" data-testid="button-jobaid-cta">
-                {c.jobAid.button}
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <PageAds page="landing" position="middle" />
       </div>
@@ -838,6 +771,73 @@ export default function Landing() {
               </div>
             </motion.div>
           </AnimatePresence>
+        </div>
+      </section>
+
+      <section className="py-20 border-y bg-gradient-to-b from-background via-primary/[0.03] to-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4">
+              <Star className="w-3.5 h-3.5" /> {c.jobAid.badge}
+            </span>
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4" data-testid="text-jobaid-heading">{c.jobAid.heading}</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{c.jobAid.subtitle}</p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {[
+              {
+                icon: <Star className="w-7 h-7 text-primary" />,
+                title: "Personalized Recommendations",
+                desc: "Get job matches hand-picked for your skills, experience and goals.",
+              },
+              {
+                icon: <Send className="w-7 h-7 text-primary" />,
+                title: "Direct Referrals",
+                desc: "Get referred straight to employers who are actively hiring.",
+              },
+              {
+                icon: <FileSearch className="w-7 h-7 text-primary" />,
+                title: "CV Refining",
+                desc: "Have your CV polished by our team so you stand out from the crowd.",
+              },
+              {
+                icon: <UserCheck className="w-7 h-7 text-primary" />,
+                title: "Interview Support",
+                desc: "Prepare with expert guidance and book interview slots faster.",
+              },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-card p-6 rounded-2xl border shadow-sm text-center"
+                data-testid={`card-jobaid-benefit-${i}`}
+              >
+                <div className="w-14 h-14 mx-auto bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                  {item.icon}
+                </div>
+                <h3 className="font-bold mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <Link href="/job-aid">
+              <Button size="lg" className="font-bold px-8 group" data-testid="button-jobaid-cta">
+                {c.jobAid.button}
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
