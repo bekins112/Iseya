@@ -23,6 +23,9 @@ export default function Header() {
             <Link href="/browse-jobs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="link-browse-jobs">
               Browse Jobs
             </Link>
+            <Link href="/job-aid" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="link-job-aid">
+              Job-Aid
+            </Link>
             <div className="relative" onMouseEnter={() => setDiscoverOpen(true)} onMouseLeave={() => setDiscoverOpen(false)}>
               <button className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-testid="button-discover-dropdown">
                 Discover <ChevronDown className={`w-3.5 h-3.5 transition-transform ${discoverOpen ? "rotate-180" : ""}`} />
@@ -131,6 +134,7 @@ export default function Header() {
           >
             <div className="px-4 py-3 space-y-1">
               <Link href="/browse-jobs" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-browse-jobs">Browse Jobs</Link>
+              <Link href="/job-aid" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-job-aid">Job-Aid</Link>
               <p className="px-3 pt-3 pb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Discover</p>
               <Link href="/for-applicants" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-for-applicants">For Job Seekers</Link>
               <Link href="/for-employers" className="block px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-muted transition-colors" onClick={() => setMobileMenuOpen(false)} data-testid="mobile-link-for-employers">For Employers</Link>

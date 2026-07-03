@@ -3319,6 +3319,445 @@ export async function registerRoutes(
     });
   });
 
+  // === JOB-AID (APPLICANT PAID OFFERING) ===
+  const JOBAID_BENEFIT_LABELS: Record<string, string> = {
+    recommendations: "Personalized job recommendations",
+    referrals: "Direct job referrals",
+    cv_refining: "Professional CV refining",
+    interview_booking: "Interview booking assistance",
+    verification: "Profile verification included",
+    priority_support: "Priority support",
+  };
+  const JOBAID_PLAN_NAMES: Record<string, string> = {
+    casual: "Casual Job-Aid",
+    smart: "Smart Job-Aid",
+    remote: "Remote Job-Aid",
+    freelance: "Freelance Job-Aid",
+    corporate: "Corporate Job-Aid",
+  };
+
+  type JobAidPlan = {
+    name: string;
+    amount: number;
+    originalAmount: number;
+    discount: number;
+    benefits: Array<{ key: string; label: string; included: boolean }>;
+  };
+
+  async function getJobAidPlans(): Promise<Record<string, JobAidPlan>> {
+    const applyDiscount = (price: number, discount: number) => Math.round(price * (1 - discount / 100));
+    const plans: Record<string, JobAidPlan> = {};
+    for (const id of JOBAID_PLAN_IDS) {
+      const price = parseFloat(await getSettingValue(`jobaid_${id}_price`)) || 0;
+      const discount = parseFloat(await getSettingValue(`jobaid_${id}_discount`)) || 0;
+      const benefits = [];
+      for (const b of JOBAID_BENEFIT_KEYS) {
+        benefits.push({
+          key: b,
+          label: JOBAID_BENEFIT_LABELS[b],
+          included: (await getSettingValue(`jobaid_${id}_${b}`)) === "true",
+        });
+      }
+      plans[id] = {
+        name: JOBAID_PLAN_NAMES[id],
+        amount: applyDiscount(price, discount) * 100,
+        originalAmount: price * 100,
+        discount,
+        benefits,
+      };
+    }
+    return plans;
+  }
+
+  app.get("/api/jobaid/plans", async (_req, res) => {
+    const plans = await getJobAidPlans();
+    const result = Object.entries(plans).map(([id, plan]) => ({
+      id,
+      ...plan,
+      amountFormatted: `₦${(plan.amount / 100).toLocaleString()}`,
+      originalAmountFormatted: `₦${(plan.originalAmount / 100).toLocaleString()}`,
+    }));
+    res.json(result);
+  });
+
+  app.get("/api/jobaid/status", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const active = user.jobAidStatus === "active" && (!user.jobAidEndDate || new Date(user.jobAidEndDate) > new Date());
+    res.json({
+      currentPlan: user.jobAidPlan || null,
+      status: active ? "active" : "none",
+      jobAidEndDate: user.jobAidEndDate,
+    });
+  });
+
+  app.post("/api/jobaid/initialize", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "applicant") {
+      return res.status(403).json({ message: "Only applicants can subscribe to Job-Aid" });
+    }
+
+    const JOBAID_PLANS = await getJobAidPlans();
+    const { plan } = req.body;
+    if (!plan || !JOBAID_PLANS[plan]) {
+      return res.status(400).json({ message: "Invalid plan selected" });
+    }
+
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) {
+      return res.status(500).json({ message: "Payment system is not configured" });
+    }
+
+    try {
+      const response = await fetch("https://api.paystack.co/transaction/initialize", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${paystackSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user.email,
+          amount: JOBAID_PLANS[plan].amount,
+          currency: "NGN",
+          callback_url: `${req.protocol}://${req.get("host")}/job-aid/verify`,
+          metadata: {
+            userId: user.id,
+            plan,
+            planName: JOBAID_PLANS[plan].name,
+            product: "jobaid",
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.status) {
+        return res.status(400).json({ message: data.message || "Failed to initialize payment" });
+      }
+
+      res.json({
+        authorization_url: data.data.authorization_url,
+        access_code: data.data.access_code,
+        reference: data.data.reference,
+      });
+    } catch (err) {
+      req.log.error({ err }, "Job-Aid Paystack initialization error");
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  app.get("/api/jobaid/verify", isAuthenticated, async (req, res) => {
+    const { reference } = req.query;
+    if (!reference) {
+      return res.status(400).json({ message: "No payment reference provided" });
+    }
+
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) {
+      return res.status(500).json({ message: "Payment system is not configured" });
+    }
+
+    try {
+      const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: {
+          Authorization: `Bearer ${paystackSecret}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!data.status || data.data.status !== "success") {
+        const meta = data.data?.metadata || {};
+        if (meta.userId && meta.plan) {
+          await storage.createTransaction({
+            userId: meta.userId,
+            type: "jobaid",
+            gateway: "paystack",
+            reference: data.data?.reference || String(reference),
+            amount: data.data?.amount || 0,
+            currency: "NGN",
+            status: "failed",
+            plan: meta.plan,
+            metadata: JSON.stringify({ reason: "Gateway reported payment not successful", gatewayStatus: data.data?.status }),
+          });
+        }
+        return res.status(400).json({ message: "Payment verification failed", verified: false });
+      }
+
+      const JOBAID_PLANS = await getJobAidPlans();
+      const { userId, plan } = data.data.metadata;
+      if (!plan || !JOBAID_PLANS[plan]) {
+        return res.status(400).json({ message: "Invalid plan in payment metadata", verified: false });
+      }
+
+      if (String(userId) !== String(req.session.userId)) {
+        return res.status(403).json({ message: "Payment does not belong to this user", verified: false });
+      }
+
+      const expectedAmount = JOBAID_PLANS[plan].amount;
+      if (data.data.amount !== expectedAmount || data.data.currency !== "NGN") {
+        return res.status(400).json({ message: "Payment amount mismatch", verified: false });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      await storage.updateUser(userId, {
+        jobAidPlan: plan,
+        jobAidStatus: "active",
+        jobAidEndDate: endDate,
+      });
+
+      await storage.createTransaction({
+        userId,
+        type: "jobaid",
+        gateway: "paystack",
+        reference: data.data.reference || String(reference),
+        amount: data.data.amount || JOBAID_PLANS[plan].amount,
+        currency: "NGN",
+        status: "success",
+        plan,
+        metadata: JSON.stringify({ planName: JOBAID_PLANS[plan].name, paystackRef: data.data.reference }),
+      });
+
+      res.json({ verified: true, plan, message: "Job-Aid activated successfully" });
+    } catch (err) {
+      req.log.error({ err }, "Job-Aid Paystack verification error");
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  app.post("/api/jobaid/webhook", async (req, res) => {
+    const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
+    if (!paystackSecret) return res.sendStatus(200);
+
+    const crypto = await import("crypto");
+    const hash = crypto.createHmac("sha512", paystackSecret)
+      .update(JSON.stringify(req.body))
+      .digest("hex");
+    const signature = req.headers["x-paystack-signature"];
+    if (hash !== signature) {
+      return res.sendStatus(401);
+    }
+
+    const event = req.body;
+    if (event.event === "charge.success") {
+      const { userId, plan, product } = event.data.metadata || {};
+      const JOBAID_PLANS = await getJobAidPlans();
+      if (product === "jobaid" && userId && plan && JOBAID_PLANS[plan]) {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+        await storage.updateUser(userId, {
+          jobAidPlan: plan,
+          jobAidStatus: "active",
+          jobAidEndDate: endDate,
+        });
+        await storage.createTransaction({
+          userId,
+          type: "jobaid",
+          gateway: "paystack",
+          reference: event.data?.reference || "",
+          amount: event.data?.amount || JOBAID_PLANS[plan].amount,
+          currency: "NGN",
+          status: "success",
+          plan,
+          metadata: JSON.stringify({ source: "webhook", planName: JOBAID_PLANS[plan].name }),
+        });
+      }
+    }
+    res.sendStatus(200);
+  });
+
+  app.post("/api/jobaid/flutterwave/initialize", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "applicant") {
+      return res.status(403).json({ message: "Only applicants can subscribe to Job-Aid" });
+    }
+
+    const JOBAID_PLANS = await getJobAidPlans();
+    const { plan } = req.body;
+    if (!plan || !JOBAID_PLANS[plan]) {
+      return res.status(400).json({ message: "Invalid plan selected" });
+    }
+
+    const flwSecret = process.env.FLW_SECRET_KEY;
+    if (!flwSecret) {
+      return res.status(500).json({ message: "Flutterwave payment system is not configured" });
+    }
+
+    try {
+      const txRef = `iseya-jobaid-${user.id}-${plan}-${Date.now()}`;
+      const response = await fetch("https://api.flutterwave.com/v3/payments", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${flwSecret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tx_ref: txRef,
+          amount: JOBAID_PLANS[plan].amount / 100,
+          currency: "NGN",
+          redirect_url: `${req.protocol}://${req.get("host")}/job-aid/verify?gateway=flutterwave`,
+          customer: {
+            email: user.email,
+            name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : (user.email || "Customer"),
+          },
+          customizations: {
+            title: "Iṣéyá Job-Aid",
+            description: `${JOBAID_PLANS[plan].name}`,
+          },
+          meta: {
+            userId: user.id,
+            plan,
+            planName: JOBAID_PLANS[plan].name,
+            product: "jobaid",
+          },
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status !== "success") {
+        return res.status(400).json({ message: data.message || "Failed to initialize payment" });
+      }
+
+      res.json({
+        payment_link: data.data.link,
+        tx_ref: txRef,
+      });
+    } catch (err) {
+      req.log.error({ err }, "Job-Aid Flutterwave initialization error");
+      res.status(500).json({ message: "Failed to initialize payment" });
+    }
+  });
+
+  app.get("/api/jobaid/flutterwave/verify", isAuthenticated, async (req, res) => {
+    const { transaction_id } = req.query;
+    if (!transaction_id) {
+      return res.status(400).json({ message: "No transaction ID provided", verified: false });
+    }
+
+    const flwSecret = process.env.FLW_SECRET_KEY;
+    if (!flwSecret) {
+      return res.status(500).json({ message: "Flutterwave payment system is not configured" });
+    }
+
+    try {
+      const response = await fetch(`https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`, {
+        headers: {
+          Authorization: `Bearer ${flwSecret}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.status !== "success" || data.data.status !== "successful") {
+        const meta = data.data?.meta || {};
+        if (meta.userId && meta.plan) {
+          await storage.createTransaction({
+            userId: meta.userId,
+            type: "jobaid",
+            gateway: "flutterwave",
+            reference: data.data?.tx_ref || data.data?.flw_ref || String(transaction_id),
+            amount: data.data?.amount ? Math.round(data.data.amount * 100) : 0,
+            currency: "NGN",
+            status: "failed",
+            plan: meta.plan,
+            metadata: JSON.stringify({ reason: "Gateway reported payment not successful", gatewayStatus: data.data?.status }),
+          });
+        }
+        return res.status(400).json({ message: "Payment verification failed", verified: false });
+      }
+
+      const JOBAID_PLANS = await getJobAidPlans();
+      const { userId, plan } = data.data.meta || {};
+      if (!plan || !JOBAID_PLANS[plan]) {
+        return res.status(400).json({ message: "Invalid plan in payment metadata", verified: false });
+      }
+
+      if (String(userId) !== String(req.session.userId)) {
+        return res.status(403).json({ message: "Payment does not belong to this user", verified: false });
+      }
+
+      const expectedAmount = JOBAID_PLANS[plan].amount / 100;
+      if (data.data.amount !== expectedAmount || data.data.currency !== "NGN") {
+        return res.status(400).json({ message: "Payment amount mismatch", verified: false });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      await storage.updateUser(userId, {
+        jobAidPlan: plan,
+        jobAidStatus: "active",
+        jobAidEndDate: endDate,
+      });
+
+      await storage.createTransaction({
+        userId,
+        type: "jobaid",
+        gateway: "flutterwave",
+        reference: data.data.tx_ref || data.data.flw_ref || String(transaction_id),
+        amount: Math.round(data.data.amount * 100),
+        currency: "NGN",
+        status: "success",
+        plan,
+        metadata: JSON.stringify({ planName: JOBAID_PLANS[plan].name, flwRef: data.data.flw_ref }),
+      });
+
+      res.json({ verified: true, plan, message: "Job-Aid activated successfully" });
+    } catch (err) {
+      req.log.error({ err }, "Job-Aid Flutterwave verification error");
+      res.status(500).json({ message: "Failed to verify payment" });
+    }
+  });
+
+  app.post("/api/jobaid/flutterwave/webhook", async (req, res) => {
+    const secretHash = process.env.FLW_SECRET_HASH;
+    if (!secretHash) return res.sendStatus(200);
+
+    const signature = req.headers["verif-hash"];
+    if (!signature || signature !== secretHash) {
+      return res.sendStatus(401);
+    }
+
+    const payload = req.body;
+    if (payload.event === "charge.completed" && payload.data?.status === "successful") {
+      const { userId, plan, product } = payload.data.meta || {};
+      const JOBAID_PLANS = await getJobAidPlans();
+      if (product === "jobaid" && userId && plan && JOBAID_PLANS[plan]) {
+        const expectedAmount = JOBAID_PLANS[plan].amount / 100;
+        if (payload.data.amount === expectedAmount && payload.data.currency === "NGN") {
+          const endDate = new Date();
+          endDate.setMonth(endDate.getMonth() + 1);
+          await storage.updateUser(userId, {
+            jobAidPlan: plan,
+            jobAidStatus: "active",
+            jobAidEndDate: endDate,
+          });
+          await storage.createTransaction({
+            userId,
+            type: "jobaid",
+            gateway: "flutterwave",
+            reference: payload.data.tx_ref || payload.data.flw_ref || "",
+            amount: Math.round(payload.data.amount * 100),
+            currency: "NGN",
+            status: "success",
+            plan,
+            metadata: JSON.stringify({ source: "webhook", planName: JOBAID_PLANS[plan].name }),
+          });
+        }
+      }
+    }
+    res.sendStatus(200);
+  });
+
   // === APPLICANT VERIFICATION SYSTEM ===
   async function getVerificationFee() {
     const fee = parseFloat(await getSettingValue("verification_fee"));
@@ -4272,6 +4711,46 @@ export async function registerRoutes(
     "subscription_standard_discount": "0",
     "subscription_premium_discount": "0",
     "subscription_enterprise_discount": "0",
+    "jobaid_casual_price": "2999",
+    "jobaid_smart_price": "4999",
+    "jobaid_remote_price": "7999",
+    "jobaid_freelance_price": "9999",
+    "jobaid_corporate_price": "14999",
+    "jobaid_casual_discount": "0",
+    "jobaid_smart_discount": "0",
+    "jobaid_remote_discount": "0",
+    "jobaid_freelance_discount": "0",
+    "jobaid_corporate_discount": "0",
+    "jobaid_casual_recommendations": "true",
+    "jobaid_casual_referrals": "false",
+    "jobaid_casual_cv_refining": "false",
+    "jobaid_casual_interview_booking": "false",
+    "jobaid_casual_verification": "false",
+    "jobaid_casual_priority_support": "false",
+    "jobaid_smart_recommendations": "true",
+    "jobaid_smart_referrals": "true",
+    "jobaid_smart_cv_refining": "false",
+    "jobaid_smart_interview_booking": "false",
+    "jobaid_smart_verification": "false",
+    "jobaid_smart_priority_support": "false",
+    "jobaid_remote_recommendations": "true",
+    "jobaid_remote_referrals": "true",
+    "jobaid_remote_cv_refining": "true",
+    "jobaid_remote_interview_booking": "false",
+    "jobaid_remote_verification": "false",
+    "jobaid_remote_priority_support": "false",
+    "jobaid_freelance_recommendations": "true",
+    "jobaid_freelance_referrals": "true",
+    "jobaid_freelance_cv_refining": "true",
+    "jobaid_freelance_interview_booking": "true",
+    "jobaid_freelance_verification": "false",
+    "jobaid_freelance_priority_support": "false",
+    "jobaid_corporate_recommendations": "true",
+    "jobaid_corporate_referrals": "true",
+    "jobaid_corporate_cv_refining": "true",
+    "jobaid_corporate_interview_booking": "true",
+    "jobaid_corporate_verification": "true",
+    "jobaid_corporate_priority_support": "true",
     "verification_fee": "9999",
     "verification_discount": "0",
     "job_limit_free": "1",
@@ -4326,6 +4805,7 @@ export async function registerRoutes(
     "landing_banners_enabled": "false",
     "landing_banners": "[]",
     "page_landing": "{}",
+    "page_jobaid": "{}",
     "page_about": "{}",
     "page_for_applicants": "{}",
     "page_for_employers": "{}",
@@ -4340,10 +4820,18 @@ export async function registerRoutes(
   };
 
   const PAGE_CONTENT_KEYS = new Set([
-    "page_landing", "page_about", "page_for_applicants", "page_for_employers",
+    "page_landing", "page_jobaid", "page_about", "page_for_applicants", "page_for_employers",
     "page_for_agents", "page_contact", "page_faqs", "page_terms",
     "page_privacy", "page_cookies", "page_copyright", "page_disclaimer",
   ]);
+
+  const JOBAID_PLAN_IDS = ["casual", "smart", "remote", "freelance", "corporate"] as const;
+  const JOBAID_BENEFIT_KEYS = [
+    "recommendations", "referrals", "cv_refining", "interview_booking", "verification", "priority_support",
+  ] as const;
+  const JOBAID_BENEFIT_TOGGLE_KEYS = JOBAID_PLAN_IDS.flatMap((plan) =>
+    JOBAID_BENEFIT_KEYS.map((b) => `jobaid_${plan}_${b}`),
+  );
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
     "hide_unverified_details",
@@ -4356,6 +4844,7 @@ export async function registerRoutes(
     "alert_channel_backup_email_enabled",
     "alert_channel_webhook_enabled",
     "landing_banners_enabled",
+    ...JOBAID_BENEFIT_TOGGLE_KEYS,
   ]);
 
   const TEXT_SETTINGS_KEYS = new Set([

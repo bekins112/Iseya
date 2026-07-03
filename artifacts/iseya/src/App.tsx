@@ -65,6 +65,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import ForEmployers from "@/pages/ForEmployers";
 import ForApplicants from "@/pages/ForApplicants";
 import ForAgents from "@/pages/ForAgents";
+import JobAid from "@/pages/JobAid";
 import CookieConsent from "@/components/CookieConsent";
 import InstallPrompt from "@/components/InstallPrompt";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
@@ -124,6 +125,8 @@ function Router() {
       <Route path="/cookies" component={CookiePolicy} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/browse-jobs" component={BrowseJobs} />
+      <Route path="/job-aid/verify" component={JobAid} />
+      <Route path="/job-aid" component={JobAid} />
       
       <Route path="/verify-email" component={VerifyEmail} />
       

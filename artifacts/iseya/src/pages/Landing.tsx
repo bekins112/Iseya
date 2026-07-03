@@ -800,6 +800,30 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="py-20 bg-primary/5">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <Badge className="mb-4 px-3 py-1 text-sm" data-testid="badge-jobaid">
+              <Star className="w-3 h-3 mr-1.5" /> {c.jobAid.badge}
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">{c.jobAid.heading}</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+              {c.jobAid.subtitle}
+            </p>
+            <Link href="/job-aid">
+              <Button size="lg" className="font-bold px-8 group" data-testid="button-jobaid-cta">
+                {c.jobAid.button}
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
       <section className="py-20 bg-gradient-to-br from-teal-50 to-teal-100/50 dark:from-teal-950/30 dark:to-teal-900/20">
         <div className="max-w-5xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">

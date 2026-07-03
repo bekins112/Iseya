@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { PageHeader } from "@/components/ui-extension";
-import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus, Phone, Mail, MapPin, Globe, Key, Youtube, FileText } from "lucide-react";
+import { Settings, Save, Loader2, CreditCard, ShieldCheck, Percent, DollarSign, Briefcase, CalendarCheck, UserPlus, Phone, Mail, MapPin, Globe, Key, Youtube, FileText, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 function formatNaira(amount: number) {
@@ -109,6 +110,50 @@ const youtubeSchema = z.object({
   youtube_applicants: z.string().optional().default(""),
 });
 
+const JOBAID_PLANS = ["casual", "smart", "remote", "freelance", "corporate"] as const;
+const JOBAID_BENEFITS = ["recommendations", "referrals", "cv_refining", "interview_booking", "verification", "priority_support"] as const;
+const JOBAID_PLAN_LABELS: Record<string, string> = {
+  casual: "Casual Job-Aid",
+  smart: "Smart Job-Aid",
+  remote: "Remote Job-Aid",
+  freelance: "Freelance Job-Aid",
+  corporate: "Corporate Job-Aid",
+};
+const JOBAID_BENEFIT_LABELS: Record<string, string> = {
+  recommendations: "Personalized recommendations",
+  referrals: "Direct job referrals",
+  cv_refining: "Professional CV refining",
+  interview_booking: "Interview booking assistance",
+  verification: "Profile verification included",
+  priority_support: "Priority support",
+};
+const JOBAID_DEFAULT_PRICES: Record<string, string> = {
+  casual: "2999", smart: "4999", remote: "7999", freelance: "9999", corporate: "14999",
+};
+
+const jobAidShape: Record<string, z.ZodTypeAny> = {};
+for (const p of JOBAID_PLANS) {
+  jobAidShape[`jobaid_${p}_price`] = z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0, "Must be a valid amount");
+  jobAidShape[`jobaid_${p}_discount`] = z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "Must be 0-100");
+  for (const b of JOBAID_BENEFITS) {
+    jobAidShape[`jobaid_${p}_${b}`] = z.string();
+  }
+}
+const jobAidSchema = z.object(jobAidShape);
+
+function jobAidDefaultValues(settings?: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const p of JOBAID_PLANS) {
+    out[`jobaid_${p}_price`] = settings?.[`jobaid_${p}_price`] || JOBAID_DEFAULT_PRICES[p];
+    out[`jobaid_${p}_discount`] = settings?.[`jobaid_${p}_discount`] || "0";
+    for (const b of JOBAID_BENEFITS) {
+      const key = `jobaid_${p}_${b}`;
+      out[key] = settings?.[key] ?? (b === "recommendations" ? "true" : "false");
+    }
+  }
+  return out;
+}
+
 export default function AdminSettings() {
   usePageTitle("Admin Settings");
   const { user } = useAuth();
@@ -123,6 +168,7 @@ export default function AdminSettings() {
   const socialSave = useSectionSave("Social Links");
   const paymentSave = useSectionSave("Payment Keys");
   const youtubeSave = useSectionSave("YouTube Links");
+  const jobAidSave = useSectionSave("Job-Aid Plans");
 
   const subForm = useForm({ resolver: zodResolver(subscriptionSchema), defaultValues: {
     subscription_standard_price: "9999", subscription_premium_price: "24999", subscription_enterprise_price: "44999",
@@ -137,6 +183,7 @@ export default function AdminSettings() {
   const socialForm = useForm({ resolver: zodResolver(socialSchema), defaultValues: { app_facebook: "", app_twitter: "", app_instagram: "", app_linkedin: "", app_tiktok: "", app_whatsapp: "" }});
   const paymentForm = useForm({ resolver: zodResolver(paymentSchema), defaultValues: { paystack_public_key: "", paystack_secret_key: "", flutterwave_public_key: "", flutterwave_secret_key: "" }});
   const youtubeForm = useForm({ resolver: zodResolver(youtubeSchema), defaultValues: { youtube_landing: "", youtube_employers: "", youtube_agents: "", youtube_applicants: "" }});
+  const jobAidForm = useForm({ resolver: zodResolver(jobAidSchema), defaultValues: jobAidDefaultValues() });
 
   useEffect(() => {
     if (settings) {
@@ -164,10 +211,12 @@ export default function AdminSettings() {
       socialForm.reset({ app_facebook: settings.app_facebook || "", app_twitter: settings.app_twitter || "", app_instagram: settings.app_instagram || "", app_linkedin: settings.app_linkedin || "", app_tiktok: settings.app_tiktok || "", app_whatsapp: settings.app_whatsapp || "" });
       paymentForm.reset({ paystack_public_key: settings.paystack_public_key || "", paystack_secret_key: settings.paystack_secret_key || "", flutterwave_public_key: settings.flutterwave_public_key || "", flutterwave_secret_key: settings.flutterwave_secret_key || "" });
       youtubeForm.reset({ youtube_landing: settings.youtube_landing || "", youtube_employers: settings.youtube_employers || "", youtube_agents: settings.youtube_agents || "", youtube_applicants: settings.youtube_applicants || "" });
+      jobAidForm.reset(jobAidDefaultValues(settings));
     }
   }, [settings]);
 
   const watchSub = subForm.watch();
+  const watchJobAid = jobAidForm.watch();
 
   if (user?.role !== "admin") {
     return (
@@ -364,6 +413,80 @@ export default function AdminSettings() {
           </Card>
 
           <SectionSaveButton isPending={subSave.isPending} label="Pricing" />
+        </form>
+      </Form>
+
+      {/* JOB-AID PLANS */}
+      <Form {...jobAidForm}>
+        <form onSubmit={jobAidForm.handleSubmit((data) => jobAidSave.mutate(data as Record<string, string>))} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" data-testid="text-jobaid-settings-title">
+                <Sparkles className="w-5 h-5 text-primary" />
+                Job-Aid Plans
+              </CardTitle>
+              <CardDescription>
+                Configure pricing, discounts, and included benefits for each applicant Job-Aid plan. Prices are in Nigerian Naira (₦).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="grid gap-8">
+                {JOBAID_PLANS.map((p) => {
+                  const priceKey = `jobaid_${p}_price`;
+                  const discountKey = `jobaid_${p}_discount`;
+                  return (
+                    <div key={p} className="border rounded-lg p-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-lg" data-testid={`text-jobaid-${p}-label`}>{JOBAID_PLAN_LABELS[p]}</h3>
+                        <Badge variant="outline" data-testid={`text-jobaid-${p}-final-price`}>
+                          Final: {formatNaira(calcDiscounted(watchJobAid[priceKey], watchJobAid[discountKey]))}/month
+                        </Badge>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <FormField control={jobAidForm.control} name={priceKey as any} render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5" />Price (₦)</FormLabel>
+                            <FormControl><Input type="number" min="0" step="1" {...field} data-testid={`input-jobaid-${p}-price`} /></FormControl>
+                            <FormDescription>Base monthly price</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={jobAidForm.control} name={discountKey as any} render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1"><Percent className="w-3.5 h-3.5" />Discount (%)</FormLabel>
+                            <FormControl><Input type="number" min="0" max="100" step="1" {...field} data-testid={`input-jobaid-${p}-discount`} /></FormControl>
+                            <FormDescription>Promotional discount</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-muted-foreground">Included Benefits</p>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {JOBAID_BENEFITS.map((b) => (
+                            <FormField key={b} control={jobAidForm.control} name={`jobaid_${p}_${b}` as any} render={({ field }) => (
+                              <FormItem className="flex items-center justify-between rounded-md border p-3 space-y-0">
+                                <FormLabel className="text-sm font-normal">{JOBAID_BENEFIT_LABELS[b]}</FormLabel>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value === "true"}
+                                    onCheckedChange={(v) => field.onChange(v ? "true" : "false")}
+                                    data-testid={`switch-jobaid-${p}-${b}`}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          <SectionSaveButton isPending={jobAidSave.isPending} label="Job-Aid Plans" />
         </form>
       </Form>
 

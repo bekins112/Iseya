@@ -34,6 +34,12 @@ export const landingDefaults = {
     heading: "Looking to Hire?",
     subtitle: "Post jobs and find reliable workers fast. Create an employer account and start hiring within minutes.",
   },
+  jobAid: {
+    badge: "Get Hired Faster",
+    heading: "Need Help Landing a Job?",
+    subtitle: "Our Job-Aid plans give job seekers a real edge — personalized recommendations, direct referrals, CV refining and interview support.",
+    button: "Explore Job-Aid Plans",
+  },
   agent: {
     badge: "Earn Money on Iṣéyá",
     heading: "Earn Money as a Recruitment Agent",
@@ -121,6 +127,16 @@ export const landingPage: PageDef = {
       fields: [
         { key: "heading", label: "Heading", type: "text" },
         { key: "subtitle", label: "Subtitle", type: "textarea" },
+      ],
+    },
+    {
+      key: "jobAid",
+      label: "Job-Aid Section",
+      fields: [
+        { key: "badge", label: "Badge", type: "text" },
+        { key: "heading", label: "Heading", type: "text" },
+        { key: "subtitle", label: "Subtitle", type: "textarea" },
+        { key: "button", label: "Button label", type: "text" },
       ],
     },
     {

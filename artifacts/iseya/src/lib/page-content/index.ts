@@ -11,6 +11,7 @@ import { privacyPage } from "./privacy";
 import { cookiesPage } from "./cookies";
 import { copyrightPage } from "./copyright";
 import { disclaimerPage } from "./disclaimer";
+import { jobAidPage } from "./job-aid";
 
 export const allPages: PageDef[] = [
   landingPage,
@@ -25,6 +26,7 @@ export const allPages: PageDef[] = [
   cookiesPage,
   copyrightPage,
   disclaimerPage,
+  jobAidPage,
 ];
 
 export * from "./types";
