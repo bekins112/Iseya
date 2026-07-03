@@ -3497,6 +3497,12 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Payment amount mismatch", verified: false });
       }
 
+      const paidRef = data.data.reference || String(reference);
+      const alreadyProcessed = await storage.getTransactionByReference(paidRef);
+      if (alreadyProcessed && alreadyProcessed.status === "success") {
+        return res.json({ verified: true, plan: alreadyProcessed.plan || plan, message: "Job-Aid already activated" });
+      }
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -3515,7 +3521,7 @@ export async function registerRoutes(
         userId,
         type: "jobaid",
         gateway: "paystack",
-        reference: data.data.reference || String(reference),
+        reference: paidRef,
         amount: data.data.amount || JOBAID_PLANS[plan].amount,
         currency: "NGN",
         status: "success",
@@ -3548,24 +3554,28 @@ export async function registerRoutes(
       const { userId, plan, product } = event.data.metadata || {};
       const JOBAID_PLANS = await getJobAidPlans();
       if (product === "jobaid" && userId && plan && JOBAID_PLANS[plan]) {
-        const endDate = new Date();
-        endDate.setMonth(endDate.getMonth() + 1);
-        await storage.updateUser(userId, {
-          jobAidPlan: plan,
-          jobAidStatus: "active",
-          jobAidEndDate: endDate,
-        });
-        await storage.createTransaction({
-          userId,
-          type: "jobaid",
-          gateway: "paystack",
-          reference: event.data?.reference || "",
-          amount: event.data?.amount || JOBAID_PLANS[plan].amount,
-          currency: "NGN",
-          status: "success",
-          plan,
-          metadata: JSON.stringify({ source: "webhook", planName: JOBAID_PLANS[plan].name }),
-        });
+        const paidRef = event.data?.reference || "";
+        const alreadyProcessed = await storage.getTransactionByReference(paidRef);
+        if (!(alreadyProcessed && alreadyProcessed.status === "success")) {
+          const endDate = new Date();
+          endDate.setMonth(endDate.getMonth() + 1);
+          await storage.updateUser(userId, {
+            jobAidPlan: plan,
+            jobAidStatus: "active",
+            jobAidEndDate: endDate,
+          });
+          await storage.createTransaction({
+            userId,
+            type: "jobaid",
+            gateway: "paystack",
+            reference: paidRef,
+            amount: event.data?.amount || JOBAID_PLANS[plan].amount,
+            currency: "NGN",
+            status: "success",
+            plan,
+            metadata: JSON.stringify({ source: "webhook", planName: JOBAID_PLANS[plan].name }),
+          });
+        }
       }
     }
     res.sendStatus(200);
@@ -3685,6 +3695,12 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Payment amount mismatch", verified: false });
       }
 
+      const paidRef = data.data.tx_ref || data.data.flw_ref || String(transaction_id);
+      const alreadyProcessed = await storage.getTransactionByReference(paidRef);
+      if (alreadyProcessed && alreadyProcessed.status === "success") {
+        return res.json({ verified: true, plan: alreadyProcessed.plan || plan, message: "Job-Aid already activated" });
+      }
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -3703,7 +3719,7 @@ export async function registerRoutes(
         userId,
         type: "jobaid",
         gateway: "flutterwave",
-        reference: data.data.tx_ref || data.data.flw_ref || String(transaction_id),
+        reference: paidRef,
         amount: Math.round(data.data.amount * 100),
         currency: "NGN",
         status: "success",
@@ -3734,24 +3750,28 @@ export async function registerRoutes(
       if (product === "jobaid" && userId && plan && JOBAID_PLANS[plan]) {
         const expectedAmount = JOBAID_PLANS[plan].amount / 100;
         if (payload.data.amount === expectedAmount && payload.data.currency === "NGN") {
-          const endDate = new Date();
-          endDate.setMonth(endDate.getMonth() + 1);
-          await storage.updateUser(userId, {
-            jobAidPlan: plan,
-            jobAidStatus: "active",
-            jobAidEndDate: endDate,
-          });
-          await storage.createTransaction({
-            userId,
-            type: "jobaid",
-            gateway: "flutterwave",
-            reference: payload.data.tx_ref || payload.data.flw_ref || "",
-            amount: Math.round(payload.data.amount * 100),
-            currency: "NGN",
-            status: "success",
-            plan,
-            metadata: JSON.stringify({ source: "webhook", planName: JOBAID_PLANS[plan].name }),
-          });
+          const paidRef = payload.data.tx_ref || payload.data.flw_ref || "";
+          const alreadyProcessed = await storage.getTransactionByReference(paidRef);
+          if (!(alreadyProcessed && alreadyProcessed.status === "success")) {
+            const endDate = new Date();
+            endDate.setMonth(endDate.getMonth() + 1);
+            await storage.updateUser(userId, {
+              jobAidPlan: plan,
+              jobAidStatus: "active",
+              jobAidEndDate: endDate,
+            });
+            await storage.createTransaction({
+              userId,
+              type: "jobaid",
+              gateway: "flutterwave",
+              reference: paidRef,
+              amount: Math.round(payload.data.amount * 100),
+              currency: "NGN",
+              status: "success",
+              plan,
+              metadata: JSON.stringify({ source: "webhook", planName: JOBAID_PLANS[plan].name }),
+            });
+          }
         }
       }
     }

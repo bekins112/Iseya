@@ -162,6 +162,7 @@ export interface IStorage {
   // Transaction methods
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   getTransaction(id: number): Promise<Transaction | undefined>;
+  getTransactionByReference(reference: string): Promise<Transaction | undefined>;
   getAllTransactions(filters?: { type?: string; status?: string; gateway?: string }): Promise<Transaction[]>;
   getTransactionsByUser(userId: string): Promise<Transaction[]>;
   updateTransactionStatus(id: number, status: string, metadata?: string): Promise<Transaction>;
@@ -1145,6 +1146,12 @@ export class DatabaseStorage implements IStorage {
 
   async getTransaction(id: number): Promise<Transaction | undefined> {
     const [transaction] = await db.select().from(transactions).where(eq(transactions.id, id));
+    return transaction;
+  }
+
+  async getTransactionByReference(reference: string): Promise<Transaction | undefined> {
+    if (!reference) return undefined;
+    const [transaction] = await db.select().from(transactions).where(eq(transactions.reference, reference));
     return transaction;
   }
 
