@@ -240,7 +240,7 @@ export default function JobDetails() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="pt-24 pb-16 px-4 max-w-6xl mx-auto">
+        <main className="pt-24 pb-16 px-4 max-w-5xl mx-auto">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/4" />
             <div className="h-12 bg-muted rounded w-3/4" />
@@ -255,7 +255,7 @@ export default function JobDetails() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="pt-24 pb-16 px-4 max-w-6xl mx-auto text-center">
+        <main className="pt-24 pb-16 px-4 max-w-5xl mx-auto text-center">
           <Briefcase className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Job Not Found</h1>
           <p className="text-muted-foreground mb-6">This job may have been removed or doesn't exist.</p>
@@ -275,7 +275,7 @@ export default function JobDetails() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="pt-24 pb-16 px-4 max-w-6xl mx-auto">
+      <main className="pt-24 pb-16 px-4 max-w-5xl mx-auto">
         <div className="mb-6 flex items-center gap-3">
           <Link href="/browse-jobs">
             <Button variant="ghost" size="sm" className="gap-1.5" data-testid="button-back-browse">
@@ -295,8 +295,8 @@ export default function JobDetails() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="overflow-hidden">
-                <div className="bg-primary/5 p-6 md:p-8 border-b">
+              <Card className="overflow-hidden rounded-2xl">
+                <div className="bg-gradient-to-br from-primary/[0.07] to-transparent p-6 md:p-7 border-b">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="space-y-3 flex-1 min-w-0">
                       <div className="flex flex-wrap gap-2">
@@ -375,7 +375,7 @@ export default function JobDetails() {
                       <Briefcase className="w-5 h-5" />
                       Job Description
                     </h2>
-                    <div className="prose max-w-none text-muted-foreground whitespace-pre-line leading-relaxed" data-testid="text-job-description">
+                    <div className="prose prose-sm max-w-2xl text-muted-foreground whitespace-pre-line leading-relaxed" data-testid="text-job-description">
                       {job.description}
                     </div>
                   </div>
