@@ -181,6 +181,9 @@ export default function AdminUsers() {
       isVerified: u.isVerified || false,
       subscriptionStatus: u.subscriptionStatus || "free",
       subscriptionEndDate: u.subscriptionEndDate ? new Date(u.subscriptionEndDate).toISOString().split("T")[0] : "",
+      jobAidPlan: u.jobAidPlan || "none",
+      jobAidStatus: u.jobAidStatus || "none",
+      jobAidEndDate: u.jobAidEndDate ? new Date(u.jobAidEndDate).toISOString().split("T")[0] : "",
       companyName: u.companyName || "",
       businessCategory: u.businessCategory || "",
     });
@@ -193,6 +196,8 @@ export default function AdminUsers() {
       updates.age = calculateAge(updates.dateOfBirth);
     }
     if (!updates.subscriptionEndDate) updates.subscriptionEndDate = null;
+    if (!updates.jobAidPlan || updates.jobAidPlan === "none") updates.jobAidPlan = null;
+    if (!updates.jobAidEndDate) updates.jobAidEndDate = null;
     if (!updates.phone) updates.phone = null;
     if (!updates.location) updates.location = null;
     if (!updates.bio) updates.bio = null;
@@ -760,6 +765,55 @@ export default function AdminUsers() {
                 />
                 <p className="text-xs text-muted-foreground">Leave empty for no expiration</p>
               </div>
+
+              {editForm.role === "applicant" && (
+                <div className="space-y-4 border-t pt-4">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-semibold">Job-Aid Subscription</Label>
+                    <p className="text-xs text-muted-foreground">Grant or update this applicant's Job-Aid plan.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Job-Aid Status</Label>
+                    <Select value={editForm.jobAidStatus || "none"} onValueChange={(v) => setEditForm({ ...editForm, jobAidStatus: v })}>
+                      <SelectTrigger data-testid="select-edit-jobaid-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="expired">Expired</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Job-Aid Plan</Label>
+                    <Select value={editForm.jobAidPlan || "none"} onValueChange={(v) => setEditForm({ ...editForm, jobAidPlan: v })}>
+                      <SelectTrigger data-testid="select-edit-jobaid-plan">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Plan</SelectItem>
+                        <SelectItem value="casual">Casual Job-Aid</SelectItem>
+                        <SelectItem value="smart">Smart Job-Aid</SelectItem>
+                        <SelectItem value="remote">Remote Job-Aid</SelectItem>
+                        <SelectItem value="freelance">Freelance Job-Aid</SelectItem>
+                        <SelectItem value="corporate">Corporate Job-Aid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-jobAidEnd">Job-Aid End Date</Label>
+                    <Input
+                      id="edit-jobAidEnd"
+                      type="date"
+                      value={editForm.jobAidEndDate || ""}
+                      onChange={(e) => setEditForm({ ...editForm, jobAidEndDate: e.target.value })}
+                      data-testid="input-edit-jobaid-end"
+                    />
+                    <p className="text-xs text-muted-foreground">Leave empty for no expiration</p>
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
 

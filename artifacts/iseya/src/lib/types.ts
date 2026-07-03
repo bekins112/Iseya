@@ -32,6 +32,9 @@ export interface User {
   isVerified?: boolean | null;
   subscriptionStatus?: string | null;
   subscriptionEndDate?: Date | null;
+  jobAidPlan?: string | null;
+  jobAidStatus?: string | null;
+  jobAidEndDate?: Date | null;
   paystackCustomerId?: string | null;
   paystackSubscriptionCode?: string | null;
   subscribedToNewsletter?: boolean | null;

@@ -44,6 +44,11 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Admin UI page `AdminRoles.tsx` at `/admin/roles` (Sidebar link gated by `canManageAdmins`). Lists all roles with assigned-admin counts; create/edit/delete with permission switch grid. System roles (`isSystem=true`) cannot be deleted.
 - `AdminSubAdmins.tsx` now shows a Role dropdown in the Add and Edit dialogs and displays a role badge next to each admin in the list. Role assignments persist via the standard create/permissions endpoints.
 
+### Admin grants Job-Aid subscriptions (Iṣéyá)
+- Admins can manually grant/update an applicant's Job-Aid plan from `AdminUsers.tsx` → Edit User → Subscription tab (section gated to `editForm.role === "applicant"`): Job-Aid Status (`none`/`active`/`expired`), Job-Aid Plan (`casual`/`smart`/`remote`/`freelance`/`corporate`), Job-Aid End Date.
+- Reuses the existing `PATCH /api/admin/users/:id` flow (gated by `canManageUsers`). `adminUpdateUserSchema` (zod-schemas.ts) accepts `jobAidPlan` (enum, nullable), `jobAidStatus` (enum), `jobAidEndDate` (string, nullable). Handler converts `jobAidEndDate` string→Date like `subscriptionEndDate`, and rejects `jobAidStatus="active"` without a `jobAidPlan` (400). Granting `active` + plan makes `/api/jobaid/status` report active (same predicate: active AND endDate NULL/future).
+- Frontend `User` type (lib/types.ts) gained `jobAidPlan`/`jobAidStatus`/`jobAidEndDate`. `handleSaveEdit` normalizes empty plan (`"none"`) and empty end date to null.
+
 ### Admin Stats (Iṣéyá)
 - `storage.getStats()` (api-server) returns two Job-Aid metrics alongside the existing counts: `activeJobAidSubscribers` (users with `jobAidStatus='active'` AND (`jobAidEndDate` NULL or > NOW()) — same predicate as `/api/jobaid/status`) and `pendingJobAidRequests` (`job_aid_requests` with status `pending`). Both surfaced via `GET /api/admin/stats`.
 - `AdminDashboard.tsx` renders two extra stat cards ("Job-Aid Subscribers" Sparkles, "Pending Job-Aid" ClipboardList); loading skeleton bumped 6→8. `Stats` interface + `IStorage.getStats()` return type kept in sync.

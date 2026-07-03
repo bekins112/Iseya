@@ -837,6 +837,9 @@ export async function registerRoutes(
     }
     try {
       const input = adminUpdateUserSchema.parse(req.body);
+      if (input.jobAidStatus === "active" && !input.jobAidPlan) {
+        return res.status(400).json({ message: "A Job-Aid plan is required to activate a Job-Aid subscription" });
+      }
       const updates: Record<string, any> = { ...input };
       if (input.isSuspended === true) {
         updates.suspendedAt = new Date();
@@ -849,12 +852,18 @@ export async function registerRoutes(
       } else if (input.subscriptionEndDate === null) {
         updates.subscriptionEndDate = null;
       }
+      if (input.jobAidEndDate) {
+        updates.jobAidEndDate = new Date(input.jobAidEndDate);
+      } else if (input.jobAidEndDate === null) {
+        updates.jobAidEndDate = null;
+      }
       const user = await storage.updateUser(req.params.id, updates);
       const actions: string[] = [];
       if (input.isSuspended === true) actions.push("suspended");
       if (input.isSuspended === false) actions.push("unsuspended");
       if (input.role) actions.push(`role changed to ${input.role}`);
       if (input.subscriptionTier) actions.push(`subscription changed to ${input.subscriptionTier}`);
+      if (input.jobAidStatus) actions.push(`job-aid ${input.jobAidStatus}${input.jobAidPlan ? ` (${input.jobAidPlan})` : ""}`);
       const desc = actions.length > 0 ? actions.join(", ") : "updated profile";
       logActivity({ req, action: "update_user", category: "users", description: `Admin ${desc} user: ${user?.email || req.params.id}`, targetType: "user", targetId: req.params.id, metadata: input });
       res.json(user);
