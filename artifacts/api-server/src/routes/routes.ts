@@ -1290,6 +1290,10 @@ export async function registerRoutes(
       canManageAds: true,
       canManageAgentCredits: true,
       canManageSettings: true,
+      canManageActivityLogs: true,
+      canManageHiringCompanies: true,
+      canManageGoogleSettings: true,
+      canManageChats: true,
       canManageJobAid: true,
     });
   });
