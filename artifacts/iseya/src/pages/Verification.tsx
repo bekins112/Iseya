@@ -73,6 +73,20 @@ export default function Verification() {
   const feeFormatted = `₦${finalVerificationFee.toLocaleString()}`;
   const originalFeeFormatted = `₦${verificationFee.toLocaleString()}`;
 
+  const { data: jobAidStatus } = useQuery<{ currentPlan: string | null; status: string; jobAidEndDate: string | null }>({
+    queryKey: ["/api/jobaid/status"],
+    enabled: !!user,
+  });
+  const { data: jobAidPlans } = useQuery<Array<{ id: string; name: string; benefits: Array<{ key: string; included: boolean }> }>>({
+    queryKey: ["/api/jobaid/plans"],
+  });
+  const currentJobAidPlan = jobAidStatus?.status === "active" && jobAidStatus.currentPlan
+    ? jobAidPlans?.find((p) => p.id === jobAidStatus.currentPlan)
+    : undefined;
+  const jobAidCoversVerification = Boolean(
+    currentJobAidPlan?.benefits.find((b) => b.key === "verification")?.included
+  );
+
   const params = new URLSearchParams(searchString);
   const verifyReference = params.get("reference");
   const flwTransactionId = params.get("transaction_id");
@@ -133,7 +147,12 @@ export default function Verification() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/verification/status"] });
-      toast({ title: "Documents submitted!", description: "Now proceed to payment to complete verification." });
+      toast({
+        title: "Documents submitted!",
+        description: jobAidCoversVerification
+          ? "Your Job-Aid plan covers verification — no payment needed. Our team will review your documents shortly."
+          : "Now proceed to payment to complete verification.",
+      });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -254,7 +273,11 @@ export default function Verification() {
               </div>
               <div>
                 <h3 className="font-bold text-lg text-blue-800 dark:text-blue-300">Under Review</h3>
-                <p className="text-sm text-blue-700 dark:text-blue-400">Payment received! Our team is reviewing your documents. This usually takes 1-3 business days.</p>
+                <p className="text-sm text-blue-700 dark:text-blue-400">
+                  {jobAidCoversVerification
+                    ? "Documents received! Our team is running your background check and reviewing your documents. This usually takes 1-3 business days."
+                    : "Payment received! Our team is reviewing your documents. This usually takes 1-3 business days."}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -274,6 +297,22 @@ export default function Verification() {
                   {request?.adminNotes || "Your verification was rejected. You can submit a new request below."}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {jobAidCoversVerification && !isVerified && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center shrink-0">
+                <BadgeCheck className="w-5 h-5 text-green-600" />
+              </div>
+              <p className="text-sm text-green-800 dark:text-green-300">
+                <span className="font-semibold">Verification is free with your {currentJobAidPlan?.name || "Job-Aid"} plan.</span>{" "}
+                Just submit your ID and selfie for a background check — no payment required.
+              </p>
             </CardContent>
           </Card>
         </motion.div>
@@ -309,6 +348,8 @@ export default function Verification() {
             <CardDescription>
               {isAwaitingPayment 
                 ? `Your documents have been submitted. Pay ${feeFormatted} to complete verification.`
+                : jobAidCoversVerification
+                ? "Upload your government-issued ID card and a selfie holding the ID for your background check. Verification is included free with your Job-Aid plan — no payment required."
                 : isExpired
                 ? `Your verification has expired. Renew for another 30 days at ${feeFormatted}.`
                 : `Upload your government-issued ID card and a selfie holding the ID to prove your identity. Monthly fee of ${feeFormatted}.`

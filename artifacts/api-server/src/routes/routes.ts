@@ -3401,6 +3401,21 @@ export async function registerRoutes(
     return plans;
   }
 
+  // True when the user has an active Job-Aid plan that includes the
+  // "verification" benefit — such applicants get profile verification for free.
+  async function jobAidVerificationIncluded(u: {
+    jobAidStatus?: string | null;
+    jobAidPlan?: string | null;
+    jobAidEndDate?: Date | string | null;
+  }): Promise<boolean> {
+    const active =
+      u.jobAidStatus === "active" &&
+      (!u.jobAidEndDate || new Date(u.jobAidEndDate) > new Date());
+    if (!active || !u.jobAidPlan) return false;
+    const plans = await getJobAidPlans();
+    return Boolean(plans[u.jobAidPlan]?.benefits.find((b) => b.key === "verification")?.included);
+  }
+
   app.get("/api/jobaid/plans", async (_req, res) => {
     const plans = await getJobAidPlans();
     const result = Object.entries(plans).map(([id, plan]) => ({
@@ -4100,6 +4115,12 @@ ${cvText}
     }
 
     const request = await storage.getVerificationRequestByUser(user.id);
+    // If the applicant became eligible for free Job-Aid verification while a
+    // request was still awaiting payment, move it straight to review.
+    if (request && request.status === "awaiting_payment" && (await jobAidVerificationIncluded(user))) {
+      await storage.updateVerificationRequest(request.id, { status: "pending" });
+      request.status = "pending";
+    }
     res.json({
       isVerified: user.isVerified && !isExpired ? true : false,
       verificationExpiry: user.verificationExpiry || null,
@@ -4146,13 +4167,17 @@ ${cvText}
       return res.status(400).json({ message: "Selfie photo is required. Please upload a clear selfie holding your ID card to verify your identity." });
     }
 
+    // Applicants on an active Job-Aid plan that includes profile verification
+    // don't pay — they just submit documents and go straight to admin review.
+    const submitStatus = (await jobAidVerificationIncluded(user)) ? "pending" : "awaiting_payment";
+
     const request = await storage.createVerificationRequest({
       userId: user.id,
       idType,
       idNumber,
       idDocumentUrl,
       selfieUrl,
-      status: "awaiting_payment",
+      status: submitStatus,
     });
 
     res.json(request);
@@ -4168,6 +4193,12 @@ ${cvText}
     const existing = await storage.getVerificationRequestByUser(user.id);
     if (!existing || existing.status !== "awaiting_payment") {
       return res.status(400).json({ message: "Please submit your verification documents first" });
+    }
+
+    // Eligible Job-Aid applicants must never be charged — send them to review.
+    if (await jobAidVerificationIncluded(user)) {
+      await storage.updateVerificationRequest(existing.id, { status: "pending" });
+      return res.status(400).json({ message: "Your Job-Aid plan covers verification — no payment needed. Your documents are now under review." });
     }
 
     const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
@@ -4269,6 +4300,12 @@ ${cvText}
     const existing = await storage.getVerificationRequestByUser(user.id);
     if (!existing || existing.status !== "awaiting_payment") {
       return res.status(400).json({ message: "Please submit your verification documents first" });
+    }
+
+    // Eligible Job-Aid applicants must never be charged — send them to review.
+    if (await jobAidVerificationIncluded(user)) {
+      await storage.updateVerificationRequest(existing.id, { status: "pending" });
+      return res.status(400).json({ message: "Your Job-Aid plan covers verification — no payment needed. Your documents are now under review." });
     }
 
     const flwSecret = process.env.FLW_SECRET_KEY;
