@@ -12,6 +12,8 @@ import {
   Crown,
   ShieldCheck,
   TrendingUp,
+  Sparkles,
+  ClipboardList,
 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -26,6 +28,8 @@ interface Stats {
   totalEmployers: number;
   totalApplicants: number;
   totalAgents: number;
+  activeJobAidSubscribers: number;
+  pendingJobAidRequests: number;
 }
 
 interface AdminPermissions {
@@ -100,6 +104,18 @@ export default function AdminDashboard() {
       icon: FileText,
       color: "text-rose-600",
     },
+    {
+      title: "Job-Aid Subscribers",
+      value: stats?.activeJobAidSubscribers || 0,
+      icon: Sparkles,
+      color: "text-indigo-600",
+    },
+    {
+      title: "Pending Job-Aid",
+      value: stats?.pendingJobAidRequests || 0,
+      icon: ClipboardList,
+      color: "text-orange-600",
+    },
   ];
 
   const adminLinks = [
@@ -135,7 +151,7 @@ export default function AdminDashboard() {
 
       {statsLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-4">
                 <div className="h-4 bg-muted rounded w-20 mb-2" />

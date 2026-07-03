@@ -58,7 +58,7 @@ export interface IStorage {
   getAllJobAidRequests(filters?: { status?: string }): Promise<(JobAidRequest & { userName: string; userEmail: string | null; userPhone: string | null })[]>;
   updateJobAidRequest(id: number, updates: Partial<InsertJobAidRequest>): Promise<JobAidRequest>;
   countJobAidRequestsForUserBenefit(userId: string, benefitKey: string, since?: Date): Promise<number>;
-  getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }>;
+  getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number; activeJobAidSubscribers: number; pendingJobAidRequests: number }>;
   getDetailedStats(): Promise<{
     usersByRole: { role: string; count: number }[];
     jobsByCategory: { category: string; count: number }[];
@@ -571,7 +571,7 @@ export class DatabaseStorage implements IStorage {
     return row?.count ?? 0;
   }
 
-  async getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }> {
+  async getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number; activeJobAidSubscribers: number; pendingJobAidRequests: number }> {
     const [userCount] = await db.select({ count: count() }).from(users);
     const [jobCount] = await db.select({ count: count() }).from(jobs);
     const [appCount] = await db.select({ count: count() }).from(applications);
@@ -581,6 +581,8 @@ export class DatabaseStorage implements IStorage {
     const [premiumCount] = await db.select({ count: count() }).from(users).where(and(eq(users.role, "employer"), eq(users.subscriptionStatus, "premium")));
     const [activeJobCount] = await db.select({ count: count() }).from(jobs).where(eq(jobs.isActive, true));
     const [pendingAppCount] = await db.select({ count: count() }).from(applications).where(eq(applications.status, "pending"));
+    const [jobAidSubscriberCount] = await db.select({ count: count() }).from(users).where(and(eq(users.jobAidStatus, "active"), or(sql`${users.jobAidEndDate} IS NULL`, sql`${users.jobAidEndDate} > NOW()`)));
+    const [pendingJobAidCount] = await db.select({ count: count() }).from(jobAidRequests).where(eq(jobAidRequests.status, "pending"));
     
     return {
       totalUsers: userCount.count,
@@ -592,6 +594,8 @@ export class DatabaseStorage implements IStorage {
       premiumEmployers: premiumCount.count,
       activeJobs: activeJobCount.count,
       pendingApplications: pendingAppCount.count,
+      activeJobAidSubscribers: jobAidSubscriberCount.count,
+      pendingJobAidRequests: pendingJobAidCount.count,
     };
   }
 

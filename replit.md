@@ -44,6 +44,10 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Admin UI page `AdminRoles.tsx` at `/admin/roles` (Sidebar link gated by `canManageAdmins`). Lists all roles with assigned-admin counts; create/edit/delete with permission switch grid. System roles (`isSystem=true`) cannot be deleted.
 - `AdminSubAdmins.tsx` now shows a Role dropdown in the Add and Edit dialogs and displays a role badge next to each admin in the list. Role assignments persist via the standard create/permissions endpoints.
 
+### Admin Stats (Iṣéyá)
+- `storage.getStats()` (api-server) returns two Job-Aid metrics alongside the existing counts: `activeJobAidSubscribers` (users with `jobAidStatus='active'` AND (`jobAidEndDate` NULL or > NOW()) — same predicate as `/api/jobaid/status`) and `pendingJobAidRequests` (`job_aid_requests` with status `pending`). Both surfaced via `GET /api/admin/stats`.
+- `AdminDashboard.tsx` renders two extra stat cards ("Job-Aid Subscribers" Sparkles, "Pending Job-Aid" ClipboardList); loading skeleton bumped 6→8. `Stats` interface + `IStorage.getStats()` return type kept in sync.
+
 ### Chatbot widget (Iṣéyá)
 - Floating chat bubble (`artifacts/iseya/src/components/ChatWidget.tsx`) mounted in `App.tsx` (hidden on `/admin/*`, `/onboarding`, `/verify-email`).
 - Visitor session id stored in `localStorage` key `iseya_chat_session_id`.
