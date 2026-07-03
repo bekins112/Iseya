@@ -5019,11 +5019,13 @@ ${cvText}
       subscriptionRevenue: stats.subscriptionRevenue / 100,
       verificationRevenue: stats.verificationRevenue / 100,
       agentCreditRevenue: stats.agentCreditRevenue / 100,
+      jobAidRevenue: stats.jobAidRevenue / 100,
       monthlyRevenue: stats.monthlyRevenue.map(m => ({
         ...m,
         subscriptions: m.subscriptions / 100,
         verifications: m.verifications / 100,
         agentCredits: m.agentCredits / 100,
+        jobAid: m.jobAid / 100,
         total: m.total / 100,
       })),
     });
@@ -5105,6 +5107,23 @@ ${cvText}
         storage.createNotification({
           title: "Post Credits Added",
           message: `${credits} job post credit${credits !== 1 ? "s" : ""} have been added to your account by the admin team.`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: txn.userId,
+          createdBy: req.session.userId!,
+        }).catch(() => {});
+      } else if (txn.type === "jobaid" && txn.plan) {
+        const endDate = new Date();
+        endDate.setMonth(endDate.getMonth() + 1);
+        await storage.updateUser(txn.userId, {
+          jobAidPlan: txn.plan,
+          jobAidStatus: "active",
+          jobAidEndDate: endDate,
+        });
+
+        storage.createNotification({
+          title: "Job-Aid Activated",
+          message: `Your ${txn.plan.charAt(0).toUpperCase() + txn.plan.slice(1)} Job-Aid plan has been activated by the admin team. Enjoy your new benefits!`,
           type: "individual",
           targetRole: null,
           targetUserId: txn.userId,

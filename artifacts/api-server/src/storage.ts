@@ -179,10 +179,11 @@ export interface IStorage {
     subscriptionRevenue: number;
     verificationRevenue: number;
     agentCreditRevenue: number;
+    jobAidRevenue: number;
     totalTransactions: number;
     successfulTransactions: number;
     failedTransactions: number;
-    monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; total: number }[];
+    monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; jobAid: number; total: number }[];
   }>;
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   getActivityLogs(filters?: { category?: string; userId?: string; action?: string; limit?: number; offset?: number }): Promise<{ logs: ActivityLogWithRoleColor[]; total: number }>;
@@ -1273,10 +1274,11 @@ export class DatabaseStorage implements IStorage {
     subscriptionRevenue: number;
     verificationRevenue: number;
     agentCreditRevenue: number;
+    jobAidRevenue: number;
     totalTransactions: number;
     successfulTransactions: number;
     failedTransactions: number;
-    monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; total: number }[];
+    monthlyRevenue: { month: string; subscriptions: number; verifications: number; agentCredits: number; jobAid: number; total: number }[];
   }> {
     const allTxns = await db.select().from(transactions).orderBy(desc(transactions.createdAt));
 
@@ -1285,15 +1287,17 @@ export class DatabaseStorage implements IStorage {
     const subscriptionRevenue = successful.filter(t => t.type === "subscription").reduce((sum, t) => sum + t.amount, 0);
     const verificationRevenue = successful.filter(t => t.type === "verification").reduce((sum, t) => sum + t.amount, 0);
     const agentCreditRevenue = successful.filter(t => t.type === "agent_post_credit").reduce((sum, t) => sum + t.amount, 0);
+    const jobAidRevenue = successful.filter(t => t.type === "jobaid").reduce((sum, t) => sum + t.amount, 0);
 
-    const monthlyMap = new Map<string, { subscriptions: number; verifications: number; agentCredits: number }>();
+    const monthlyMap = new Map<string, { subscriptions: number; verifications: number; agentCredits: number; jobAid: number }>();
     for (const t of successful) {
       if (!t.createdAt) continue;
       const month = `${t.createdAt.getFullYear()}-${String(t.createdAt.getMonth() + 1).padStart(2, '0')}`;
-      const existing = monthlyMap.get(month) || { subscriptions: 0, verifications: 0, agentCredits: 0 };
+      const existing = monthlyMap.get(month) || { subscriptions: 0, verifications: 0, agentCredits: 0, jobAid: 0 };
       if (t.type === "subscription") existing.subscriptions += t.amount;
       else if (t.type === "verification") existing.verifications += t.amount;
       else if (t.type === "agent_post_credit") existing.agentCredits += t.amount;
+      else if (t.type === "jobaid") existing.jobAid += t.amount;
       monthlyMap.set(month, existing);
     }
 
@@ -1303,7 +1307,8 @@ export class DatabaseStorage implements IStorage {
         subscriptions: data.subscriptions,
         verifications: data.verifications,
         agentCredits: data.agentCredits,
-        total: data.subscriptions + data.verifications + data.agentCredits,
+        jobAid: data.jobAid,
+        total: data.subscriptions + data.verifications + data.agentCredits + data.jobAid,
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -1312,6 +1317,7 @@ export class DatabaseStorage implements IStorage {
       subscriptionRevenue,
       verificationRevenue,
       agentCreditRevenue,
+      jobAidRevenue,
       totalTransactions: allTxns.length,
       successfulTransactions: successful.length,
       failedTransactions: allTxns.filter(t => t.status === "failed").length,
