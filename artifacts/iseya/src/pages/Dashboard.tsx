@@ -13,7 +13,6 @@ import { motion } from "framer-motion";
 import { checkApplicantProfile, checkEmployerProfile, checkAgentProfile } from "@/lib/profile-utils";
 import PageAds from "@/components/PageAds";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { JobAidFeatures } from "@/components/JobAidFeatures";
 
 
 export default function Dashboard() {
@@ -194,8 +193,6 @@ export default function Dashboard() {
       </motion.div>
 
       <PageAds page={dashboardAdPage} position="middle" />
-
-      {isApplicant && <JobAidFeatures />}
 
       {(isEmployer || isAgent) && (
         <motion.div

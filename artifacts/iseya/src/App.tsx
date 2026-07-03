@@ -67,6 +67,7 @@ import ForEmployers from "@/pages/ForEmployers";
 import ForApplicants from "@/pages/ForApplicants";
 import ForAgents from "@/pages/ForAgents";
 import JobAid from "@/pages/JobAid";
+import JobAidCenter from "@/pages/JobAidCenter";
 import CookieConsent from "@/components/CookieConsent";
 import InstallPrompt from "@/components/InstallPrompt";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
@@ -177,6 +178,12 @@ function Router() {
       <Route path="/my-applications">
         <AuthenticatedLayout>
           <Applications />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/my-job-aid">
+        <AuthenticatedLayout>
+          <JobAidCenter />
         </AuthenticatedLayout>
       </Route>
 

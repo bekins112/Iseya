@@ -34,6 +34,7 @@ import {
   Images,
   Menu,
   X,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -101,6 +102,7 @@ export function Sidebar() {
     ] : [
       { href: "/jobs", label: "Find Jobs", icon: Briefcase },
       { href: "/my-applications", label: "Applications", icon: FolderOpen },
+      { href: "/my-job-aid", label: "Job-Aid", icon: Sparkles },
       { href: "/verification", label: user?.isVerified ? "Verified" : "Get Verified", icon: ShieldCheck, subtitle: verificationSubtitle },
     ]),
     ...(!isAdmin ? [{ href: "/support", label: "Support", icon: HelpCircle }] : []),
@@ -141,6 +143,7 @@ export function Sidebar() {
         { href: "/my-applications", label: "Applied", icon: FolderOpen },
       ],
       overflow: [
+        { href: "/my-job-aid", label: "Job-Aid", icon: Sparkles },
         { href: "/verification", label: user?.isVerified ? "Verified" : "Get Verified", icon: ShieldCheck },
         { href: "/support", label: "Support", icon: HelpCircle },
         { href: "/profile", label: "Profile", icon: User },
