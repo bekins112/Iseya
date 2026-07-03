@@ -59,6 +59,14 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - Zod schemas in `src/zod-schemas.ts` (separate from schema files to avoid drizzle-kit conflicts)
 - Re-exports everything from `src/index.ts`
 
+### Job-Aid Requests (Iṣéyá)
+- Applicants with an ACTIVE Job-Aid plan can request each benefit included in their plan (per-benefit REQUEST flow); admins fulfill manually.
+- New `canManageJobAid` permission added to `admin_roles` + `admin_permissions` (schema.ts, zod-schemas.ts, storage `PERMISSION_KEYS`, sub-admin create blocks, my-permissions fallback).
+- New `jobAidRequests` table (userId, plan, benefitKey, status `pending`/`in_progress`/`completed`/`rejected`, note, adminNote, processedBy). No `createInsertSchema` for it (avoids duplicate-export ambiguity via `export *`).
+- API (routes.ts): applicant `GET/POST /api/jobaid/requests` (gates: active plan, benefit-included, duplicate-open block, quota via `periodStart = jobAidEndDate − 30d`); admin `GET /api/admin/jobaid/requests` + `PATCH /api/admin/jobaid/requests/:id` (both gated by `canManageJobAid`). Notifies admins (type `role`/`admin`) on submit; notifies applicant (type `individual`) ONLY when status actually changes.
+- Benefit keys/labels + quota set (`recommendations`/`referrals`/`interview_booking` are quota'd; `cv_refining`/`verification`/`priority_support` are toggles) live in routes.ts. `JOBAID_BENEFIT_KEYS`/`JOBAID_QUOTA_BENEFIT_KEYS` are const-declared later in `registerRoutes` but only read inside handler closures (no TDZ at runtime).
+- Frontend: `components/JobAidFeatures.tsx` mounted in Dashboard for applicants (LOCKED upgrade card → `/job-aid` when no active plan; per-benefit request cards + status/quota when active). Admin page `pages/AdminJobAid.tsx` at `/admin/jobaid` (Sidebar link gated by `canManageJobAid`; list/detail/status-update). `canManageJobAid` wired into AdminSubAdmins + AdminRoles permission grids and `lib/types.ts`.
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages

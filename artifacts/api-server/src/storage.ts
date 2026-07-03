@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { users, jobs, applications, adminPermissions, adminRoles, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, emailHealthChecks, type EmailHealthCheck, type InsertEmailHealthCheck, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type AdminRole, type InsertAdminRole, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany } from "@workspace/db";
+import { users, jobs, applications, adminPermissions, adminRoles, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, emailHealthChecks, type EmailHealthCheck, type InsertEmailHealthCheck, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type AdminRole, type InsertAdminRole, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany, jobAidRequests, type JobAidRequest, type InsertJobAidRequest } from "@workspace/db";
 import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
 export interface IStorage {
   // Users
@@ -50,6 +50,14 @@ export interface IStorage {
   deleteRole(id: number): Promise<void>;
   countAdminsWithRole(roleId: number): Promise<number>;
   seedDefaultRoles(): Promise<void>;
+
+  // Job-Aid requests
+  createJobAidRequest(data: InsertJobAidRequest): Promise<JobAidRequest>;
+  getJobAidRequestsForUser(userId: string): Promise<JobAidRequest[]>;
+  getJobAidRequestById(id: number): Promise<JobAidRequest | undefined>;
+  getAllJobAidRequests(filters?: { status?: string }): Promise<(JobAidRequest & { userName: string; userEmail: string | null; userPhone: string | null })[]>;
+  updateJobAidRequest(id: number, updates: Partial<InsertJobAidRequest>): Promise<JobAidRequest>;
+  countJobAidRequestsForUserBenefit(userId: string, benefitKey: string, since?: Date): Promise<number>;
   getStats(): Promise<{ totalUsers: number; totalJobs: number; totalApplications: number; totalEmployers: number; totalApplicants: number; totalAgents: number; premiumEmployers: number; activeJobs: number; pendingApplications: number }>;
   getDetailedStats(): Promise<{
     usersByRole: { role: string; count: number }[];
@@ -201,6 +209,7 @@ const PERMISSION_KEYS = [
   "canManageHiringCompanies",
   "canManageGoogleSettings",
   "canManageChats",
+  "canManageJobAid",
 ] as const;
 
 export type ActivityLogWithRoleColor = ActivityLog & { userRoleColor: string | null };
@@ -1136,6 +1145,83 @@ export class DatabaseStorage implements IStorage {
       .from(emailHealthChecks)
       .orderBy(desc(emailHealthChecks.checkedAt))
       .limit(limit);
+  }
+
+  // Job-Aid request methods
+  async createJobAidRequest(data: InsertJobAidRequest): Promise<JobAidRequest> {
+    const [created] = await db.insert(jobAidRequests).values(data).returning();
+    return created;
+  }
+
+  async getJobAidRequestsForUser(userId: string): Promise<JobAidRequest[]> {
+    return await db
+      .select()
+      .from(jobAidRequests)
+      .where(eq(jobAidRequests.userId, userId))
+      .orderBy(desc(jobAidRequests.createdAt));
+  }
+
+  async getJobAidRequestById(id: number): Promise<JobAidRequest | undefined> {
+    const [row] = await db.select().from(jobAidRequests).where(eq(jobAidRequests.id, id));
+    return row;
+  }
+
+  async getAllJobAidRequests(filters?: { status?: string }): Promise<(JobAidRequest & { userName: string; userEmail: string | null; userPhone: string | null })[]> {
+    const conditions = [];
+    if (filters?.status && filters.status !== "all") {
+      conditions.push(eq(jobAidRequests.status, filters.status));
+    }
+    const rows = await db
+      .select({
+        id: jobAidRequests.id,
+        userId: jobAidRequests.userId,
+        plan: jobAidRequests.plan,
+        benefitKey: jobAidRequests.benefitKey,
+        status: jobAidRequests.status,
+        note: jobAidRequests.note,
+        adminNote: jobAidRequests.adminNote,
+        processedBy: jobAidRequests.processedBy,
+        createdAt: jobAidRequests.createdAt,
+        updatedAt: jobAidRequests.updatedAt,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email,
+        userPhone: users.phone,
+      })
+      .from(jobAidRequests)
+      .leftJoin(users, eq(jobAidRequests.userId, users.id))
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(jobAidRequests.createdAt));
+    return rows.map((r) => {
+      const { userFirstName, userLastName, ...rest } = r as any;
+      return {
+        ...rest,
+        userName: `${userFirstName || ""} ${userLastName || ""}`.trim() || "Unknown",
+      } as JobAidRequest & { userName: string; userEmail: string | null; userPhone: string | null };
+    });
+  }
+
+  async updateJobAidRequest(id: number, updates: Partial<InsertJobAidRequest>): Promise<JobAidRequest> {
+    const [row] = await db
+      .update(jobAidRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(jobAidRequests.id, id))
+      .returning();
+    return row;
+  }
+
+  async countJobAidRequestsForUserBenefit(userId: string, benefitKey: string, since?: Date): Promise<number> {
+    const conditions = [
+      eq(jobAidRequests.userId, userId),
+      eq(jobAidRequests.benefitKey, benefitKey),
+      sql`${jobAidRequests.status} <> 'rejected'`,
+    ];
+    if (since) conditions.push(sql`${jobAidRequests.createdAt} >= ${since}`);
+    const [row] = await db
+      .select({ c: count() })
+      .from(jobAidRequests)
+      .where(and(...conditions));
+    return row?.c ?? 0;
   }
 
   // Transaction methods

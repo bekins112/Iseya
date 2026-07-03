@@ -184,6 +184,7 @@ export const adminRoles = pgTable("admin_roles", {
   canManageHiringCompanies: boolean("can_manage_hiring_companies").default(false),
   canManageGoogleSettings: boolean("can_manage_google_settings").default(false),
   canManageChats: boolean("can_manage_chats").default(false),
+  canManageJobAid: boolean("can_manage_job_aid").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -216,6 +217,7 @@ export const adminPermissions = pgTable("admin_permissions", {
   canManageHiringCompanies: boolean("can_manage_hiring_companies").default(false),
   canManageGoogleSettings: boolean("can_manage_google_settings").default(false),
   canManageChats: boolean("can_manage_chats").default(false),
+  canManageJobAid: boolean("can_manage_job_aid").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -467,6 +469,26 @@ export const chatMessages = pgTable("chat_messages", {
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+// Job-Aid benefit requests — applicant requests a benefit, admin fulfills manually
+export const jobAidRequests = pgTable("job_aid_requests", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  plan: varchar("plan").notNull(),
+  benefitKey: varchar("benefit_key").notNull(),
+  status: varchar("status").notNull().default("pending"),
+  note: text("note"),
+  adminNote: text("admin_note"),
+  processedBy: varchar("processed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (t) => ({
+  userIdx: index("job_aid_req_user_idx").on(t.userId, t.createdAt),
+  statusIdx: index("job_aid_req_status_idx").on(t.status, t.createdAt),
+}));
+
+export type JobAidRequest = typeof jobAidRequests.$inferSelect;
+export type InsertJobAidRequest = typeof jobAidRequests.$inferInsert;
 
 export type CreateJobRequest = InsertJob;
 export type CreateApplicationRequest = InsertApplication;

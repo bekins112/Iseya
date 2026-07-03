@@ -76,6 +76,7 @@ export function Sidebar() {
     { href: "/admin/transactions", label: "Transactions", icon: DollarSign, perm: "canManageTransactions" },
     { href: "/admin/tickets", label: "Support Tickets", icon: Ticket, perm: "canManageTickets" },
     { href: "/admin/chats", label: "Live Chats", icon: MessageCircle, perm: "canManageChats" },
+    { href: "/admin/jobaid", label: "Job-Aid Requests", icon: HelpCircle, perm: "canManageJobAid" },
     { href: "/admin/reports", label: "Reports", icon: Flag, perm: "canManageReports" },
     { href: "/admin/notifications", label: "Notifications", icon: Bell, perm: "canManageNotifications" },
     { href: "/admin/automated-emails", label: "Automated Emails", icon: Mail, perm: "canManageAutomatedEmails" },

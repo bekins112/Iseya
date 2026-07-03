@@ -47,6 +47,7 @@ import AdminAgentCredits from "@/pages/AdminAgentCredits";
 import AdminAutomatedEmails from "@/pages/AdminAutomatedEmails";
 import AdminActivityLogs from "@/pages/AdminActivityLogs";
 import AdminChats from "@/pages/AdminChats";
+import AdminJobAid from "@/pages/AdminJobAid";
 import ChatWidget from "@/components/ChatWidget";
 import Verification from "@/pages/Verification";
 import About from "@/pages/About";
@@ -348,6 +349,12 @@ function Router() {
       <Route path="/admin/chats">
         <AuthenticatedLayout>
           <AdminChats />
+        </AuthenticatedLayout>
+      </Route>
+
+      <Route path="/admin/jobaid">
+        <AuthenticatedLayout>
+          <AdminJobAid />
         </AuthenticatedLayout>
       </Route>
 

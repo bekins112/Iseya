@@ -115,6 +115,7 @@ export interface AdminPermissions {
   canManageHiringCompanies?: boolean | null;
   canManageGoogleSettings?: boolean | null;
   canManageChats?: boolean | null;
+  canManageJobAid?: boolean | null;
   createdAt?: Date | null;
 }
 
@@ -143,9 +144,26 @@ export interface AdminRole {
   canManageHiringCompanies?: boolean | null;
   canManageGoogleSettings?: boolean | null;
   canManageChats?: boolean | null;
+  canManageJobAid?: boolean | null;
   adminCount?: number;
   createdAt?: string | null;
   updatedAt?: string | null;
+}
+
+export interface JobAidRequest {
+  id: number;
+  userId: string;
+  plan: string;
+  benefitKey: string;
+  status: "pending" | "in_progress" | "completed" | "rejected";
+  note?: string | null;
+  adminNote?: string | null;
+  processedBy?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  userName?: string;
+  userEmail?: string | null;
+  userPhone?: string | null;
 }
 
 export interface ChatConversation {

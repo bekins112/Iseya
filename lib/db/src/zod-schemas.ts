@@ -58,6 +58,7 @@ const permissionFields = {
   canManageHiringCompanies: z.boolean().default(false),
   canManageGoogleSettings: z.boolean().default(false),
   canManageChats: z.boolean().default(false),
+  canManageJobAid: z.boolean().default(false),
 };
 
 export const insertAdminRoleSchema = z.object({
@@ -90,6 +91,7 @@ export const updateAdminRoleSchema = z.object({
   canManageHiringCompanies: z.boolean().optional(),
   canManageGoogleSettings: z.boolean().optional(),
   canManageChats: z.boolean().optional(),
+  canManageJobAid: z.boolean().optional(),
 });
 
 export type InsertAdminRole = z.infer<typeof insertAdminRoleSchema>;
@@ -117,6 +119,7 @@ export const insertAdminPermissionsSchema = z.object({
   canManageHiringCompanies: z.boolean().default(false),
   canManageGoogleSettings: z.boolean().default(false),
   canManageChats: z.boolean().default(false),
+  canManageJobAid: z.boolean().default(false),
   createdBy: z.string().optional().nullable(),
 });
 
@@ -141,6 +144,7 @@ export const updateAdminPermissionsSchema = z.object({
   canManageHiringCompanies: z.boolean().optional(),
   canManageGoogleSettings: z.boolean().optional(),
   canManageChats: z.boolean().optional(),
+  canManageJobAid: z.boolean().optional(),
 });
 
 export const adminUpdateUserSchema = z.object({
@@ -205,6 +209,7 @@ export const createSubAdminSchema = z.object({
     canManageHiringCompanies: z.boolean().optional(),
     canManageGoogleSettings: z.boolean().optional(),
     canManageChats: z.boolean().optional(),
+    canManageJobAid: z.boolean().optional(),
   }),
 });
 
@@ -234,6 +239,7 @@ export const createNewAdminSchema = z.object({
     canManageHiringCompanies: z.boolean().optional(),
     canManageGoogleSettings: z.boolean().optional(),
     canManageChats: z.boolean().optional(),
+    canManageJobAid: z.boolean().optional(),
   }),
 });
 

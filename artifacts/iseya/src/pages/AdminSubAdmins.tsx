@@ -44,6 +44,7 @@ const defaultPermissions = {
   canManageHiringCompanies: false,
   canManageGoogleSettings: false,
   canManageChats: false,
+  canManageJobAid: false,
 };
 
 const permissionLabels = [
@@ -65,6 +66,7 @@ const permissionLabels = [
   { key: "canManageSettings", label: "Platform Settings", short: "Settings", icon: SlidersHorizontal, description: "Can modify pricing and platform-wide configuration" },
   { key: "canManageActivityLogs", label: "Activity Logs", short: "Activity Logs", icon: Activity, description: "Can view and clear platform activity logs" },
   { key: "canManageChats", label: "Manage Live Chats", short: "Chats", icon: MessageCircle, description: "Can take over visitor chats from the bot and reply as the Iṣéyá team" },
+  { key: "canManageJobAid", label: "Manage Job-Aid", short: "Job-Aid", icon: Briefcase, description: "Can view and fulfill applicant Job-Aid feature requests" },
   { key: "canManageAdmins", label: "Manage Admins", short: "Admins", icon: Shield, description: "Can create and manage other sub-admins" },
 ];
 
@@ -194,6 +196,7 @@ export default function AdminSubAdmins() {
         canManageHiringCompanies: admin.permissions.canManageHiringCompanies || false,
         canManageGoogleSettings: admin.permissions.canManageGoogleSettings || false,
         canManageChats: admin.permissions.canManageChats || false,
+        canManageJobAid: admin.permissions.canManageJobAid || false,
       });
     }
   };

@@ -67,6 +67,7 @@ const permissionLabels = [
   { key: "canManageSettings", label: "Platform Settings", icon: SlidersHorizontal },
   { key: "canManageActivityLogs", label: "Activity Logs", icon: Activity },
   { key: "canManageChats", label: "Manage Live Chats", icon: MessageCircle },
+  { key: "canManageJobAid", label: "Manage Job-Aid", icon: Briefcase },
   { key: "canManageAdmins", label: "Manage Admins", icon: Shield },
 ] as const;
 

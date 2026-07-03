@@ -1043,6 +1043,7 @@ export async function registerRoutes(
         canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
         canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
         canManageChats: input.permissions.canManageChats ?? false,
+        canManageJobAid: input.permissions.canManageJobAid ?? false,
         }).returning();
         return perms;
       });
@@ -1112,6 +1113,7 @@ export async function registerRoutes(
         canManageHiringCompanies: input.permissions.canManageHiringCompanies ?? false,
         canManageGoogleSettings: input.permissions.canManageGoogleSettings ?? false,
         canManageChats: input.permissions.canManageChats ?? false,
+        canManageJobAid: input.permissions.canManageJobAid ?? false,
         }).returning();
         return perms;
       });
@@ -1279,6 +1281,7 @@ export async function registerRoutes(
       canManageAds: true,
       canManageAgentCredits: true,
       canManageSettings: true,
+      canManageJobAid: true,
     });
   });
 
@@ -3391,6 +3394,141 @@ export async function registerRoutes(
       status: active ? "active" : "none",
       jobAidEndDate: user.jobAidEndDate,
     });
+  });
+
+  // Applicant: list own Job-Aid feature requests
+  app.get("/api/jobaid/requests", isAuthenticated, async (req, res) => {
+    const requests = await storage.getJobAidRequestsForUser(req.session.userId!);
+    res.json(requests);
+  });
+
+  // Applicant: submit a Job-Aid feature request
+  app.post("/api/jobaid/requests", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "applicant") {
+      return res.status(403).json({ message: "Only applicants can request Job-Aid features" });
+    }
+    const active = user.jobAidStatus === "active" && (!user.jobAidEndDate || new Date(user.jobAidEndDate) > new Date());
+    if (!active || !user.jobAidPlan) {
+      return res.status(403).json({ message: "You need an active Job-Aid plan to request features" });
+    }
+
+    const bodySchema = z.object({
+      benefitKey: z.enum(JOBAID_BENEFIT_KEYS as unknown as [string, ...string[]]),
+      note: z.string().max(1000).optional(),
+    });
+    const parsed = bodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid request", errors: parsed.error.flatten() });
+    }
+    const { benefitKey, note } = parsed.data;
+
+    const plans = await getJobAidPlans();
+    const plan = plans[user.jobAidPlan];
+    if (!plan) return res.status(400).json({ message: "Your plan is no longer available" });
+    const benefit = plan.benefits.find((b) => b.key === benefitKey);
+    if (!benefit || !benefit.included) {
+      return res.status(400).json({ message: "This feature is not included in your plan" });
+    }
+
+    // Block duplicate open requests for the same benefit
+    const existing = await storage.getJobAidRequestsForUser(user.id);
+    const openSame = existing.find(
+      (r) => r.benefitKey === benefitKey && (r.status === "pending" || r.status === "in_progress"),
+    );
+    if (openSame) {
+      return res.status(400).json({ message: "You already have an open request for this feature. Please wait for our team to process it." });
+    }
+
+    // Enforce quota for numeric benefits within the current billing period
+    if (JOBAID_QUOTA_BENEFIT_KEYS.has(benefitKey) && benefit.limit != null) {
+      const periodStart = user.jobAidEndDate
+        ? new Date(new Date(user.jobAidEndDate).getTime() - 30 * 24 * 60 * 60 * 1000)
+        : undefined;
+      const used = await storage.countJobAidRequestsForUserBenefit(user.id, benefitKey, periodStart);
+      if (used >= benefit.limit) {
+        return res.status(400).json({ message: `You've used all ${benefit.limit} of your "${benefit.label}" requests for this period.` });
+      }
+    }
+
+    const created = await storage.createJobAidRequest({
+      userId: user.id,
+      plan: user.jobAidPlan,
+      benefitKey,
+      note: note || null,
+      status: "pending",
+    });
+
+    // Notify admins that a new request needs attention
+    storage.createNotification({
+      title: "New Job-Aid request",
+      message: `${(user.firstName || "An applicant")} ${(user.lastName || "")}`.trim() + ` requested "${benefit.label}" (${plan.name}).`,
+      type: "role",
+      targetRole: "admin",
+      targetUserId: null,
+      createdBy: user.id,
+    }).catch((e) => console.error("Failed to create job-aid admin notification:", e));
+
+    res.status(201).json(created);
+  });
+
+  // Admin: list all Job-Aid requests
+  app.get("/api/admin/jobaid/requests", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageJobAid) {
+      return res.status(403).json({ message: "You don't have permission to manage Job-Aid requests" });
+    }
+    const status = (req.query.status as string) || undefined;
+    const requests = await storage.getAllJobAidRequests({ status });
+    res.json(requests);
+  });
+
+  // Admin: update a Job-Aid request (status + note) and notify the applicant
+  app.patch("/api/admin/jobaid/requests/:id", isAuthenticated, isAdmin, async (req: any, res) => {
+    if (req.adminPermissions && !req.adminPermissions.canManageJobAid) {
+      return res.status(403).json({ message: "You don't have permission to manage Job-Aid requests" });
+    }
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ message: "Invalid request id" });
+
+    const bodySchema = z.object({
+      status: z.enum(["pending", "in_progress", "completed", "rejected"]),
+      adminNote: z.string().max(2000).optional().nullable(),
+    });
+    const parsed = bodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    }
+
+    const existing = await storage.getJobAidRequestById(id);
+    if (!existing) return res.status(404).json({ message: "Request not found" });
+
+    const adminNote = parsed.data.adminNote !== undefined ? parsed.data.adminNote : existing.adminNote;
+    const updated = await storage.updateJobAidRequest(id, {
+      status: parsed.data.status,
+      adminNote: adminNote ?? null,
+      processedBy: req.session.userId,
+    });
+
+    // Notify the applicant only when the status actually changes
+    if (parsed.data.status !== existing.status) {
+      const label = JOBAID_BENEFIT_LABELS[existing.benefitKey] || "your Job-Aid feature";
+      const statusMessages: Record<string, string> = {
+        pending: `Your request for "${label}" has been received and is pending review.`,
+        in_progress: `Good news! Our team has started working on your request for "${label}".`,
+        completed: `Your request for "${label}" has been completed. Check your dashboard or email for details.`,
+        rejected: `Your request for "${label}" could not be processed.${adminNote ? ` Reason: ${adminNote}` : ""}`,
+      };
+      storage.createNotification({
+        title: "Job-Aid request update",
+        message: statusMessages[parsed.data.status],
+        type: "individual",
+        targetRole: null,
+        targetUserId: existing.userId,
+        createdBy: req.session.userId!,
+      }).catch((e) => console.error("Failed to notify applicant of job-aid update:", e));
+    }
+
+    res.json(updated);
   });
 
   app.post("/api/jobaid/initialize", isAuthenticated, async (req, res) => {
