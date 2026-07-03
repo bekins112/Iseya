@@ -4,9 +4,9 @@ import type { InternalAd } from "@/lib/types";
 
 export default function PageAds({ page, position = "top" }: { page: string; position?: "top" | "middle" | "bottom" | "right" }) {
   const { data: ads = [] } = useQuery<InternalAd[]>({
-    queryKey: ["/api/ads", page],
+    queryKey: ["/api/promotions", page],
     queryFn: async () => {
-      const res = await fetch(`/api/ads?page=${page}`);
+      const res = await fetch(`/api/promotions?page=${page}`);
       if (!res.ok) return [];
       return res.json();
     },

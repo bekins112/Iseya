@@ -6,11 +6,11 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { InternalAd } from "@/lib/types";
 
 function isDismissed(adId: number): boolean {
-  return sessionStorage.getItem(`iseya_ad_dismissed_${adId}`) === "true";
+  return sessionStorage.getItem(`iseya_promo_dismissed_${adId}`) === "true";
 }
 
 function dismissAd(adId: number): void {
-  sessionStorage.setItem(`iseya_ad_dismissed_${adId}`, "true");
+  sessionStorage.setItem(`iseya_promo_dismissed_${adId}`, "true");
 }
 
 export function AdBanner({ ad }: { ad: InternalAd }) {
@@ -37,7 +37,7 @@ export function AdBanner({ ad }: { ad: InternalAd }) {
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3 }}
           className="overflow-hidden"
-          data-testid={`ad-banner-${ad.id}`}
+          data-testid={`promo-banner-${ad.id}`}
         >
           <div
             className="relative rounded-xl mb-4 overflow-hidden mx-auto"
@@ -55,14 +55,14 @@ export function AdBanner({ ad }: { ad: InternalAd }) {
                 style={{
                   maxHeight: ad.bannerHeight ? `${ad.bannerHeight}px` : undefined,
                 }}
-                data-testid={`ad-banner-img-${ad.id}`}
+                data-testid={`promo-banner-img-${ad.id}`}
               />
             )}
             {(ad.title || ad.content || ad.linkUrl) && (
               <div className="px-4 py-3 flex items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  {ad.title && <p className="text-sm font-semibold" data-testid={`ad-banner-title-${ad.id}`}>{ad.title}</p>}
-                  {ad.content && <p className="text-sm opacity-90" data-testid={`ad-banner-content-${ad.id}`}>{ad.content}</p>}
+                  {ad.title && <p className="text-sm font-semibold" data-testid={`promo-banner-title-${ad.id}`}>{ad.title}</p>}
+                  {ad.content && <p className="text-sm opacity-90" data-testid={`promo-banner-content-${ad.id}`}>{ad.content}</p>}
                 </div>
                 {ad.linkUrl && (
                   <a
@@ -70,7 +70,7 @@ export function AdBanner({ ad }: { ad: InternalAd }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors shrink-0"
-                    data-testid={`ad-banner-link-${ad.id}`}
+                    data-testid={`promo-banner-link-${ad.id}`}
                   >
                     {ad.linkText || "Learn More"}
                     <ExternalLink className="w-3 h-3" />
@@ -82,7 +82,7 @@ export function AdBanner({ ad }: { ad: InternalAd }) {
               onClick={handleDismiss}
               className="absolute top-2 right-2 p-1 rounded-full bg-black/30 hover:bg-black/50 text-white transition-colors"
               aria-label="Dismiss"
-              data-testid={`ad-banner-dismiss-${ad.id}`}
+              data-testid={`promo-banner-dismiss-${ad.id}`}
             >
               <X className="w-4 h-4" />
             </button>
@@ -116,14 +116,14 @@ export function AdPopup({ ad }: { ad: InternalAd }) {
           maxWidth: ad.popupWidth ? `${ad.popupWidth}px` : "384px",
           maxHeight: ad.popupHeight ? `${ad.popupHeight}px` : undefined,
         }}
-        data-testid={`ad-popup-${ad.id}`}
+        data-testid={`promo-popup-${ad.id}`}
       >
         {ad.imageUrl && (
           <img
             src={ad.imageUrl}
             alt={ad.title}
             className="w-full object-contain"
-            data-testid={`ad-popup-img-${ad.id}`}
+            data-testid={`promo-popup-img-${ad.id}`}
           />
         )}
         <div
@@ -133,15 +133,15 @@ export function AdPopup({ ad }: { ad: InternalAd }) {
             color: ad.textColor || undefined,
           }}
         >
-          <h3 className="text-lg font-bold mb-2" data-testid={`ad-popup-title-${ad.id}`}>{ad.title}</h3>
-          <p className="text-sm leading-relaxed mb-4" data-testid={`ad-popup-content-${ad.id}`}>{ad.content}</p>
+          <h3 className="text-lg font-bold mb-2" data-testid={`promo-popup-title-${ad.id}`}>{ad.title}</h3>
+          <p className="text-sm leading-relaxed mb-4" data-testid={`promo-popup-content-${ad.id}`}>{ad.content}</p>
           <div className="flex items-center gap-3">
             {ad.linkUrl && (
               <a
                 href={ad.linkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                data-testid={`ad-popup-link-${ad.id}`}
+                data-testid={`promo-popup-link-${ad.id}`}
               >
                 <Button size="sm" className="gap-1">
                   {ad.linkText || "Learn More"}
@@ -153,7 +153,7 @@ export function AdPopup({ ad }: { ad: InternalAd }) {
               size="sm"
               variant="outline"
               onClick={handleClose}
-              data-testid={`ad-popup-close-${ad.id}`}
+              data-testid={`promo-popup-close-${ad.id}`}
             >
               Close
             </Button>

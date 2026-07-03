@@ -38,7 +38,7 @@ import {
 } from "../email";
 import { storeFileInDb, getFileFromDb, migrateExistingUploads, restoreFilesFromDb } from "../file-storage";
 
-for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets", "uploads/ads", "uploads/email-promo", "uploads/banners"]) {
+for (const dir of ["uploads/cv", "uploads/profile", "uploads/logo", "uploads/tickets", "uploads/ads", "uploads/promos", "uploads/email-promo", "uploads/banners"]) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
@@ -151,7 +151,7 @@ const uploadTicketAttachment = multer({
 });
 
 const adMediaStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, "uploads/ads"),
+  destination: (_req, _file, cb) => cb(null, "uploads/promos"),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     cb(null, `ad_${Date.now()}${ext}`);
@@ -3569,6 +3569,68 @@ ${cvText}
     },
   );
 
+  // True when the user has an active Job-Aid plan that includes the
+  // "recommendations" benefit. Returns the numeric limit (max recommendations
+  // to surface) when configured, otherwise null.
+  async function jobAidRecommendationsIncluded(u: {
+    jobAidStatus?: string | null;
+    jobAidPlan?: string | null;
+    jobAidEndDate?: Date | string | null;
+  }): Promise<{ included: boolean; limit: number | null }> {
+    const active =
+      u.jobAidStatus === "active" &&
+      (!u.jobAidEndDate || new Date(u.jobAidEndDate) > new Date());
+    if (!active || !u.jobAidPlan) return { included: false, limit: null };
+    const plans = await getJobAidPlans();
+    const b = plans[u.jobAidPlan]?.benefits.find((x) => x.key === "recommendations");
+    return { included: Boolean(b?.included), limit: b?.limit ?? null };
+  }
+
+  // Applicant: read saved recommendation preferences (job sectors of interest).
+  app.get("/api/jobaid/preferences", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    return res.json({ categories: user.preferredCategories || [] });
+  });
+
+  // Applicant: save recommendation preferences. Recommendations are AUTOMATIC —
+  // no request or admin fulfillment. The applicant saves the sectors they care
+  // about and the app surfaces matching active jobs to apply for directly.
+  app.post("/api/jobaid/preferences", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user || user.role !== "applicant") {
+      return res.status(403).json({ message: "Only applicants can set job preferences" });
+    }
+    const { included } = await jobAidRecommendationsIncluded(user);
+    if (!included) {
+      return res.status(403).json({ message: "Personalized recommendations are not included in your plan" });
+    }
+    const bodySchema = z.object({
+      categories: z.array(z.string().min(1).max(120)).max(60),
+    });
+    const parsed = bodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid preferences", errors: parsed.error.flatten() });
+    }
+    const categories = Array.from(new Set(parsed.data.categories)).slice(0, 60);
+    const updated = await storage.updateUser(user.id, { preferredCategories: categories });
+    return res.json({ categories: updated.preferredCategories || [] });
+  });
+
+  // Applicant: eligibility + limit for the recommendations experience. The
+  // actual job matching happens client-side against the public jobs list, since
+  // the sector→role taxonomy lives in the web app.
+  app.get("/api/jobaid/recommendations/meta", isAuthenticated, async (req, res) => {
+    const user = await storage.getUser(req.session.userId!);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const { included, limit } = await jobAidRecommendationsIncluded(user);
+    return res.json({
+      included,
+      limit,
+      categories: user.preferredCategories || [],
+    });
+  });
+
   // Applicant: list own Job-Aid feature requests
   app.get("/api/jobaid/requests", isAuthenticated, async (req, res) => {
     const requests = await storage.getJobAidRequestsForUser(req.session.userId!);
@@ -5240,14 +5302,17 @@ ${cvText}
     }
   });
 
-  app.get("/api/ads", async (req, res) => {
+  // Public promotions feed. `/api/promotions` is the primary path; `/api/ads`
+  // is kept as a backward-compatible alias for older cached clients. The neutral
+  // `/api/promotions` name avoids ad-blocker URL filters that block `/api/ads`.
+  app.get(["/api/promotions", "/api/ads"], async (req, res) => {
     try {
       const page = req.query.page as string;
       if (!page) return res.status(400).json({ message: "Page parameter is required" });
       const ads = await storage.getActiveAdsForPage(page);
       res.json(ads);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch ads" });
+      res.status(500).json({ message: "Failed to fetch promotions" });
     }
   });
 
@@ -5293,7 +5358,7 @@ ${cvText}
         endDate: z.string().nullable().optional(),
       });
       const input = adSchema.parse({ ...req.body, targetPages, position });
-      const imageUrl = req.file ? `/uploads/ads/${req.file.filename}` : null;
+      const imageUrl = req.file ? `/uploads/promos/${req.file.filename}` : null;
       if (req.file) storeFileInDb(imageUrl!, req.file.path).catch(() => {});
       const ad = await storage.createAd({
         ...input,
@@ -5369,7 +5434,7 @@ ${cvText}
       if (updates.startDate !== undefined) updates.startDate = updates.startDate ? new Date(updates.startDate) : null;
       if (updates.endDate !== undefined) updates.endDate = updates.endDate ? new Date(updates.endDate) : null;
       if (req.file) {
-        updates.imageUrl = `/uploads/ads/${req.file.filename}`;
+        updates.imageUrl = `/uploads/promos/${req.file.filename}`;
         storeFileInDb(updates.imageUrl, req.file.path).catch(() => {});
       } else if (parsed.removeImage) {
         updates.imageUrl = null;
@@ -5440,7 +5505,7 @@ ${cvText}
         if (!name) return res.status(400).json({ message: "Company name is required" });
         if (!req.file) return res.status(400).json({ message: "Company logo is required" });
 
-        const logoUrl = `/uploads/ads/${req.file.filename}`;
+        const logoUrl = `/uploads/promos/${req.file.filename}`;
         storeFileInDb(logoUrl, req.file.path).catch(() => {});
         const websiteUrl = (req.body.websiteUrl || "").toString().trim() || null;
         const displayOrder = req.body.displayOrder ? Number(req.body.displayOrder) : 0;
@@ -5488,7 +5553,7 @@ ${cvText}
           updates.isActive = req.body.isActive === "true" || req.body.isActive === true;
         }
         if (req.file) {
-          updates.logoUrl = `/uploads/ads/${req.file.filename}`;
+          updates.logoUrl = `/uploads/promos/${req.file.filename}`;
           storeFileInDb(updates.logoUrl, req.file.path).catch(() => {});
         }
         const company = await storage.updateHiringCompany(id, updates);
