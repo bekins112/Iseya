@@ -19,7 +19,7 @@ import { usePageTitle } from "@/hooks/use-page-title";
 import { usePageContent } from "@/lib/page-content/use-page-content";
 import { jobAidDefaults } from "@/lib/page-content/job-aid";
 
-type JobAidBenefit = { key: string; label: string; included: boolean };
+type JobAidBenefit = { key: string; label: string; included: boolean; limit: number | null };
 type JobAidPlan = {
   id: string;
   name: string;
@@ -302,7 +302,12 @@ export default function JobAid() {
                                 ) : (
                                   <X className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
                                 )}
-                                <span className="text-sm">{b.label}</span>
+                                <span className="text-sm">
+                                  {b.label}
+                                  {b.limit != null && b.included ? (
+                                    <span className="font-semibold"> ({b.limit})</span>
+                                  ) : null}
+                                </span>
                               </li>
                             );
                           })}

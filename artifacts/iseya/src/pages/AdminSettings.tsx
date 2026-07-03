@@ -112,6 +112,7 @@ const youtubeSchema = z.object({
 
 const JOBAID_PLANS = ["casual", "smart", "remote", "freelance", "corporate"] as const;
 const JOBAID_BENEFITS = ["recommendations", "referrals", "cv_refining", "interview_booking", "verification", "priority_support"] as const;
+const JOBAID_QUOTA_BENEFITS = new Set<string>(["recommendations", "referrals", "interview_booking"]);
 const JOBAID_PLAN_LABELS: Record<string, string> = {
   casual: "Casual Job-Aid",
   smart: "Smart Job-Aid",
@@ -136,7 +137,11 @@ for (const p of JOBAID_PLANS) {
   jobAidShape[`jobaid_${p}_price`] = z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0, "Must be a valid amount");
   jobAidShape[`jobaid_${p}_discount`] = z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100, "Must be 0-100");
   for (const b of JOBAID_BENEFITS) {
-    jobAidShape[`jobaid_${p}_${b}`] = z.string();
+    if (JOBAID_QUOTA_BENEFITS.has(b)) {
+      jobAidShape[`jobaid_${p}_${b}`] = z.string().refine(v => !isNaN(Number(v)) && Number.isInteger(Number(v)) && Number(v) >= 0, "Must be 0 or more");
+    } else {
+      jobAidShape[`jobaid_${p}_${b}`] = z.string();
+    }
   }
 }
 const jobAidSchema = z.object(jobAidShape);
@@ -148,7 +153,7 @@ function jobAidDefaultValues(settings?: Record<string, string>): Record<string, 
     out[`jobaid_${p}_discount`] = settings?.[`jobaid_${p}_discount`] || "0";
     for (const b of JOBAID_BENEFITS) {
       const key = `jobaid_${p}_${b}`;
-      out[key] = settings?.[key] ?? (b === "recommendations" ? "true" : "false");
+      out[key] = settings?.[key] ?? (JOBAID_QUOTA_BENEFITS.has(b) ? "0" : "false");
     }
   }
   return out;
@@ -461,18 +466,29 @@ export default function AdminSettings() {
                         )} />
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">Included Benefits</p>
+                        <p className="text-sm font-medium text-muted-foreground">Included Benefits <span className="font-normal">(number fields = usage limit per plan; 0 = not included)</span></p>
                         <div className="grid sm:grid-cols-2 gap-3">
                           {JOBAID_BENEFITS.map((b) => (
                             <FormField key={b} control={jobAidForm.control} name={`jobaid_${p}_${b}` as any} render={({ field }) => (
                               <FormItem className="flex items-center justify-between rounded-md border p-3 space-y-0">
                                 <FormLabel className="text-sm font-normal">{JOBAID_BENEFIT_LABELS[b]}</FormLabel>
                                 <FormControl>
-                                  <Switch
-                                    checked={field.value === "true"}
-                                    onCheckedChange={(v) => field.onChange(v ? "true" : "false")}
-                                    data-testid={`switch-jobaid-${p}-${b}`}
-                                  />
+                                  {JOBAID_QUOTA_BENEFITS.has(b) ? (
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      step="1"
+                                      className="w-20 h-8"
+                                      {...field}
+                                      data-testid={`input-jobaid-${p}-${b}`}
+                                    />
+                                  ) : (
+                                    <Switch
+                                      checked={field.value === "true"}
+                                      onCheckedChange={(v) => field.onChange(v ? "true" : "false")}
+                                      data-testid={`switch-jobaid-${p}-${b}`}
+                                    />
+                                  )}
                                 </FormControl>
                               </FormItem>
                             )} />

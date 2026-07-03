@@ -1,2 +1,3 @@
 - [Page content framework (iseya)](page-content-framework.md) — admin-editable public-page body content via per-page JSON settings keys + usePageContent defaults fallback.
 - [Payment verify security (iseya)](payment-verify-security.md) — gateway verify handlers must enforce metadata.userId===session + amount/currency; Paystack is kobo, Flutterwave is naira.
+- [Job-Aid benefit model (iseya)](jobaid-benefit-model.md) — Job-Aid benefits are mixed: 3 quota (numeric limit) + 3 toggle (boolean); quota keys must stay out of BOOLEAN_SETTINGS_KEYS or they get coerced to true/false.

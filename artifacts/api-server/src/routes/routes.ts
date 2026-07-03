@@ -3341,7 +3341,7 @@ export async function registerRoutes(
     amount: number;
     originalAmount: number;
     discount: number;
-    benefits: Array<{ key: string; label: string; included: boolean }>;
+    benefits: Array<{ key: string; label: string; included: boolean; limit: number | null }>;
   };
 
   async function getJobAidPlans(): Promise<Record<string, JobAidPlan>> {
@@ -3352,11 +3352,13 @@ export async function registerRoutes(
       const discount = parseFloat(await getSettingValue(`jobaid_${id}_discount`)) || 0;
       const benefits = [];
       for (const b of JOBAID_BENEFIT_KEYS) {
-        benefits.push({
-          key: b,
-          label: JOBAID_BENEFIT_LABELS[b],
-          included: (await getSettingValue(`jobaid_${id}_${b}`)) === "true",
-        });
+        const raw = await getSettingValue(`jobaid_${id}_${b}`);
+        if (JOBAID_QUOTA_BENEFIT_KEYS.has(b)) {
+          const limit = parseInt(raw, 10) || 0;
+          benefits.push({ key: b, label: JOBAID_BENEFIT_LABELS[b], included: limit > 0, limit });
+        } else {
+          benefits.push({ key: b, label: JOBAID_BENEFIT_LABELS[b], included: raw === "true", limit: null });
+        }
       }
       plans[id] = {
         name: JOBAID_PLAN_NAMES[id],
@@ -4741,34 +4743,34 @@ export async function registerRoutes(
     "jobaid_remote_discount": "0",
     "jobaid_freelance_discount": "0",
     "jobaid_corporate_discount": "0",
-    "jobaid_casual_recommendations": "true",
-    "jobaid_casual_referrals": "false",
+    "jobaid_casual_recommendations": "5",
+    "jobaid_casual_referrals": "0",
     "jobaid_casual_cv_refining": "false",
-    "jobaid_casual_interview_booking": "false",
+    "jobaid_casual_interview_booking": "0",
     "jobaid_casual_verification": "false",
     "jobaid_casual_priority_support": "false",
-    "jobaid_smart_recommendations": "true",
-    "jobaid_smart_referrals": "true",
+    "jobaid_smart_recommendations": "10",
+    "jobaid_smart_referrals": "3",
     "jobaid_smart_cv_refining": "false",
-    "jobaid_smart_interview_booking": "false",
+    "jobaid_smart_interview_booking": "0",
     "jobaid_smart_verification": "false",
     "jobaid_smart_priority_support": "false",
-    "jobaid_remote_recommendations": "true",
-    "jobaid_remote_referrals": "true",
+    "jobaid_remote_recommendations": "15",
+    "jobaid_remote_referrals": "5",
     "jobaid_remote_cv_refining": "true",
-    "jobaid_remote_interview_booking": "false",
+    "jobaid_remote_interview_booking": "0",
     "jobaid_remote_verification": "false",
     "jobaid_remote_priority_support": "false",
-    "jobaid_freelance_recommendations": "true",
-    "jobaid_freelance_referrals": "true",
+    "jobaid_freelance_recommendations": "20",
+    "jobaid_freelance_referrals": "8",
     "jobaid_freelance_cv_refining": "true",
-    "jobaid_freelance_interview_booking": "true",
+    "jobaid_freelance_interview_booking": "2",
     "jobaid_freelance_verification": "false",
     "jobaid_freelance_priority_support": "false",
-    "jobaid_corporate_recommendations": "true",
-    "jobaid_corporate_referrals": "true",
+    "jobaid_corporate_recommendations": "50",
+    "jobaid_corporate_referrals": "15",
     "jobaid_corporate_cv_refining": "true",
-    "jobaid_corporate_interview_booking": "true",
+    "jobaid_corporate_interview_booking": "5",
     "jobaid_corporate_verification": "true",
     "jobaid_corporate_priority_support": "true",
     "verification_fee": "9999",
@@ -4849,8 +4851,14 @@ export async function registerRoutes(
   const JOBAID_BENEFIT_KEYS = [
     "recommendations", "referrals", "cv_refining", "interview_booking", "verification", "priority_support",
   ] as const;
+  const JOBAID_QUOTA_BENEFIT_KEYS = new Set<string>(["recommendations", "referrals", "interview_booking"]);
   const JOBAID_BENEFIT_TOGGLE_KEYS = JOBAID_PLAN_IDS.flatMap((plan) =>
-    JOBAID_BENEFIT_KEYS.map((b) => `jobaid_${plan}_${b}`),
+    JOBAID_BENEFIT_KEYS.filter((b) => !JOBAID_QUOTA_BENEFIT_KEYS.has(b)).map((b) => `jobaid_${plan}_${b}`),
+  );
+  const JOBAID_BENEFIT_QUOTA_SETTING_KEYS = new Set(
+    JOBAID_PLAN_IDS.flatMap((plan) =>
+      JOBAID_BENEFIT_KEYS.filter((b) => JOBAID_QUOTA_BENEFIT_KEYS.has(b)).map((b) => `jobaid_${plan}_${b}`),
+    ),
   );
 
   const BOOLEAN_SETTINGS_KEYS = new Set([
@@ -5397,6 +5405,8 @@ export async function registerRoutes(
         if (key.startsWith("job_limit_")) {
           if (!Number.isInteger(numVal) || numVal < -1) continue;
         } else if (key.startsWith("interview_credits_")) {
+          if (!Number.isInteger(numVal) || numVal < 0) continue;
+        } else if (JOBAID_BENEFIT_QUOTA_SETTING_KEYS.has(key)) {
           if (!Number.isInteger(numVal) || numVal < 0) continue;
         } else {
           if (numVal < 0) continue;
