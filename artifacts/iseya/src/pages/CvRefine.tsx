@@ -106,15 +106,40 @@ export default function CvRefine() {
     }
   };
 
-  const downloadCv = () => {
+  const downloadCv = async () => {
     if (!result) return;
-    const blob = new Blob([result.improvedCv], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "refined-cv.txt";
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const marginX = 48;
+      const marginTop = 56;
+      const marginBottom = 56;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const maxWidth = pageWidth - marginX * 2;
+      const lineHeight = 16;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+
+      const paragraphs = result.improvedCv.replace(/\r\n/g, "\n").split("\n");
+      let y = marginTop;
+      for (const para of paragraphs) {
+        const lines: string[] = para.length ? doc.splitTextToSize(para, maxWidth) : [""];
+        for (const line of lines) {
+          if (y > pageHeight - marginBottom) {
+            doc.addPage();
+            y = marginTop;
+          }
+          doc.text(line, marginX, y);
+          y += lineHeight;
+        }
+      }
+
+      doc.save("refined-cv.pdf");
+    } catch {
+      toast({ title: "Download failed", description: "Could not generate the PDF. Please try again.", variant: "destructive" });
+    }
   };
 
   if (user && user.role !== "applicant") {
@@ -257,7 +282,7 @@ export default function CvRefine() {
                         {copied ? "Copied" : "Copy"}
                       </Button>
                       <Button size="sm" variant="outline" onClick={downloadCv} className="gap-1.5" data-testid="button-cvrefine-download">
-                        <Download className="w-3.5 h-3.5" /> Download
+                        <Download className="w-3.5 h-3.5" /> Download PDF
                       </Button>
                     </div>
                   </div>
