@@ -697,7 +697,8 @@ export default function BrowseJobs() {
 
             {/* Detail preview (desktop split view) */}
             <div className="hidden lg:block lg:flex-1 lg:min-w-0">
-              <div className="sticky top-24">
+              <div className="sticky top-24 space-y-4">
+                <PageAds page="browse-jobs" position="right" />
                 {selectedJob ? (
                   <AnimatePresence mode="wait">
                     <motion.div
