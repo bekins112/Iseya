@@ -481,7 +481,7 @@ export default function BrowseJobs() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="pt-24 pb-16 px-4 max-w-7xl mx-auto">
+      <main className="pt-24 pb-16 px-4 max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
