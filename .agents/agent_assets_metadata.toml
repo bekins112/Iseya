@@ -12,3 +12,9 @@ id = "bHG3-9lzFlA2qFzxOOaY4"
 uri = "file://.local/outputs/I--y-.pdf"
 type = "pdf"
 title = "Iṣéyá.pdf"
+
+[[outputs]]
+id = "ou8LmN3KDYjPj4dVHQUMr"
+uri = "file://exports/Iseya-Investor-Business-Plan.pdf"
+type = "pdf"
+title = "Iṣéyá — Investor Business Plan (18-page PDF)"

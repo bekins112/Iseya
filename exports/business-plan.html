@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Iṣéyá — Investor Business Plan</title>
+<style>
+  :root{
+    --gold:#f2b90d;
+    --gold-deep:#e6ac00;
+    --bg:#fffdf5;
+    --cream:#fcfaf3;
+    --ink:#241f0f;
+    --muted:#756e57;
+    --line:#e7e1cf;
+  }
+
+  @page{
+    size:A4;
+    margin:20mm 17mm 18mm 17mm;
+    @bottom-left{ content:"Iṣéyá — Investor Business Plan"; font-family:Georgia,serif; font-size:8pt; color:#a49a80; }
+    @bottom-right{ content:"Page " counter(page) " of " counter(pages); font-family:Georgia,serif; font-size:8pt; color:#a49a80; }
+    @bottom-center{ content:"Confidential"; font-family:Georgia,serif; font-size:8pt; color:#a49a80; letter-spacing:.15em; text-transform:uppercase; }
+  }
+  @page cover{ margin:0; @bottom-left{content:""} @bottom-right{content:""} @bottom-center{content:""} }
+
+  *{ box-sizing:border-box; }
+  html{ -weasy-hyphens:none; }
+  body{
+    font-family:Georgia,"Times New Roman",serif;
+    color:var(--ink);
+    font-size:10.2pt;
+    line-height:1.5;
+    margin:0;
+    background:#fff;
+  }
+  h1,h2,h3,h4,.display{ font-family:"Helvetica Neue",Arial,sans-serif; }
+
+  /* ---------- COVER ---------- */
+  .cover{
+    page:cover;
+    position:relative;
+    height:297mm;
+    width:210mm;
+    background:var(--bg);
+    overflow:hidden;
+    page-break-after:always;
+  }
+  .cover .topbar{ position:absolute; top:0; left:0; right:0; height:14mm; background:var(--gold); }
+  .cover .sidebar{ position:absolute; top:0; right:0; bottom:0; width:52mm; background:var(--ink); }
+  .cover .wordmark{
+    position:absolute; top:24mm; left:20mm;
+    font-family:"Helvetica Neue",Arial,sans-serif; font-weight:800; font-size:20pt; letter-spacing:-.02em;
+  }
+  .cover .kicker{
+    position:absolute; top:120mm; left:20mm;
+    font-family:"Helvetica Neue",Arial,sans-serif; text-transform:uppercase; letter-spacing:.42em;
+    font-size:9pt; color:var(--gold-deep); font-weight:700;
+  }
+  .cover h1{
+    position:absolute; top:128mm; left:20mm; right:60mm;
+    font-size:41pt; line-height:.98; font-weight:800; letter-spacing:-.02em; margin:0; color:var(--ink);
+  }
+  .cover .sub{
+    position:absolute; top:196mm; left:20mm; right:62mm;
+    font-size:12pt; color:var(--muted); line-height:1.45;
+  }
+  .cover .meta{
+    position:absolute; bottom:22mm; left:20mm; right:62mm;
+    font-family:"Helvetica Neue",Arial,sans-serif; font-size:8.5pt; color:var(--muted);
+    border-top:1px solid var(--line); padding-top:6mm; line-height:1.9;
+  }
+  .cover .meta b{ color:var(--ink); }
+  .cover .vfeat{
+    position:absolute; right:0; top:0; width:52mm; color:#fffdf5;
+    padding:150mm 8mm 0 8mm; text-align:left;
+  }
+  .cover .vfeat .n{ font-family:"Helvetica Neue",Arial,sans-serif; font-weight:800; font-size:23pt; line-height:1; color:var(--gold); }
+  .cover .vfeat .l{ font-size:8pt; color:#d8d2c2; margin:2mm 0 9mm 0; line-height:1.35; }
+
+  /* ---------- SECTIONS ---------- */
+  section{ page-break-before:always; }
+  section.contin{ page-break-before:auto; }
+  .sec-num{
+    font-family:"Helvetica Neue",Arial,sans-serif; font-size:8.5pt; font-weight:700;
+    letter-spacing:.35em; text-transform:uppercase; color:var(--gold-deep);
+  }
+  h2.sec{
+    font-family:"Helvetica Neue",Arial,sans-serif; font-size:22pt; font-weight:800;
+    letter-spacing:-.02em; margin:2mm 0 2mm 0; line-height:1.02;
+  }
+  .rule{ height:3px; width:24mm; background:var(--gold); margin:0 0 6mm 0; }
+  h3.sub{
+    font-family:"Helvetica Neue",Arial,sans-serif; font-size:12pt; font-weight:700;
+    margin:7mm 0 2mm 0; color:var(--ink);
+  }
+  h4.min{
+    font-family:"Helvetica Neue",Arial,sans-serif; font-size:9.5pt; font-weight:700;
+    text-transform:uppercase; letter-spacing:.08em; margin:5mm 0 1.5mm 0; color:var(--gold-deep);
+  }
+  p{ margin:0 0 3.2mm 0; }
+  ul,ol{ margin:0 0 3.2mm 0; padding-left:5mm; }
+  li{ margin:0 0 1.6mm 0; }
+  b,strong{ color:var(--ink); }
+  .lead{ font-size:11.5pt; line-height:1.5; color:var(--ink); }
+  a{ color:var(--gold-deep); text-decoration:none; }
+
+  /* ---------- COMPONENTS ---------- */
+  .stat-grid{ display:flex; gap:4mm; margin:5mm 0; }
+  .stat{ flex:1; background:var(--cream); border:1px solid var(--line); padding:5mm 4mm; }
+  .stat .big{ font-family:"Helvetica Neue",Arial,sans-serif; font-weight:800; font-size:20pt; line-height:1; color:var(--ink); }
+  .stat .lbl{ font-family:"Helvetica Neue",Arial,sans-serif; font-size:7.5pt; text-transform:uppercase; letter-spacing:.14em; color:var(--muted); margin-top:2mm; line-height:1.35; }
+  .stat.dark{ background:var(--ink); border-color:var(--ink); }
+  .stat.dark .big{ color:var(--gold); }
+  .stat.dark .lbl{ color:#cfc7b2; }
+  .stat.gold{ background:var(--gold); border-color:var(--gold); }
+  .stat.gold .big,.stat.gold .lbl{ color:var(--ink); }
+
+  table{ width:100%; border-collapse:collapse; margin:4mm 0 5mm 0; font-size:9.2pt; }
+  th{ font-family:"Helvetica Neue",Arial,sans-serif; text-align:left; font-size:7.8pt; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); border-bottom:1.5px solid var(--ink); padding:2.4mm 2.4mm; }
+  td{ padding:2.4mm 2.4mm; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.num,th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  tr.total td{ font-weight:700; border-top:1.5px solid var(--ink); border-bottom:none; }
+  tbody tr:nth-child(even) td{ background:#fbf8ee; }
+
+  .callout{ background:var(--cream); border-left:3px solid var(--gold); padding:4mm 5mm; margin:5mm 0; }
+  .callout .k{ font-family:"Helvetica Neue",Arial,sans-serif; font-size:7.8pt; text-transform:uppercase; letter-spacing:.16em; color:var(--gold-deep); font-weight:700; margin-bottom:1.5mm; }
+
+  .two-col{ display:flex; gap:7mm; }
+  .two-col > div{ flex:1; }
+
+  .plan-grid{ display:flex; gap:3mm; margin:4mm 0; }
+  .plan{ flex:1; border:1px solid var(--line); background:var(--cream); padding:4mm 3.5mm; }
+  .plan.pop{ background:var(--gold); border-color:var(--gold); }
+  .plan.ent{ background:var(--ink); }
+  .plan .nm{ font-family:"Helvetica Neue",Arial,sans-serif; font-size:7.6pt; text-transform:uppercase; letter-spacing:.16em; color:var(--muted); }
+  .plan.ent .nm{ color:var(--gold); }
+  .plan .pr{ font-family:"Helvetica Neue",Arial,sans-serif; font-weight:800; font-size:16pt; margin:1.5mm 0; color:var(--ink); }
+  .plan.ent .pr{ color:#fffdf5; }
+  .plan .ds{ font-size:8pt; color:var(--muted); line-height:1.35; }
+  .plan.pop .nm,.plan.pop .ds{ color:#5a4a06; }
+  .plan.ent .ds{ color:#cfc7b2; }
+
+  .toc-row{ display:flex; justify-content:space-between; border-bottom:1px dotted var(--line); padding:2.6mm 0; font-family:"Helvetica Neue",Arial,sans-serif; font-size:10pt; }
+  .toc-row .t{ color:var(--ink); }
+  .toc-row .n{ color:var(--muted); }
+  .toc-row.h{ font-weight:700; }
+
+  .risk td:first-child{ width:34%; font-weight:700; color:var(--ink); }
+  .muted{ color:var(--muted); }
+  .small{ font-size:8.4pt; color:var(--muted); line-height:1.4; }
+  .avoid-break{ page-break-inside:avoid; }
+</style>
+</head>
+<body>
+
+<!-- ===================== COVER ===================== -->
+<div class="cover">
+  <div class="topbar"></div>
+  <div class="sidebar"></div>
+  <div class="wordmark">Iṣéyá</div>
+
+  <div class="vfeat">
+    <div class="n">220M+</div>
+    <div class="l">Nigerians — the market Iṣéyá serves</div>
+    <div class="n">80%</div>
+    <div class="l">of work is informal, casual or self-employed</div>
+    <div class="n">120M+</div>
+    <div class="l">mobile internet connections</div>
+  </div>
+
+  <div class="kicker">Investor Business Plan</div>
+  <h1>The trusted marketplace for Nigerian work.</h1>
+  <div class="sub">A mobile-first platform connecting verified workers, employers and recruitment agents — Naira-native, built for how Nigeria actually hires.</div>
+
+  <div class="meta">
+    <div><b>Company</b> &nbsp; Iṣéyá, operated by Renowned Technology Limited</div>
+    <div><b>Website</b> &nbsp; iseya.ng</div>
+    <div><b>Document</b> &nbsp; Business Plan &amp; Seed Investment Memorandum</div>
+    <div><b>Status</b> &nbsp; Confidential — for prospective investors only</div>
+  </div>
+</div>
+
+<!-- ===================== CONTENTS ===================== -->
+<section>
+  <div class="sec-num">Contents</div>
+  <h2 class="sec">Table of Contents</h2>
+  <div class="rule"></div>
+
+  <div class="toc-row h"><span class="t">01 &nbsp; Executive Summary</span><span class="n">03</span></div>
+  <div class="toc-row"><span class="t">02 &nbsp; Company Overview</span><span class="n">04</span></div>
+  <div class="toc-row"><span class="t">03 &nbsp; The Problem</span><span class="n">05</span></div>
+  <div class="toc-row"><span class="t">04 &nbsp; The Solution &amp; Product</span><span class="n">06</span></div>
+  <div class="toc-row"><span class="t">05 &nbsp; Market Opportunity</span><span class="n">07</span></div>
+  <div class="toc-row"><span class="t">06 &nbsp; Business Model &amp; Revenue Streams</span><span class="n">08</span></div>
+  <div class="toc-row"><span class="t">07 &nbsp; Technology &amp; What's Already Built</span><span class="n">10</span></div>
+  <div class="toc-row"><span class="t">08 &nbsp; Competitive Landscape &amp; Edge</span><span class="n">11</span></div>
+  <div class="toc-row"><span class="t">09 &nbsp; Go-to-Market Strategy</span><span class="n">12</span></div>
+  <div class="toc-row"><span class="t">10 &nbsp; Operations, Trust &amp; Safety</span><span class="n">13</span></div>
+  <div class="toc-row"><span class="t">11 &nbsp; Team</span><span class="n">14</span></div>
+  <div class="toc-row"><span class="t">12 &nbsp; Financial Plan &amp; Projections</span><span class="n">15</span></div>
+  <div class="toc-row"><span class="t">13 &nbsp; The Ask &amp; Use of Funds</span><span class="n">17</span></div>
+  <div class="toc-row"><span class="t">14 &nbsp; Milestones &amp; Roadmap</span><span class="n">18</span></div>
+  <div class="toc-row"><span class="t">15 &nbsp; Risks &amp; Mitigation</span><span class="n">19</span></div>
+</section>
+
+<!-- ===================== 01 EXEC SUMMARY ===================== -->
+<section>
+  <div class="sec-num">01 · Executive Summary</div>
+  <h2 class="sec">Executive Summary</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Iṣéyá is a mobile-first job marketplace for Nigeria — connecting workers with employers and recruitment agents across casual, part-time, remote, freelance and full-time work. It replaces the offline, middleman-driven hiring that dominates Africa's largest informal economy with a fast, verified and Naira-native platform.</p>
+
+  <p>Hiring in Nigeria still runs on word of mouth, WhatsApp groups and informal middlemen who charge job seekers one to two months of wages with no accountability. Meanwhile the enabling rails — smartphones, mobile money and digital KYC — are finally ubiquitous. Iṣéyá brings this entire flow online: workers build verified profiles and apply in a few taps; employers post jobs and hire with confidence; agents run recruitment for multiple clients from a single dashboard.</p>
+
+  <p>The product is already built and live. It includes role-based experiences for applicants, employers and agents; identity verification with a review workflow; tiered subscriptions billed in Naira through Paystack and Flutterwave; an admin console with granular role-based access control; automated transactional email; a support and live-chat system; Facebook auto-posting for reach; and a Job-Aid programme that monetises the job-seeker side with premium career support.</p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="big">3</div><div class="lbl">Sides of the marketplace: workers, employers, agents</div></div>
+    <div class="stat gold"><div class="big">2</div><div class="lbl">Payment rails live: Paystack &amp; Flutterwave</div></div>
+    <div class="stat dark"><div class="big">Live</div><div class="lbl">Product built &amp; operating today</div></div>
+  </div>
+
+  <h4 class="min">The opportunity</h4>
+  <p>Nigeria has 220M+ people, a median age of ~18, and over 120M mobile internet connections. Roughly 80% of employment is informal. Even a small share of formalised, monetised hiring represents a large and defensible revenue base — and Iṣéyá is positioned to own the trust layer for it.</p>
+
+  <h4 class="min">The ask</h4>
+  <p>Iṣéyá is raising a <b>seed round of [ $XXX,000 / ₦XXX million ]</b> to fund an 18-month runway. The plan targets three Nigerian cities, 10,000 verified workers, 1,000 paying employers and positive contribution margin — the foundations of a category-defining Nigerian hiring platform.</p>
+  <p class="small">Bracketed figures are placeholders for the founders to confirm before circulation.</p>
+</section>
+
+<!-- ===================== 02 COMPANY ===================== -->
+<section>
+  <div class="sec-num">02 · Company Overview</div>
+  <h2 class="sec">Company Overview</h2>
+  <div class="rule"></div>
+
+  <p>Iṣéyá is a job marketplace platform operated by <b>Renowned Technology Limited</b>, connecting workers with employers across Nigeria. The name — Yoruba for "work" — reflects the mission: to make honest work easy to find and easy to fill, for everyone from a house cleaner in Lagos to a software engineer working remotely.</p>
+
+  <div class="two-col">
+    <div>
+      <h4 class="min">Mission</h4>
+      <p>To connect every Nigerian to dignified work through a platform that is trusted, transparent and built for local realities.</p>
+    </div>
+    <div>
+      <h4 class="min">Vision</h4>
+      <p>To become the default hiring layer for Africa's informal and semi-formal economy — the first place workers, employers and agents go to get things done.</p>
+    </div>
+  </div>
+
+  <h3 class="sub">What Iṣéyá does today</h3>
+  <ul>
+    <li><b>For job seekers:</b> browse and apply to jobs for free, build a profile, get verified, track applications, negotiate offers, and optionally subscribe to Job-Aid for hands-on career support.</li>
+    <li><b>For employers:</b> post jobs, access verified applicants, manage a hiring pipeline, run interviews, extend and negotiate offers, and reach beyond the platform via social auto-posting.</li>
+    <li><b>For agents:</b> operate as recruitment middlemen the right way — managing jobs and candidates for multiple clients from one dashboard, using a credit or subscription model.</li>
+  </ul>
+
+  <h3 class="sub">Core values</h3>
+  <div class="two-col">
+    <div>
+      <h4 class="min">Trust first</h4>
+      <p>Verification, ratings and accountability are built into the product, not bolted on.</p>
+      <h4 class="min">Local by design</h4>
+      <p>Naira-native pricing, 36 states and 774 LGAs, neighbourhood-level filters, and payment methods Nigerians already use.</p>
+    </div>
+    <div>
+      <h4 class="min">Mobile-first</h4>
+      <p>Optimised for the smartphone-only majority, lightweight enough for real-world data conditions.</p>
+      <h4 class="min">Fair economics</h4>
+      <p>Free to seek work; employers and agents pay for reach and tooling — never exploitative placement fees.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 03 PROBLEM ===================== -->
+<section>
+  <div class="sec-num">03 · The Problem</div>
+  <h2 class="sec">Casual work in Nigeria is stuck offline.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">The largest labour market in Africa runs on informal networks, not infrastructure. That creates friction, cost and risk on every side of the transaction.</p>
+
+  <h4 class="min">For workers</h4>
+  <ul>
+    <li>Jobs are found through word of mouth, WhatsApp groups and physical noticeboards — slow, narrow and unreliable.</li>
+    <li>Informal middlemen charge <b>one to two months of wages</b> as placement fees, often with no job delivered and no recourse.</li>
+    <li>No verifiable identity or reputation means honest workers can't prove they're trustworthy.</li>
+  </ul>
+
+  <h4 class="min">For employers</h4>
+  <ul>
+    <li>No reliable way to verify who they're hiring, especially for in-home and on-site roles.</li>
+    <li>Sourcing is manual and time-consuming; quality is a gamble.</li>
+    <li>Existing job boards are built for formal, white-collar roles and priced for enterprises — not the SMEs and households that drive casual hiring.</li>
+  </ul>
+
+  <h4 class="min">For the market</h4>
+  <ul>
+    <li>No trusted, structured, mobile-native place where supply and demand for everyday work actually meet.</li>
+    <li>Payments, identity and accountability are fragmented across informal channels.</li>
+  </ul>
+
+  <div class="callout">
+    <div class="k">The gap</div>
+    <p style="margin:0;">The rails for digital hiring — smartphones, mobile money and KYC — are finally in place. What's missing is a trusted marketplace that ties them together for the 80% of work that is informal. That is the gap Iṣéyá fills.</p>
+  </div>
+</section>
+
+<!-- ===================== 04 SOLUTION ===================== -->
+<section>
+  <div class="sec-num">04 · The Solution &amp; Product</div>
+  <h2 class="sec">A mobile-first marketplace for Nigerian work.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Iṣéyá brings the entire hiring flow online — discovery, verification, application, interview, offer and payment for premium services — in one Naira-native platform designed for how Nigeria hires.</p>
+
+  <h3 class="sub">Role-based experiences</h3>
+  <table>
+    <thead><tr><th style="width:22%">Role</th><th>What they get</th></tr></thead>
+    <tbody>
+      <tr><td><b>Applicant</b></td><td>Free browsing and applications, profile and CV, identity verification badge, application tracking, counter-offers, job-type and category preferences with alerts.</td></tr>
+      <tr><td><b>Employer</b></td><td>Instant job posting across organised sectors, verified applicant access, pipeline management, interviews, offers and counter-offers, Facebook auto-posting on premium tiers.</td></tr>
+      <tr><td><b>Agent</b></td><td>Employer-grade tooling to recruit for multiple clients; credit-based or subscription posting; full pipeline control across many employers from one dashboard.</td></tr>
+      <tr><td><b>Admin</b></td><td>Console with granular role-based permissions to manage users, jobs, verification, subscriptions, Job-Aid, promotions, chats and transactions.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">What makes it work in Nigeria</h3>
+  <div class="two-col">
+    <div>
+      <h4 class="min">Verification &amp; trust</h4>
+      <p>Government-ID verification (NIN, Voter's Card, Driver's License, Passport) plus a selfie check, reviewed by the team. Verified workers get a badge, priority listing and materially higher hiring odds.</p>
+      <h4 class="min">Naira-native payments</h4>
+      <p>All pricing in ₦, paid via Paystack or Flutterwave — cards, bank transfer, USSD and mobile money. No FX friction for SMEs.</p>
+    </div>
+    <div>
+      <h4 class="min">Hyper-local coverage</h4>
+      <p>36 states, 774 LGAs and neighbourhood-level filters, so hiring matches how people actually live and work.</p>
+      <h4 class="min">Job-Aid for seekers</h4>
+      <p>Optional premium career support — personalised recommendations, referrals, AI CV refining, interview booking, verification and priority support — monetising the demand side too.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 05 MARKET ===================== -->
+<section>
+  <div class="sec-num">05 · Market Opportunity</div>
+  <h2 class="sec">Africa's largest informal labour market is going online.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Nigeria combines enormous scale, a young mobile-native population and — for the first time — the digital rails needed to formalise everyday hiring.</p>
+
+  <div class="stat-grid">
+    <div class="stat dark"><div class="big">220M</div><div class="lbl">Population — half under 19, rapidly urbanising</div></div>
+    <div class="stat gold"><div class="big">80%</div><div class="lbl">Of jobs are informal, casual or self-employed</div></div>
+    <div class="stat"><div class="big">120M+</div><div class="lbl">Mobile internet connections — today's audience</div></div>
+    <div class="stat"><div class="big">2 of 2</div><div class="lbl">Major fintech rails already integrated</div></div>
+  </div>
+
+  <h3 class="sub">Why now</h3>
+  <ul>
+    <li><b>Smartphone saturation:</b> the largest mobile internet base on the continent, growing fast.</li>
+    <li><b>Fintech maturity:</b> Paystack and Flutterwave have normalised digital payments for SMEs and consumers.</li>
+    <li><b>Digital identity:</b> NIN and other KYC instruments make trustworthy verification possible at scale.</li>
+    <li><b>Behaviour shift:</b> a generation that already lives on mobile expects to find work the same way it finds everything else.</li>
+  </ul>
+
+  <h3 class="sub">Market sizing (illustrative framework)</h3>
+  <table>
+    <thead><tr><th>Layer</th><th>Definition</th><th class="num">Scale</th></tr></thead>
+    <tbody>
+      <tr><td><b>TAM</b></td><td>Nigeria's informal &amp; semi-formal workforce and the businesses that hire them</td><td class="num">80%+ of ~70M+ workers</td></tr>
+      <tr><td><b>SAM</b></td><td>Mobile-internet-enabled workers, SMEs, households &amp; agents hiring casually / part-time / remote</td><td class="num">120M+ connected</td></tr>
+      <tr><td><b>SOM (18&nbsp;mo)</b></td><td>Verified workers &amp; paying employers reachable across the first three cities</td><td class="num">10k workers · 1k employers</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Figures above are directional and intended to frame the opportunity; they are not audited market estimates. The near-term serviceable target is anchored to the company's own 18-month operating milestones.</p>
+</section>
+
+<!-- ===================== 06 BUSINESS MODEL ===================== -->
+<section>
+  <div class="sec-num">06 · Business Model</div>
+  <h2 class="sec">Tiered subscriptions, Naira-native.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Iṣéyá monetises both sides of the marketplace. Employers and agents pay to post and hire; job seekers can pay for premium career support. Recurring subscriptions form the revenue core, with add-on credits driving expansion revenue.</p>
+
+  <h3 class="sub">Employer &amp; agent subscriptions</h3>
+  <div class="plan-grid">
+    <div class="plan"><div class="nm">Free</div><div class="pr">₦0</div><div class="ds">Browse, profile, 1 active job. Onboards every employer.</div></div>
+    <div class="plan"><div class="nm">Standard</div><div class="pr">₦5k<span style="font-size:8pt;font-weight:400">/mo</span></div><div class="ds">5 jobs, applicant inbox, basic verification badges.</div></div>
+    <div class="plan pop"><div class="nm">Premium · Popular</div><div class="pr">₦15k<span style="font-size:8pt;font-weight:400">/mo</span></div><div class="ds">Unlimited jobs, agent recommender, Facebook auto-posting.</div></div>
+    <div class="plan ent"><div class="nm">Enterprise</div><div class="pr">Custom</div><div class="ds">Hiring companies, bulk credits, API &amp; dedicated team.</div></div>
+  </div>
+  <p class="small">Pricing shown reflects current plan structure and is configurable by the platform; promotional discounts may apply.</p>
+
+  <h3 class="sub">Revenue streams</h3>
+  <table>
+    <thead><tr><th style="width:30%">Stream</th><th>Description</th><th style="width:20%">Type</th></tr></thead>
+    <tbody>
+      <tr><td><b>Employer subscriptions</b></td><td>Monthly recurring plans (Standard, Premium, Enterprise) for posting and hiring.</td><td>Recurring</td></tr>
+      <tr><td><b>Agent monetisation</b></td><td>Job-posting credits and subscription plans for recruitment agents.</td><td>Recurring + usage</td></tr>
+      <tr><td><b>Job-Aid (seekers)</b></td><td>Premium career-support plans for job seekers (Casual, Smart, Remote, Freelance, Corporate).</td><td>Recurring</td></tr>
+      <tr><td><b>Verification fees</b></td><td>Identity verification for applicants (valid 30 days), a paid trust product.</td><td>Transactional</td></tr>
+      <tr><td><b>Add-ons</b></td><td>Interview credits, agent credit packs and featured listings.</td><td>Expansion</td></tr>
+      <tr><td><b>Promotions</b></td><td>On-platform promotional placements and sponsored banners.</td><td>Ancillary</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="k">Why the model compounds</div>
+    <p style="margin:0;">Free posting onboards the entire employer base, verification builds a defensible trust graph, and both sides convert to recurring revenue as they get value. Add-on credits let the highest-intent users spend more, lifting ARPU without raising base prices.</p>
+  </div>
+</section>
+
+<!-- ===================== 07 TECH / BUILT ===================== -->
+<section>
+  <div class="sec-num">07 · Technology</div>
+  <h2 class="sec">What's already built.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Iṣéyá is not a concept — it is a live, production platform. Capital accelerates growth on top of a working product, not a prototype.</p>
+
+  <h3 class="sub">Shipped &amp; operating</h3>
+  <div class="two-col">
+    <div>
+      <ul>
+        <li><b>Identity verification</b> with document upload, selfie check and admin review workflow.</li>
+        <li><b>Role-based access control</b> across applicants, employers, agents and multi-tier admins.</li>
+        <li><b>Tiered subscriptions</b> billed in Naira via Paystack and Flutterwave, with secure payment verification.</li>
+        <li><b>Job-Aid programme</b> — seeker plans, per-benefit request flows and admin fulfilment.</li>
+        <li><b>Facebook auto-posting</b> to extend job reach off-platform.</li>
+      </ul>
+    </div>
+    <div>
+      <ul>
+        <li><b>Email automation</b> for verification, resets, notifications and lifecycle messaging.</li>
+        <li><b>Support &amp; live chat</b> with an AI assistant and human-handoff to admins.</li>
+        <li><b>Admin console</b> for users, jobs, applications, transactions, promotions and analytics.</li>
+        <li><b>Applicant tools</b> — CV refining, recommendations, interview booking, counter-offers.</li>
+        <li><b>Secure auth</b> — email/password with CAPTCHA, Google sign-in and hardened sessions.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="sub">Architecture</h3>
+  <p>A modern, cloud-native stack: a React &amp; TypeScript mobile-first web client, an Express (Node.js) API, and a PostgreSQL database. Payments run through Paystack and Flutterwave; transactional email through managed providers. The system is built to scale horizontally as demand grows, with security practices including hashed credentials, server-side sessions and CAPTCHA-protected auth, aligned to the Nigeria Data Protection Regulation (NDPR).</p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="big">Web</div><div class="lbl">Mobile-first PWA-ready client</div></div>
+    <div class="stat"><div class="big">API</div><div class="lbl">Express + PostgreSQL backend</div></div>
+    <div class="stat gold"><div class="big">NDPR</div><div class="lbl">Privacy-aligned data handling</div></div>
+  </div>
+</section>
+
+<!-- ===================== 08 COMPETITIVE ===================== -->
+<section>
+  <div class="sec-num">08 · Competitive Edge</div>
+  <h2 class="sec">Competitive landscape &amp; edge.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Global and pan-African job boards target formal, white-collar roles; informal hiring is left to WhatsApp, agents and noticeboards. Iṣéyá is purpose-built for the middle Nigeria actually lives in.</p>
+
+  <table>
+    <thead><tr><th style="width:26%">Approach</th><th>Casual / informal fit</th><th>Trust layer</th><th>Naira-native</th></tr></thead>
+    <tbody>
+      <tr><td><b>Global job boards</b></td><td>Poor — formal roles only</td><td>Limited</td><td>No</td></tr>
+      <tr><td><b>WhatsApp / social groups</b></td><td>High reach, no structure</td><td>None</td><td>Cash only</td></tr>
+      <tr><td><b>Informal middlemen</b></td><td>High but exploitative</td><td>None</td><td>Cash, high fees</td></tr>
+      <tr><td style="color:var(--gold-deep)"><b>Iṣéyá</b></td><td><b>Built for it</b></td><td><b>Verification + ratings</b></td><td><b>Yes</b></td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">Our moats</h3>
+  <div class="two-col">
+    <div>
+      <h4 class="min">Local-first design</h4>
+      <p>36 states, 774 LGAs, neighbourhood filters and Naira pricing — hard to replicate by a foreign entrant treating Nigeria as an afterthought.</p>
+      <h4 class="min">Trust graph</h4>
+      <p>Every verification and rating deepens a proprietary trust layer that gets more valuable — and more defensible — with scale.</p>
+    </div>
+    <div>
+      <h4 class="min">Agent network</h4>
+      <p>Formalising middlemen as productive agents turns a legacy adversary into a distribution channel.</p>
+      <h4 class="min">Dual payment rails</h4>
+      <p>Paystack and Flutterwave together maximise conversion and resilience across cards, transfers, USSD and mobile money.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 09 GTM ===================== -->
+<section>
+  <div class="sec-num">09 · Go-to-Market</div>
+  <h2 class="sec">City-by-city, supply-side first.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Marketplaces win by solving the chicken-and-egg problem locally. Iṣéyá concentrates liquidity in one city at a time, seeding verified worker supply first so employers find immediate value.</p>
+
+  <h3 class="sub">The playbook</h3>
+  <ol>
+    <li><b>Seed supply:</b> recruit and verify workers in a target city through agents, community partners and referrals — free to join lowers the barrier.</li>
+    <li><b>Activate demand:</b> onboard SMEs and households with free posting; convert to paid tiers as they experience verified, faster hiring.</li>
+    <li><b>Enlist agents:</b> convert existing middlemen into platform agents who bring their own worker and employer networks.</li>
+    <li><b>Amplify reach:</b> Facebook auto-posting and promotions extend every listing beyond the platform.</li>
+    <li><b>Densify, then expand:</b> reach liquidity in one city, then replicate the motion in the next.</li>
+  </ol>
+
+  <h3 class="sub">Channels</h3>
+  <div class="two-col">
+    <div>
+      <ul>
+        <li>Agent-led community recruitment</li>
+        <li>Social &amp; digital acquisition (incl. Facebook auto-posting)</li>
+        <li>Referral loops on both sides</li>
+      </ul>
+    </div>
+    <div>
+      <ul>
+        <li>SME &amp; sector partnerships</li>
+        <li>Verification as an on-ramp to trust</li>
+        <li>Job-Aid as a seeker-side growth &amp; monetisation engine</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="k">18-month target</div>
+    <p style="margin:0;">3 cities · 10,000 verified workers · 1,000 paying employers · positive contribution margin.</p>
+  </div>
+</section>
+
+<!-- ===================== 10 OPERATIONS ===================== -->
+<section>
+  <div class="sec-num">10 · Operations, Trust &amp; Safety</div>
+  <h2 class="sec">Operations, trust &amp; safety.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Trust is the product. Iṣéyá's operating model is designed to keep both sides of the marketplace safe, accountable and coming back.</p>
+
+  <div class="two-col">
+    <div>
+      <h4 class="min">Verification operations</h4>
+      <p>A human-in-the-loop review team validates IDs and selfies before badges are granted, balancing speed with fraud prevention. Verification expires after 30 days, keeping the trust graph fresh.</p>
+      <h4 class="min">Ratings &amp; accountability</h4>
+      <p>Admin-scored assessments after interviews give employers a reliable signal and give workers a way to build reputation.</p>
+      <h4 class="min">Support</h4>
+      <p>Ticketing plus AI-assisted live chat with human handoff resolves issues and reduces churn.</p>
+    </div>
+    <div>
+      <h4 class="min">Fraud &amp; abuse controls</h4>
+      <p>Report flows for jobs and users, admin review and action, CAPTCHA-protected auth and secure payment verification with metadata and amount checks.</p>
+      <h4 class="min">Data protection</h4>
+      <p>NDPR-aligned handling: hashed passwords, secure server-side sessions, and controlled access to sensitive verification documents.</p>
+      <h4 class="min">Agent oversight</h4>
+      <p>Agents operate within platform rules and tooling, replacing opaque, unaccountable middlemen with a transparent system.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 11 TEAM ===================== -->
+<section>
+  <div class="sec-num">11 · Team</div>
+  <h2 class="sec">Team.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Iṣéyá is built by an operating team that has already shipped a full, live platform — combining product, engineering and local market execution.</p>
+
+  <table>
+    <thead><tr><th style="width:28%">Role</th><th>Focus</th></tr></thead>
+    <tbody>
+      <tr><td><b>[Founder &amp; CEO]</b></td><td>Vision, fundraising, partnerships and market strategy.</td></tr>
+      <tr><td><b>[Co-founder / CTO]</b></td><td>Product and engineering — architecture, delivery and scale.</td></tr>
+      <tr><td><b>[Head of Growth]</b></td><td>City launches, acquisition, agent network and partnerships.</td></tr>
+      <tr><td><b>[Head of Operations / Trust]</b></td><td>Verification, support, safety and marketplace quality.</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Team names and bios are placeholders to be completed by the founders before this document is circulated to investors.</p>
+
+  <h3 class="sub">Why this team wins</h3>
+  <ul>
+    <li>Proven execution — a complete, production platform is already live.</li>
+    <li>Deep understanding of Nigerian hiring behaviour, informal networks and local payments.</li>
+    <li>A capital-efficient build, positioning every new dollar toward growth rather than catch-up engineering.</li>
+  </ul>
+
+  <h4 class="min">Advisors &amp; hires (planned)</h4>
+  <p>Seed capital funds key additions across engineering, growth and city operations, plus advisors across fintech, recruitment and Nigerian SME distribution.</p>
+</section>
+
+<!-- ===================== 12 FINANCIALS ===================== -->
+<section>
+  <div class="sec-num">12 · Financial Plan</div>
+  <h2 class="sec">Financial plan &amp; projections.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">The model below is illustrative — it demonstrates the shape of the business and the path to positive contribution margin, based on the plan's stated targets and current pricing. All figures are in Nigerian Naira (₦) and should be validated against live cohort data as the company scales.</p>
+
+  <h3 class="sub">Key assumptions</h3>
+  <ul>
+    <li>Blended employer subscription ARPU rising from ~₦8k to ~₦10k/month as the mix shifts toward Premium.</li>
+    <li>Job-Aid adoption grows on the seeker side at a modest single-digit percentage of active workers.</li>
+    <li>Add-ons, verification fees and promotions contribute incremental, higher-margin revenue.</li>
+    <li>18-month operating milestone: 3 cities, 10,000 verified workers, 1,000 paying employers.</li>
+  </ul>
+
+  <h3 class="sub">Illustrative revenue build</h3>
+  <table>
+    <thead><tr><th>Driver</th><th class="num">Year 1</th><th class="num">Year 2</th><th class="num">Year 3</th></tr></thead>
+    <tbody>
+      <tr><td>Paying employers / agents (avg active)</td><td class="num">450</td><td class="num">1,500</td><td class="num">4,000</td></tr>
+      <tr><td>Blended subscription ARPU (₦/mo)</td><td class="num">8,000</td><td class="num">9,000</td><td class="num">10,000</td></tr>
+      <tr><td>Employer subscription revenue (₦m)</td><td class="num">43</td><td class="num">162</td><td class="num">480</td></tr>
+      <tr><td>Job-Aid subscribers (avg active)</td><td class="num">2,000</td><td class="num">8,000</td><td class="num">20,000</td></tr>
+      <tr><td>Job-Aid revenue (₦m)</td><td class="num">15</td><td class="num">60</td><td class="num">180</td></tr>
+      <tr><td>Verification, add-ons &amp; promotions (₦m)</td><td class="num">8</td><td class="num">28</td><td class="num">90</td></tr>
+      <tr class="total"><td>Total revenue (₦m)</td><td class="num">66</td><td class="num">250</td><td class="num">750</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">Illustrative P&amp;L shape</h3>
+  <table>
+    <thead><tr><th>Line</th><th class="num">Year 1</th><th class="num">Year 2</th><th class="num">Year 3</th></tr></thead>
+    <tbody>
+      <tr><td>Total revenue (₦m)</td><td class="num">66</td><td class="num">250</td><td class="num">750</td></tr>
+      <tr><td>Cost of revenue — payments, hosting, verification (₦m)</td><td class="num">(20)</td><td class="num">(58)</td><td class="num">(150)</td></tr>
+      <tr><td>Gross profit (₦m)</td><td class="num">46</td><td class="num">192</td><td class="num">600</td></tr>
+      <tr><td>Growth &amp; marketing (₦m)</td><td class="num">(70)</td><td class="num">(120)</td><td class="num">(240)</td></tr>
+      <tr><td>People &amp; operations (₦m)</td><td class="num">(90)</td><td class="num">(150)</td><td class="num">(260)</td></tr>
+      <tr class="total"><td>EBITDA (₦m)</td><td class="num">(114)</td><td class="num">(78)</td><td class="num">100</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="k">The trajectory</div>
+    <p style="margin:0;">Year 1 is an investment phase to build liquidity and trust. Contribution margin turns positive as subscriptions compound and city operations mature, with the business reaching EBITDA profitability by Year 3 in this scenario.</p>
+  </div>
+  <p class="small">These projections are directional illustrations for discussion, not guarantees of future performance. Actual results depend on execution, pricing, conversion and market conditions.</p>
+</section>
+
+<!-- ===================== 13 THE ASK ===================== -->
+<section>
+  <div class="sec-num">13 · The Ask</div>
+  <h2 class="sec">The ask &amp; use of funds.</h2>
+  <div class="rule"></div>
+
+  <p class="lead">Iṣéyá is raising a <b>seed round of [ $XXX,000 / ₦XXX million ]</b> to fund an 18-month runway to marketplace liquidity across three Nigerian cities and positive contribution margin.</p>
+
+  <h3 class="sub">Use of funds</h3>
+  <table>
+    <thead><tr><th>Category</th><th>What it funds</th><th class="num">Allocation</th></tr></thead>
+    <tbody>
+      <tr><td><b>Engineering &amp; product</b></td><td>Scale the platform, mobile experience, matching and reliability.</td><td class="num">40%</td></tr>
+      <tr><td><b>Growth &amp; marketing</b></td><td>City launches, acquisition on both sides, brand.</td><td class="num">30%</td></tr>
+      <tr><td><b>Operations &amp; agents</b></td><td>Verification, support, trust &amp; safety, agent network.</td><td class="num">20%</td></tr>
+      <tr><td><b>Runway buffer</b></td><td>Contingency to protect the plan against variance.</td><td class="num">10%</td></tr>
+      <tr class="total"><td>Total</td><td></td><td class="num">100%</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">What this round achieves</h3>
+  <div class="stat-grid">
+    <div class="stat dark"><div class="big">3</div><div class="lbl">Cities with real marketplace liquidity</div></div>
+    <div class="stat gold"><div class="big">10k</div><div class="lbl">Verified workers</div></div>
+    <div class="stat"><div class="big">1k</div><div class="lbl">Paying employers</div></div>
+    <div class="stat"><div class="big">+</div><div class="lbl">Positive contribution margin</div></div>
+  </div>
+  <p class="small">Bracketed amount is a placeholder — replace with the figure and currency you are raising before circulation.</p>
+</section>
+
+<!-- ===================== 14 ROADMAP ===================== -->
+<section>
+  <div class="sec-num">14 · Milestones &amp; Roadmap</div>
+  <h2 class="sec">Milestones &amp; roadmap.</h2>
+  <div class="rule"></div>
+
+  <table>
+    <thead><tr><th style="width:20%">Phase</th><th>Focus</th><th>Target outcome</th></tr></thead>
+    <tbody>
+      <tr><td><b>Now — live</b></td><td>Full platform shipped and operating; verification, subscriptions, Job-Aid, agents.</td><td>Product-market fit signals in first market.</td></tr>
+      <tr><td><b>Months 0–6</b></td><td>Deepen liquidity in first city; scale verified worker supply; convert employers to paid.</td><td>City 1 liquidity; early recurring revenue.</td></tr>
+      <tr><td><b>Months 6–12</b></td><td>Launch cities 2 and 3; grow agent network; expand Job-Aid adoption.</td><td>3 cities live; ARPU growth.</td></tr>
+      <tr><td><b>Months 12–18</b></td><td>Densify all three cities; optimise unit economics; scale add-ons.</td><td>10k verified workers · 1k paying employers · positive contribution margin.</td></tr>
+      <tr><td><b>Beyond</b></td><td>Multi-city expansion, deeper matching, potential mobile app &amp; new revenue lines.</td><td>Path to national scale &amp; Series A.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="k">Capital-efficient by design</div>
+    <p style="margin:0;">Because the product is already built, this round is about distribution and liquidity — not proving the technology. That focuses spend where it compounds fastest.</p>
+  </div>
+</section>
+
+<!-- ===================== 15 RISKS ===================== -->
+<section>
+  <div class="sec-num">15 · Risks &amp; Mitigation</div>
+  <h2 class="sec">Risks &amp; mitigation.</h2>
+  <div class="rule"></div>
+
+  <table class="risk">
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Marketplace cold-start</td><td>City-by-city, supply-first playbook; free posting to onboard demand; agents bring pre-built networks.</td></tr>
+      <tr><td>Trust &amp; fraud</td><td>Human-reviewed verification, ratings, report flows, CAPTCHA and secure payment checks; NDPR-aligned data handling.</td></tr>
+      <tr><td>Monetisation / willingness to pay</td><td>Free tier drives adoption; value-led conversion; multiple revenue lines (employers, agents, Job-Aid, add-ons) reduce single-point dependence.</td></tr>
+      <tr><td>Competition / new entrants</td><td>Local-first design, proprietary trust graph and agent network create compounding, hard-to-copy moats.</td></tr>
+      <tr><td>Macro &amp; FX volatility</td><td>Naira-native pricing removes FX friction for users; lean, capital-efficient operations extend runway.</td></tr>
+      <tr><td>Regulatory / data protection</td><td>NDPR-aligned practices, controlled access to sensitive documents, and clear user policies.</td></tr>
+      <tr><td>Key-person / hiring</td><td>Seed funds key hires and advisors; documented systems reduce single-person dependence.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:8mm;">
+    <div class="k">In summary</div>
+    <p style="margin:0;">Iṣéyá pairs a live, production platform with a large, underserved market and a focused, capital-efficient plan. This round turns a working product into a category-defining Nigerian hiring marketplace.</p>
+  </div>
+
+  <div class="meta" style="border-top:1px solid var(--line); margin-top:10mm; padding-top:5mm; font-family:'Helvetica Neue',Arial,sans-serif; font-size:8.5pt; color:var(--muted); line-height:1.9;">
+    <div><b style="color:var(--ink)">Iṣéyá</b> — operated by Renowned Technology Limited &nbsp;·&nbsp; iseya.ng</div>
+    <div>Confidential — prepared for prospective investors. Not an offer to sell securities.</div>
+  </div>
+</section>
+
+</body>
+</html>
