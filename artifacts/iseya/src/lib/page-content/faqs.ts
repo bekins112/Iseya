@@ -66,6 +66,51 @@ export const faqsDefaults = {
         answer: "Yes. When an employer sends you a job offer, you can accept it, decline it, or submit a counter-offer with your preferred salary. The employer can then accept or decline your counter-offer.",
       },
       {
+        category: "Job-Aid",
+        question: "What is Job-Aid?",
+        answer: "Job-Aid is a paid support service for job seekers that gives your job search a professional edge. Instead of searching alone, you get hands-on help — personalized job recommendations, direct referrals to employers, AI-powered CV refining, interview booking, a verified badge, and priority support. Choose a Job-Aid plan to unlock these benefits.",
+      },
+      {
+        category: "Job-Aid",
+        question: "Who is Job-Aid for?",
+        answer: "Job-Aid is designed for applicants (job seekers). It's completely optional — browsing and applying for jobs on Iṣéyá is always free. Job-Aid is for those who want extra, personalized help to land a job faster.",
+      },
+      {
+        category: "Job-Aid",
+        question: "What Job-Aid plans are available?",
+        answer: "Job-Aid offers several plans tailored to different needs — Casual, Smart, Remote, Freelance, and Corporate. Each plan bundles a different set of benefits and usage limits. You can compare all plans and what they include on the Job-Aid page. Pricing is set by the platform and shown in Nigerian Naira (₦), and may include promotional discounts.",
+      },
+      {
+        category: "Job-Aid",
+        question: "What benefits are included in Job-Aid?",
+        answer: "Depending on your plan, Job-Aid can include: Personalized Recommendations (matching jobs based on your preferred sectors), Referrals (our team refers you directly to matching employers), CV Refining (polish your CV instantly with our AI refiner or with help from our team), Interview Booking (we schedule the interviews your plan covers), a Verified Badge, and Priority Support. Not every plan includes every benefit — check the plan details before subscribing.",
+      },
+      {
+        category: "Job-Aid",
+        question: "How do I subscribe to a Job-Aid plan?",
+        answer: "Go to the Job-Aid page, compare the plans, and choose the one that fits your needs. Payments are made in Nigerian Naira (₦) via Paystack or Flutterwave, which support cards, bank transfers, USSD, and mobile money. Once your payment is confirmed, your plan activates and your benefits unlock immediately.",
+      },
+      {
+        category: "Job-Aid",
+        question: "How do I use my Job-Aid benefits after subscribing?",
+        answer: "Once your plan is active, manage everything from the 'My Job-Aid' hub in your dashboard. Some benefits are self-serve — you can view recommendations, refine your CV, or start verification yourself. Others, like referrals and interview booking, are handled directly by our team on your behalf. Your hub also shows your usage and any remaining limits for each benefit.",
+      },
+      {
+        category: "Job-Aid",
+        question: "Do Job-Aid benefits have usage limits?",
+        answer: "Some benefits — like recommendations, referrals, and interview booking — come with a set number of uses based on your plan, while others (such as CV refining, verification, and priority support) are simply available while your plan is active. Your 'My Job-Aid' hub shows your current usage and remaining limits for each benefit.",
+      },
+      {
+        category: "Job-Aid",
+        question: "How is Job-Aid different from employer subscriptions?",
+        answer: "Employer subscription plans (Basic, Standard, Premium, Enterprise) are for businesses posting and managing jobs. Job-Aid plans (Casual, Smart, Remote, Freelance, Corporate) are for job seekers who want extra help finding and landing work. They're completely separate — Job-Aid is only for applicants.",
+      },
+      {
+        category: "Job-Aid",
+        question: "Does Job-Aid guarantee me a job?",
+        answer: "No. Job-Aid significantly boosts your chances by giving you personalized recommendations, referrals, a polished CV, interview support, and a verified badge — but final hiring decisions are always made by employers. Job-Aid helps you stand out and get in front of the right employers faster.",
+      },
+      {
         category: "Employers",
         question: "How do I post a job?",
         answer: "After creating an employer account, click 'Post a Job' on your dashboard. Fill in the job details including title, category (from organized sectors), job type (Full-time, Part-time, Contract, Remote, or Freelance), location (state, LGA, city/town, and specific address), salary range, and requirements. Your job goes live instantly.",
