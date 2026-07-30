@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { ApplicationChatDialog, useApplicationUnreadCounts } from "@/components/ApplicationChatDialog";
 import { jobUrl } from "@/lib/slug-utils";
 
 type EnrichedApp = {
@@ -352,9 +353,12 @@ export default function Applications() {
   const [offerDialogOpen, setOfferDialogOpen] = useState(false);
   const [cancelApp, setCancelApp] = useState<EnrichedApp | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [chatApp, setChatApp] = useState<EnrichedApp | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const confirmInterviewMutation = useUpdateInterview();
   const apps = (applications as EnrichedApp[] | undefined) || [];
+  const { data: unreadCounts = {} } = useApplicationUnreadCounts(apps.map((a) => a.id));
   const myInterviews = (interviewsData || []) as any[];
   const isVerified = user?.isVerified || false;
 
@@ -607,6 +611,21 @@ export default function Applications() {
                               View Job
                             </Button>
                           </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 relative"
+                            onClick={() => { setChatApp(app); setChatOpen(true); }}
+                            data-testid={`button-message-employer-${app.id}`}
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            Message
+                            {(unreadCounts[app.id] || 0) > 0 && (
+                              <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                                {(unreadCounts[app.id] || 0) > 9 ? "9+" : unreadCounts[app.id]}
+                              </span>
+                            )}
+                          </Button>
                           {app.status !== "accepted" && isVerified && (
                             <Button
                               variant="ghost"
@@ -643,6 +662,14 @@ export default function Applications() {
         app={cancelApp}
         open={cancelDialogOpen}
         onOpenChange={setCancelDialogOpen}
+      />
+
+      <ApplicationChatDialog
+        applicationId={chatApp?.id ?? null}
+        otherPartyName={chatApp?.employerName || "Employer"}
+        jobTitle={chatApp?.jobTitle || ""}
+        open={chatOpen}
+        onOpenChange={setChatOpen}
       />
     </div>
   );

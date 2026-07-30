@@ -35,6 +35,7 @@ import {
   sendTicketAdminNotifyEmail,
   sendContactFormAcknowledgement,
   sendTicketReplyEmail,
+  sendApplicationMessageEmail,
 } from "../email";
 import { storeFileInDb, getFileFromDb, migrateExistingUploads, restoreFilesFromDb } from "../file-storage";
 
@@ -756,6 +757,109 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       res.status(500).json({ message: "Failed to save admin review" });
+    }
+  });
+
+  // === APPLICATION MESSAGES (applicant <-> job poster chat) ===
+
+  // Resolve an application + verify the current user is a participant.
+  // Participants: the applicant, and the job poster (employer or the agent who posted the job).
+  async function getMessageParticipants(appId: number, userId: string) {
+    const application = await storage.getApplication(appId);
+    if (!application) return { error: 404 as const };
+    const job = await storage.getJob(application.jobId);
+    if (!job) return { error: 404 as const };
+    const posterId = job.agentId || job.employerId;
+    const isApplicant = application.applicantId === userId;
+    const isPoster = job.employerId === userId || job.agentId === userId;
+    if (!isApplicant && !isPoster) return { error: 403 as const };
+    const otherPartyId = isApplicant ? posterId : application.applicantId;
+    return { application, job, isApplicant, otherPartyId };
+  }
+
+  // List messages for an application (also marks the other party's messages as read)
+  app.get("/api/applications/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const appId = Number(req.params.id);
+      if (isNaN(appId)) return res.status(400).json({ message: "Invalid application ID" });
+
+      const ctx = await getMessageParticipants(appId, userId);
+      if ("error" in ctx) return res.status(ctx.error).json({ message: ctx.error === 404 ? "Application not found" : "Not authorized" });
+
+      const messages = await storage.getApplicationMessages(appId);
+      storage.markApplicationMessagesRead(appId, userId).catch(() => {});
+      res.json(messages);
+    } catch (err) {
+      console.error("Get application messages error:", err);
+      res.status(500).json({ message: "Failed to load messages" });
+    }
+  });
+
+  // Send a message on an application
+  app.post("/api/applications/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const appId = Number(req.params.id);
+      if (isNaN(appId)) return res.status(400).json({ message: "Invalid application ID" });
+
+      const text = typeof req.body?.message === "string" ? req.body.message.trim() : "";
+      if (!text) return res.status(400).json({ message: "Message cannot be empty" });
+      if (text.length > 2000) return res.status(400).json({ message: "Message is too long (max 2000 characters)" });
+
+      const ctx = await getMessageParticipants(appId, userId);
+      if ("error" in ctx) return res.status(ctx.error).json({ message: ctx.error === 404 ? "Application not found" : "Not authorized" });
+
+      const created = await storage.createApplicationMessage(appId, userId, text);
+      res.status(201).json(created);
+
+      // Notify the other party (fire-and-forget)
+      (async () => {
+        const [sender, recipient] = await Promise.all([
+          storage.getUser(userId),
+          storage.getUser(ctx.otherPartyId),
+        ]);
+        if (!recipient) return;
+        const senderName = ctx.isApplicant
+          ? `${sender?.firstName || ""} ${sender?.lastName || ""}`.trim() || "The applicant"
+          : sender?.companyName || `${sender?.firstName || ""} ${sender?.lastName || ""}`.trim() || "The employer";
+
+        storage.createNotification({
+          title: `New message about "${ctx.job.title}"`,
+          message: `${senderName}: ${text.length > 120 ? text.slice(0, 120) + "…" : text}`,
+          type: "individual",
+          targetRole: null,
+          targetUserId: ctx.otherPartyId,
+          createdBy: userId,
+        }).catch((e) => console.error("Application message notification error:", e));
+
+        if (recipient.email) {
+          const recipientName = `${recipient.firstName || ""} ${recipient.lastName || ""}`.trim() || "there";
+          sendApplicationMessageEmail(recipient.email, recipientName, senderName, ctx.job.title, text)
+            .catch((e) => console.error("Application message email error:", e));
+        }
+      })().catch(() => {});
+    } catch (err) {
+      console.error("Send application message error:", err);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Unread message counts for a set of applications the user participates in
+  app.get("/api/application-messages/unread-counts", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const idsParam = typeof req.query.ids === "string" ? req.query.ids : "";
+      const ids = idsParam.split(",").map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 200);
+      if (ids.length === 0) return res.json({});
+
+      // Only count applications where the user is actually a participant (single batched query)
+      const allowed = await storage.filterParticipantApplicationIds(ids, userId);
+      const counts = await storage.getUnreadApplicationMessageCounts(allowed, userId);
+      res.json(counts);
+    } catch (err) {
+      console.error("Unread counts error:", err);
+      res.status(500).json({ message: "Failed to load unread counts" });
     }
   });
 

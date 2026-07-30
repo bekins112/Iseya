@@ -4,6 +4,7 @@ import {
   users,
   jobs,
   applications,
+  applicationMessages,
   jobHistory,
   offers,
   interviews,
@@ -23,6 +24,8 @@ import {
 export const insertUserSchema = createInsertSchema(users);
 export const insertJobSchema = createInsertSchema(jobs);
 export const insertApplicationSchema = createInsertSchema(applications);
+export const insertApplicationMessageSchema = createInsertSchema(applicationMessages);
+export type InsertApplicationMessage = z.infer<typeof insertApplicationMessageSchema>;
 export const insertJobHistorySchema = createInsertSchema(jobHistory);
 export const insertOfferSchema = createInsertSchema(offers);
 export const insertInterviewSchema = createInsertSchema(interviews);

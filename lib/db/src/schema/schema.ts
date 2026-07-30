@@ -43,6 +43,20 @@ export const applications = pgTable("applications", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Direct messages between applicant and job poster, scoped to an application
+export const applicationMessages = pgTable("application_messages", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  applicationId: integer("application_id").notNull().references(() => applications.id, { onDelete: "cascade" }),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_application_messages_application").on(table.applicationId),
+]);
+
+export type ApplicationMessage = typeof applicationMessages.$inferSelect;
+
 // Job history table for applicant profiles
 export const jobHistory = pgTable("job_history", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

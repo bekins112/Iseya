@@ -879,3 +879,26 @@ export async function sendPasswordResetEmail(to: string, name: string, code: str
     <p style="color: #666; font-size: 14px;">This code expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
   `);
 }
+
+export async function sendApplicationMessageEmail(
+  recipientEmail: string,
+  recipientName: string,
+  senderName: string,
+  jobTitle: string,
+  messagePreview: string
+): Promise<boolean> {
+  const escaped = messagePreview
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const truncated = escaped.length > 300 ? escaped.slice(0, 300) + "…" : escaped;
+  return sendEmail(recipientEmail, recipientName, `New message about ${jobTitle}`, `
+    <h2 style="color: #333; margin: 0 0 16px;">New Message</h2>
+    <p style="color: #555; line-height: 1.6;">Hi ${recipientName},</p>
+    <p style="color: #555; line-height: 1.6;"><strong>${senderName}</strong> sent you a message regarding <strong>${jobTitle}</strong>:</p>
+    <div style="background: #f7f7f7; border-left: 4px solid #d4a017; padding: 16px; margin: 20px 0; border-radius: 4px;">
+      <p style="color: #333; margin: 0; white-space: pre-wrap;">${truncated}</p>
+    </div>
+    <p style="color: #555; line-height: 1.6;">Log in to your dashboard to reply.</p>
+  `);
+}

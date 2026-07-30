@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { users, jobs, applications, adminPermissions, adminRoles, tickets, ticketMessages, reports, jobHistory, offers, interviews, verificationRequests, notifications, notificationReads, platformSettings, emailHealthChecks, type EmailHealthCheck, type InsertEmailHealthCheck, transactions, newsletterSubscribers, internalAds, googleAdPlacements, activityLogs, hiringCompanies, type User, type UpsertUser, type Job, type InsertJob, type Application, type InsertApplication, type AdminPermissions, type InsertAdminPermissions, type AdminRole, type InsertAdminRole, type Ticket, type InsertTicket, type TicketMessage, type InsertTicketMessage, type Report, type InsertReport, type JobHistory, type InsertJobHistory, type Offer, type InsertOffer, type Interview, type InsertInterview, type VerificationRequest, type InsertVerificationRequest, type Notification, type InsertNotification, type PlatformSetting, type Transaction, type InsertTransaction, type InternalAd, type InsertInternalAd, type GoogleAdPlacement, type InsertGoogleAdPlacement, type ActivityLog, type InsertActivityLog, type HiringCompany, type InsertHiringCompany, jobAidRequests, type JobAidRequest, type InsertJobAidRequest } from "@workspace/db";
-import { eq, and, desc, sql, count, or, like, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, count, or, like, inArray, ne } from "drizzle-orm";
+import { applicationMessages, type ApplicationMessage } from "@workspace/db";
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
@@ -319,6 +320,63 @@ export class DatabaseStorage implements IStorage {
   async getApplication(id: number): Promise<Application | undefined> {
     const [app] = await db.select().from(applications).where(eq(applications.id, id));
     return app;
+  }
+
+  // === Application messages (applicant <-> job poster chat) ===
+  async getApplicationMessages(applicationId: number): Promise<ApplicationMessage[]> {
+    return db.select().from(applicationMessages)
+      .where(eq(applicationMessages.applicationId, applicationId))
+      .orderBy(applicationMessages.createdAt);
+  }
+
+  async createApplicationMessage(applicationId: number, senderId: string, message: string): Promise<ApplicationMessage> {
+    const [row] = await db.insert(applicationMessages)
+      .values({ applicationId, senderId, message })
+      .returning();
+    return row;
+  }
+
+  async markApplicationMessagesRead(applicationId: number, readerId: string): Promise<void> {
+    await db.update(applicationMessages)
+      .set({ isRead: true })
+      .where(and(
+        eq(applicationMessages.applicationId, applicationId),
+        ne(applicationMessages.senderId, readerId),
+        eq(applicationMessages.isRead, false),
+      ));
+  }
+
+  // Filter a set of application IDs down to those where the user is a participant
+  // (applicant, or the job's employer/agent) — one query instead of per-id lookups.
+  async filterParticipantApplicationIds(applicationIds: number[], userId: string): Promise<number[]> {
+    if (applicationIds.length === 0) return [];
+    const rows = await db.select({ id: applications.id })
+      .from(applications)
+      .innerJoin(jobs, eq(applications.jobId, jobs.id))
+      .where(and(
+        inArray(applications.id, applicationIds),
+        or(
+          eq(applications.applicantId, userId),
+          eq(jobs.employerId, userId),
+          eq(jobs.agentId, userId),
+        ),
+      ));
+    return rows.map(r => r.id);
+  }
+
+  async getUnreadApplicationMessageCounts(applicationIds: number[], readerId: string): Promise<Record<number, number>> {
+    if (applicationIds.length === 0) return {};
+    const rows = await db.select({
+      applicationId: applicationMessages.applicationId,
+      count: count(),
+    }).from(applicationMessages)
+      .where(and(
+        inArray(applicationMessages.applicationId, applicationIds),
+        ne(applicationMessages.senderId, readerId),
+        eq(applicationMessages.isRead, false),
+      ))
+      .groupBy(applicationMessages.applicationId);
+    return Object.fromEntries(rows.map(r => [r.applicationId, Number(r.count)]));
   }
 
   async deleteApplication(id: number, applicantId: string): Promise<void> {

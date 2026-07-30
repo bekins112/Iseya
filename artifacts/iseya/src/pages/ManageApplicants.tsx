@@ -62,6 +62,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { usePageTitle } from "@/hooks/use-page-title";
+import { ApplicationChatDialog, useApplicationUnreadCounts } from "@/components/ApplicationChatDialog";
 
 type EnrichedApplication = Application & {
   applicantName?: string;
@@ -650,6 +651,8 @@ function ApplicantCard({
   isSubmittingReview,
   onRespondToCounter,
   isRespondingToCounter,
+  onMessage,
+  unreadCount = 0,
 }: { 
   application: EnrichedApplication;
   onUpdateStatus: (id: number, status: 'pending' | 'accepted' | 'rejected' | 'offered') => void;
@@ -669,6 +672,8 @@ function ApplicantCard({
   isSubmittingReview?: boolean;
   onRespondToCounter?: (offerId: number, action: "accept" | "decline") => void;
   isRespondingToCounter?: boolean;
+  onMessage: (application: EnrichedApplication) => void;
+  unreadCount?: number;
 }) {
   const status = application.status || 'pending';
   const StatusIcon = statusConfig[status]?.icon || Clock;
@@ -755,6 +760,22 @@ function ApplicantCard({
               >
                 <User className="w-4 h-4" />
                 View Profile
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1 relative"
+                onClick={() => onMessage(application)}
+                data-testid={`button-message-applicant-${application.id}`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                Message
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Button>
 
               {application.applicantCvUrl && (
@@ -1036,6 +1057,11 @@ export default function ManageApplicants() {
   const [reviewAppId, setReviewAppId] = useState<number | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewNote, setReviewNote] = useState("");
+  const [chatApp, setChatApp] = useState<EnrichedApplication | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const { data: unreadCounts = {} } = useApplicationUnreadCounts(
+    ((applications as EnrichedApplication[] | undefined) || []).map((a) => a.id)
+  );
 
   const interviews = interviewsData || [];
   const [showRecommendations, setShowRecommendations] = useState(false);
@@ -1434,6 +1460,8 @@ export default function ManageApplicants() {
                 isSubmittingReview={submitAdminReview.isPending}
                 onRespondToCounter={handleRespondToCounter}
                 isRespondingToCounter={respondToCounter.isPending}
+                onMessage={(a) => { setChatApp(a); setChatOpen(true); }}
+                unreadCount={unreadCounts[app.id] || 0}
               />
             ))
           )}
@@ -1456,6 +1484,14 @@ export default function ManageApplicants() {
         application={interviewApp}
         open={interviewOpen}
         onOpenChange={setInterviewOpen}
+      />
+
+      <ApplicationChatDialog
+        applicationId={chatApp?.id ?? null}
+        otherPartyName={chatApp?.applicantName || "Applicant"}
+        jobTitle={job?.title || ""}
+        open={chatOpen}
+        onOpenChange={setChatOpen}
       />
     </div>
   );
