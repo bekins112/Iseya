@@ -2,3 +2,4 @@
 - [Payment verify security (iseya)](payment-verify-security.md) — gateway verify handlers must enforce metadata.userId===session + amount/currency; Paystack is kobo, Flutterwave is naira.
 - [Job-Aid benefit model (iseya)](jobaid-benefit-model.md) — Job-Aid benefits are mixed: 3 quota (numeric limit) + 3 toggle (boolean); quota keys must stay out of BOOLEAN_SETTINGS_KEYS or they get coerced to true/false.
 - [Promotions / ad-blocker naming (iseya)](promotions-adblock-naming.md) — public ads surface uses promotions/promos names to dodge ad blockers; keep legacy aliases.
+- [Support email pipeline (iseya)](support-email-pipeline.md) — support@ → Postmark → ticket works; blocked on DNS MX conflict, user waiting for Namecheap webmail migration before forwarding fix.
